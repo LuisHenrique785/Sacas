@@ -8,29 +8,40 @@
     body { font-family: sans-serif; background: #f2f2f7; padding: 15px; display: flex; flex-direction: column; align-items: center; }
     .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 340px; }
     input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-    .btn-print { width: 100%; padding: 15px; background: #34c759; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+    .btn-print  { width: 100%; padding: 15px; background: #34c759; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
     .btn-print:disabled { background: #a0a0a0; cursor: not-allowed; }
-    .btn-status { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 15px; cursor: pointer; font-size: 15px; }
+    .btn-status { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-size: 15px; }
+    .btn-login  { width: 100%; padding: 12px; background: #ff3b30; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
     #status { margin-top: 10px; font-size: 14px; text-align: center; padding: 10px; border-radius: 8px; display: none; }
-    #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
-    .m-cont { background: white; margin: 10% auto; padding: 20px; width: 85%; max-width: 380px; border-radius: 15px; text-align: left; max-height: 75vh; overflow-y: auto; }
-    .ranking-item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-    .barra-fundo { background: #e5e5ea; border-radius: 4px; height: 8px; flex: 1; margin: 0 10px; }
-    .barra-fill { height: 8px; border-radius: 4px; }
+    #modal  { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
+    .m-cont { background: white; margin: 10% auto; padding: 20px; width: 85%; max-width: 380px; border-radius: 15px; max-height: 75vh; overflow-y: auto; }
+    .ranking-item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .barra-fundo  { background: #e5e5ea; border-radius: 4px; height: 8px; flex: 1; }
+    .barra-fill   { height: 8px; border-radius: 4px; }
+    #acessoBanner { display: none; background: #fff3cd; border: 1px solid #ffc107; padding: 14px; border-radius: 10px; margin-bottom: 10px; text-align: center; width: 100%; max-width: 340px; box-sizing: border-box; }
   </style>
 </head>
 <body>
 
-  <button class="btn-status" onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
+  <!-- Banner aparece se o usuario nao estiver logado no Google -->
+  <div id="acessoBanner">
+    <div style="font-size:24px">&#128274;</div>
+    <b>Login necessario</b><br>
+    <span style="font-size:13px">Faca login com sua conta Google <b>@meli</b> e recarregue a pagina.</span><br><br>
+    <button class="btn-login" onclick="abrirLogin()">Fazer login no Google</button>
+    <button style="width:100%;padding:8px;border-radius:8px;border:none;background:#e0e0e0;cursor:pointer" onclick="verificarAcesso()">Ja fiz login — verificar novamente</button>
+  </div>
 
-  <div class="card">
+  <button class="btn-status" id="btnStatus" onclick="verStatus()" style="display:none">&#128202; VER STATUS ROTAS</button>
+
+  <div class="card" id="mainCard" style="display:none">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
-      <input type="text" id="ip" placeholder="IP Impressora" onchange="sv()">
-      <input type="text" id="resp" placeholder="Seu Nome" onchange="sv()">
+      <input type="text" id="ip"   placeholder="IP Impressora" onchange="sv()">
+      <input type="text" id="resp" placeholder="Seu Nome"      onchange="sv()">
     </div>
-    <input type="text" id="log" placeholder="Descrição Log">
-    <input type="text" id="saca" placeholder="N&#186; Saca" inputmode="numeric">
-    <input type="number" id="qtd" placeholder="Quantidade" min="1">
+    <input type="text"   id="log"  placeholder="Descricao Log">
+    <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
+    <input type="number" id="qtd"  placeholder="Quantidade" min="1">
     <button id="btPrint" class="btn-print" onclick="processar()">IMPRIMIR</button>
     <div id="status"></div>
   </div>
@@ -39,17 +50,15 @@
     <div class="m-cont">
       <h3 style="margin-top:0">Ranking Rotas</h3>
       <div id="lista"></div>
-      <button style="width:100%; margin-top:15px; padding:10px; border-radius:8px; border:none; background:#f2f2f7; font-size:15px; cursor:pointer;" onclick="document.getElementById('modal').style.display='none'">FECHAR</button>
+      <button style="width:100%;margin-top:15px;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:15px;cursor:pointer;" onclick="document.getElementById('modal').style.display='none'">FECHAR</button>
     </div>
   </div>
 
   <script>
     // ===================== CONFIGURAÇÕES =====================
-    const URL_CSV_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-9TjTwAMwJuptIUlw7Aa5B9p1A_Ql9Fx6bUiQLjUZXwLo6i26K8wgIMXbnklftm3qtSE_RYW7islv/pub?gid=2049170111&single=true&output=csv';
-    const URL_CSV_ROTA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-9TjTwAMwJuptIUlw7Aa5B9p1A_Ql9Fx6bUiQLjUZXwLo6i26K8wgIMXbnklftm3qtSE_RYW7islv/pub?gid=1529740109&single=true&output=csv';
-    const URL_CSV_LOG  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-9TjTwAMwJuptIUlw7Aa5B9p1A_Ql9Fx6bUiQLjUZXwLo6i26K8wgIMXbnklftm3qtSE_RYW7islv/pub?gid=1733053240&single=true&output=csv';
+    const SHEET_ID = '1EZ9fXbCu8hr8nS1jLJWAPTwefXo2EFQbmrMLodbN6LE';
 
-    const URL_FORM_SUBMIT = 'https://docs.google.com/forms/d/e/1FAIpQLSdgSXDTEh6bS_8TLS0o5qjJS-mHVZafm_XJb9Ofyxobp7Mpnw/formResponse';
+    const URL_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSdgSXDTEh6bS_8TLS0o5qjJS-mHVZafm_XJb9Ofyxobp7Mpnw/formResponse';
 
     const FIELDS = {
       data:  'entry.1911248389',
@@ -64,9 +73,92 @@
 
     const getV = id => document.getElementById(id).value.trim();
 
+    // Carrega aba via gviz JSONP — usa a sessao Google ja ativa no navegador
+    // Nao precisa publicar a planilha: basta estar logado e ter acesso pelo dominio
+    function carregarAba(sheetParam) {
+      return new Promise((resolve, reject) => {
+        const cb = '_gviz' + Date.now() + Math.random().toString(36).slice(2);
+        const s  = document.createElement('script');
+
+        const t = setTimeout(() => { cleanup(); reject(new Error('Timeout ao carregar dados')); }, 12000);
+
+        function cleanup() {
+          clearTimeout(t);
+          delete window[cb];
+          if (s.parentNode) s.remove();
+        }
+
+        window[cb] = (data) => {
+          cleanup();
+          if (!data || data.status === 'error') {
+            const msg = data && data.errors ? data.errors[0].message : 'sem detalhes';
+            reject(new Error('Sem acesso (' + sheetParam + '): ' + msg));
+            return;
+          }
+          const numCols = (data.table.cols || []).length;
+          const rows = (data.table.rows || []).map(row =>
+            Array.from({ length: numCols }, (_, i) => {
+              const cell = row.c ? row.c[i] : null;
+              if (!cell || cell.v === null || cell.v === undefined) return '';
+              const v = cell.v;
+              if (typeof v === 'string' && v.startsWith('Date(')) {
+                const n = v.slice(5, -1).split(',').map(Number);
+                const d = new Date(n[0], n[1], n[2] || 1, n[3] || 0, n[4] || 0);
+                const ds = d.toLocaleDateString('pt-BR');
+                return n.length > 3
+                  ? ds + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
+                  : ds;
+              }
+              return cell.f !== undefined ? String(cell.f) : String(v);
+            })
+          );
+          resolve(rows);
+        };
+
+        s.onerror = () => { cleanup(); reject(new Error('Erro de rede')); };
+        s.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
+                '/gviz/tq?tqx=out:json&' + sheetParam +
+                '&callback=' + cb + '&_=' + Date.now();
+        document.head.appendChild(s);
+      });
+    }
+
+    // Verifica se o usuario tem acesso a planilha e mostra a UI correta
+    async function verificarAcesso() {
+      document.getElementById('acessoBanner').style.display = 'none';
+      document.getElementById('btnStatus').style.display = 'none';
+      document.getElementById('mainCard').style.display  = 'none';
+      document.getElementById('acessoBanner').innerHTML =
+        '<div style="padding:10px;text-align:center">Verificando acesso...</div>';
+      document.getElementById('acessoBanner').style.display = 'block';
+
+      try {
+        await carregarAba('sheet=Base');
+        // Acesso OK
+        document.getElementById('acessoBanner').style.display = 'none';
+        document.getElementById('btnStatus').style.display = 'block';
+        document.getElementById('mainCard').style.display  = 'block';
+      } catch (e) {
+        // Sem acesso — mostra banner de login
+        document.getElementById('acessoBanner').innerHTML =
+          '<div style="font-size:24px">&#128274;</div>' +
+          '<b>Login necessario</b><br>' +
+          '<span style="font-size:13px">Faca login com sua conta Google <b>@meli</b> e recarregue a pagina.</span><br><br>' +
+          '<button class="btn-login" onclick="abrirLogin()">Fazer login no Google</button>' +
+          '<button style="width:100%;padding:8px;border-radius:8px;border:none;background:#e0e0e0;cursor:pointer;margin-top:6px" onclick="verificarAcesso()">Ja fiz login — verificar novamente</button>' +
+          '<div style="font-size:11px;color:#888;margin-top:8px">Detalhe: ' + e.message + '</div>';
+        document.getElementById('acessoBanner').style.display = 'block';
+      }
+    }
+
+    function abrirLogin() {
+      window.open('https://accounts.google.com/ServiceLogin?continue=https://docs.google.com/spreadsheets/d/' + SHEET_ID, '_blank');
+    }
+
     window.onload = () => {
       document.getElementById('ip').value   = localStorage.getItem('ip') || '';
       document.getElementById('resp').value = localStorage.getItem('rp') || '';
+      verificarAcesso();
     };
 
     const sv = () => {
@@ -74,157 +166,124 @@
       localStorage.setItem('rp', getV('resp'));
     };
 
-    // Parser CSV compatível com RFC 4180 (lida com campos entre aspas e vírgulas internas)
-    function parseCSV(text) {
-      if (!text) return [];
-      const rows = [];
-      let row = [], cell = '', inQ = false;
-      // Normaliza separador de linha
-      const chars = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-      for (let i = 0; i < chars.length; i++) {
-        const c = chars[i];
-        if (inQ) {
-          if (c === '"' && chars[i + 1] === '"') { cell += '"'; i++; }
-          else if (c === '"') inQ = false;
-          else cell += c;
-        } else {
-          if (c === '"') { inQ = true; }
-          else if (c === ',') { row.push(cell.trim()); cell = ''; }
-          else if (c === '\n') { row.push(cell.trim()); rows.push(row); row = []; cell = ''; }
-          else cell += c;
-        }
-      }
-      row.push(cell.trim());
-      if (row.some(v => v !== '')) rows.push(row);
-      return rows.filter(r => r[0] !== '');
-    }
-
     function dataHoje() {
-      return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date());
+      return new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }).format(new Date());
     }
 
     function dataHoraAtual() {
       return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+        day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
       }).format(new Date());
     }
 
     function setStatus(msg, cor) {
-      const st = document.getElementById('status');
-      st.style.display = 'block';
-      st.style.background = cor || '#e6ffed';
-      st.innerText = msg;
+      const el = document.getElementById('status');
+      el.style.display  = 'block';
+      el.style.background = cor || '#e6ffed';
+      el.innerText = msg;
     }
 
-    // ---------- STATUS DE ROTAS ----------
+    // -------- STATUS DAS ROTAS --------
     async function verStatus() {
       document.getElementById('modal').style.display = 'block';
       document.getElementById('lista').innerHTML = 'Carregando...';
 
       try {
-        const [txtRota, txtLog] = await Promise.all([
-          fetch(URL_CSV_ROTA + '&nocache=' + Date.now()).then(r => r.text()),
-          fetch(URL_CSV_LOG  + '&nocache=' + Date.now()).then(r => r.text())
+        const [dadosRota, dadosLog] = await Promise.all([
+          carregarAba('sheet=Rota'),
+          carregarAba('gid=0')
         ]);
 
-        const dadosRota = parseCSV(txtRota);
-        const dadosLog  = parseCSV(txtLog);
         const hoje = dataHoje();
-
         let totalPorRota = {};
-        for (let i = 1; i < dadosRota.length; i++) {
-          const r = dadosRota[i][1];
+        for (const row of dadosRota) {
+          const r = row[1];
           if (r) totalPorRota[r] = (totalPorRota[r] || 0) + 1;
         }
 
         const sacasHoje = new Set();
-        for (let j = 1; j < dadosLog.length; j++) {
-          if (dadosLog[j][0] && dadosLog[j][0].startsWith(hoje) && dadosLog[j][3])
-            sacasHoje.add(dadosLog[j][3].toString().trim());
+        for (const row of dadosLog) {
+          if (row[0] && row[0].startsWith(hoje) && row[3])
+            sacasHoje.add(row[3].toString().trim());
         }
 
         let progresso = {};
-        for (let i = 1; i < dadosRota.length; i++) {
-          const saca = (dadosRota[i][0] || '').toString().trim();
-          const rota = dadosRota[i][1];
+        for (const row of dadosRota) {
+          const saca = (row[0] || '').toString().trim();
+          const rota = row[1];
           if (!saca || !rota) continue;
           if (!progresso[rota]) progresso[rota] = 0;
           if (sacasHoje.has(saca)) progresso[rota]++;
         }
 
-        let ranking = [];
+        const ranking = [];
         for (const r in totalPorRota) {
           const tot = totalPorRota[r], feitas = progresso[r] || 0;
           ranking.push({ rota: r, pronta: feitas, total: tot, porc: (feitas / tot) * 100 });
         }
         ranking.sort((a, b) => b.porc - a.porc);
 
-        if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados.'; return; }
+        if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados na aba Rota.'; return; }
 
         let h = '';
-        ranking.forEach(d => {
+        for (const d of ranking) {
           const pct = Math.round(d.porc);
           const cor = pct === 100 ? '#34c759' : pct >= 50 ? '#ff9500' : '#ff3b30';
-          h += `<div class="ranking-item">
-            <span style="min-width:90px"><b>${d.rota}</b></span>
-            <div class="barra-fundo"><div class="barra-fill" style="width:${pct}%;background:${cor}"></div></div>
-            <span style="min-width:80px;text-align:right;color:${cor}">${d.pronta}/${d.total} (${pct}%)</span>
-          </div>`;
-        });
+          h += '<div class="ranking-item">' +
+               '<span style="min-width:80px"><b>' + d.rota + '</b></span>' +
+               '<div class="barra-fundo"><div class="barra-fill" style="width:' + pct + '%;background:' + cor + '"></div></div>' +
+               '<span style="min-width:75px;text-align:right;color:' + cor + '">' + d.pronta + '/' + d.total + ' (' + pct + '%)</span>' +
+               '</div>';
+        }
         document.getElementById('lista').innerHTML = h;
 
       } catch (e) {
-        document.getElementById('lista').innerHTML = '<span style="color:red">Erro ao carregar dados. Verifique a conexão.</span>';
+        document.getElementById('lista').innerHTML =
+          '<span style="color:#c0392b">Erro: ' + e.message + '</span>';
       }
     }
 
-    // ---------- PROCESSAR ENTRADA ----------
+    // -------- PROCESSAR / IMPRIMIR --------
     async function processar() {
-      const btn = document.getElementById('btPrint');
-      const ip    = getV('ip');
+      const btn    = document.getElementById('btPrint');
+      const ip     = getV('ip');
       const sacaId = getV('saca');
       const qtdVal = parseInt(getV('qtd'));
 
       if (!ip || !sacaId || !qtdVal || qtdVal < 1) {
-        alert('Preencha IP, Nº Saca e Quantidade.');
+        alert('Preencha IP da impressora, Nº Saca e Quantidade.');
         return;
       }
 
       btn.disabled = true;
-      setStatus('Buscando dados...', '#fff3cd');
+      setStatus('Buscando saca na Base...', '#fff3cd');
 
       try {
-        const [txtBase, txtLog] = await Promise.all([
-          fetch(URL_CSV_BASE + '&nocache=' + Date.now()).then(r => r.text()),
-          fetch(URL_CSV_LOG  + '&nocache=' + Date.now()).then(r => r.text())
-        ]);
+        const dadosBase = await carregarAba('sheet=Base');
 
-        const baseData = parseCSV(txtBase);
-        const logData  = parseCSV(txtLog);
-
-        // Busca na Base: col B = sacaId, col A = QR Mãe, col C = Rota
         let qrMae = '', rotaSaca = '';
-        for (let i = 0; i < baseData.length; i++) {
-          if ((baseData[i][1] || '').toString().trim() === sacaId) {
-            qrMae    = baseData[i][0] || '';
-            rotaSaca = baseData[i][2] || '';
+        for (const row of dadosBase) {
+          if ((row[1] || '').toString().trim() === sacaId) {
+            qrMae    = row[0] || '';
+            rotaSaca = row[2] || '';
             break;
           }
         }
 
         if (!qrMae) {
-          setStatus('Saca nao existe na Base!', '#ffdce0');
+          setStatus('Saca nao encontrada na Base!', '#ffdce0');
           btn.disabled = false;
           return;
         }
 
-        // Verifica se já foi lançada hoje
+        setStatus('Verificando historico...', '#fff3cd');
+        const dadosLog = await carregarAba('gid=0');
+
         const hoje = dataHoje();
         let jaExiste = false;
-        for (let j = logData.length - 1; j >= 0; j--) {
-          if (logData[j][0] && logData[j][0].startsWith(hoje) &&
-              (logData[j][3] || '').toString().trim() === sacaId) {
+        for (let j = dadosLog.length - 1; j >= 0; j--) {
+          if (dadosLog[j][0] && dadosLog[j][0].startsWith(hoje) &&
+              (dadosLog[j][3] || '').toString().trim() === sacaId) {
             jaExiste = true;
             break;
           }
@@ -239,45 +298,42 @@
           btn.disabled = true;
         }
 
-        setStatus('Registrando...', '#fff3cd');
-
+        setStatus('Registrando no sistema...', '#fff3cd');
         const dataStr = dataHoraAtual();
-        const formData = new URLSearchParams();
-        formData.append(FIELDS.data,  dataStr);
-        formData.append(FIELDS.resp,  getV('resp'));
-        formData.append(FIELDS.audit, getV('log'));
-        formData.append(FIELDS.saca,  sacaId);
-        formData.append(FIELDS.qtd,   qtdVal);
-        formData.append(FIELDS.qr,    qrMae);
-        formData.append(FIELDS.rota,  rotaSaca);
+        const form = new URLSearchParams();
+        form.append(FIELDS.data,  dataStr);
+        form.append(FIELDS.resp,  getV('resp'));
+        form.append(FIELDS.audit, getV('log'));
+        form.append(FIELDS.saca,  sacaId);
+        form.append(FIELDS.qtd,   qtdVal);
+        form.append(FIELDS.qr,    qrMae);
+        form.append(FIELDS.rota,  rotaSaca);
 
-        await fetch(URL_FORM_SUBMIT, {
-          method: 'POST',
-          mode: 'no-cors',
+        await fetch(URL_FORM, {
+          method: 'POST', mode: 'no-cors',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: formData
+          body: form
         });
 
-        // Monta ZPL e envia para impressora
+        setStatus('Enviando para impressora...', '#fff3cd');
         let zpl = '';
         for (let k = 1; k <= qtdVal; k++) {
-          const qr = (k === 1) ? qrMae : `${sacaId} Saca ${k}-${qtdVal}`;
-          zpl += `^XA^CI28^PW800^LL800^MD25^FO250,30^BQN,2,7^FDQA,${qr}^FS` +
-                 `^FO0,360^A0N,70,70^FB800,1,0,C^FD${rotaSaca} - ${sacaId}^FS` +
-                 `^FO0,480^A0N,60,60^FB800,1,0,C^FDSaca ${k} de ${qtdVal}^FS` +
-                 `^FO0,620^A0N,25,25^FB800,1,0,C^FD${dataStr} | ${getV('resp')}^FS` +
-                 `^FO0,660^A0N,25,25^FB800,1,0,C^FDAUDITORIA: ${getV('log')}^FS^XZ`;
+          const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
+          zpl += '^XA^CI28^PW800^LL800^MD25' +
+                 '^FO250,30^BQN,2,7^FDQA,' + qr + '^FS' +
+                 '^FO0,360^A0N,70,70^FB800,1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                 '^FO0,480^A0N,60,60^FB800,1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                 '^FO0,620^A0N,25,25^FB800,1,0,C^FD' + dataStr + ' | ' + getV('resp') + '^FS' +
+                 '^FO0,660^A0N,25,25^FB800,1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
         }
 
-        setStatus('Enviando para impressora...', '#fff3cd');
-
-        fetch(`http://${ip}/pstprnt`, { method: 'POST', body: zpl, mode: 'no-cors' })
+        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
           .then(() => {
-            setStatus('✅ Sucesso!', '#e6ffed');
+            setStatus('Sucesso!', '#e6ffed');
             document.getElementById('saca').value = '';
             document.getElementById('qtd').value  = '';
           })
-          .catch(() => setStatus('❌ Erro na impressora. Registro salvo.', '#ffdce0'))
+          .catch(() => setStatus('Registro salvo. Erro na impressora - verifique o IP.', '#ffdce0'))
           .finally(() => { btn.disabled = false; });
 
       } catch (e) {
