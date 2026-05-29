@@ -9,15 +9,19 @@
     .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 340px; }
     input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
     .btn-print { width: 100%; padding: 15px; background: #34c759; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
-    .btn-status { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 15px; cursor: pointer; }
+    .btn-print:disabled { background: #a0a0a0; cursor: not-allowed; }
+    .btn-status { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 15px; cursor: pointer; font-size: 15px; }
     #status { margin-top: 10px; font-size: 14px; text-align: center; padding: 10px; border-radius: 8px; display: none; }
-    #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
-    .m-cont { background: white; margin: 15% auto; padding: 20px; width: 80%; border-radius: 15px; text-align: left; }
+    #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
+    .m-cont { background: white; margin: 10% auto; padding: 20px; width: 85%; max-width: 380px; border-radius: 15px; text-align: left; max-height: 75vh; overflow-y: auto; }
+    .ranking-item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .barra-fundo { background: #e5e5ea; border-radius: 4px; height: 8px; flex: 1; margin: 0 10px; }
+    .barra-fill { height: 8px; border-radius: 4px; }
   </style>
 </head>
 <body>
 
-  <button class="btn-status" onclick="verStatus()">📊 VER STATUS ROTAS</button>
+  <button class="btn-status" onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
 
   <div class="card">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
@@ -25,8 +29,8 @@
       <input type="text" id="resp" placeholder="Seu Nome" onchange="sv()">
     </div>
     <input type="text" id="log" placeholder="Descrição Log">
-    <input type="text" id="saca" placeholder="Nº Saca" inputmode="numeric">
-    <input type="number" id="qtd" placeholder="Quantidade">
+    <input type="text" id="saca" placeholder="N&#186; Saca" inputmode="numeric">
+    <input type="number" id="qtd" placeholder="Quantidade" min="1">
     <button id="btPrint" class="btn-print" onclick="processar()">IMPRIMIR</button>
     <div id="status"></div>
   </div>
@@ -35,34 +39,33 @@
     <div class="m-cont">
       <h3 style="margin-top:0">Ranking Rotas</h3>
       <div id="lista"></div>
-      <button style="width:100%; margin-top:15px; padding:10px;" onclick="document.getElementById('modal').style.display='none'">FECHAR</button>
+      <button style="width:100%; margin-top:15px; padding:10px; border-radius:8px; border:none; background:#f2f2f7; font-size:15px; cursor:pointer;" onclick="document.getElementById('modal').style.display='none'">FECHAR</button>
     </div>
   </div>
 
   <script>
-    // ================= CONFIGURAÇÕES DO GOOGLE OFICIAIS =================
+    // ===================== CONFIGURAÇÕES =====================
     const URL_CSV_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-9TjTwAMwJuptIUlw7Aa5B9p1A_Ql9Fx6bUiQLjUZXwLo6i26K8wgIMXbnklftm3qtSE_RYW7islv/pub?gid=2049170111&single=true&output=csv';
     const URL_CSV_ROTA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-9TjTwAMwJuptIUlw7Aa5B9p1A_Ql9Fx6bUiQLjUZXwLo6i26K8wgIMXbnklftm3qtSE_RYW7islv/pub?gid=1529740109&single=true&output=csv';
     const URL_CSV_LOG  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-9TjTwAMwJuptIUlw7Aa5B9p1A_Ql9Fx6bUiQLjUZXwLo6i26K8wgIMXbnklftm3qtSE_RYW7islv/pub?gid=1733053240&single=true&output=csv';
-    
-    const URL_FORM_SUBMIT = 'https://docs.google.com/forms/d/e/1FAIpQLSdgSXDTEh6bS_8TLS0o5qjJS-mHVZafm_XJb9Ofyxobp7Mpnw/formResponse';
-    
-    // IDs extraídos diretamente do seu código-fonte
-    const FIELDS = {
-      data: 'entry.1911248389',
-      resp: 'entry.1107274403',
-      audit: 'entry.1214123688',
-      saca: 'entry.1271577756',
-      qtd: 'entry.90002713',
-      qr: 'entry.965325040',
-      rota: 'entry.1257884009'
-    };
-    // ====================================================================
 
-    const getV = (id) => document.getElementById(id).value;
-    
+    const URL_FORM_SUBMIT = 'https://docs.google.com/forms/d/e/1FAIpQLSdgSXDTEh6bS_8TLS0o5qjJS-mHVZafm_XJb9Ofyxobp7Mpnw/formResponse';
+
+    const FIELDS = {
+      data:  'entry.1911248389',
+      resp:  'entry.1107274403',
+      audit: 'entry.1214123688',
+      saca:  'entry.1271577756',
+      qtd:   'entry.90002713',
+      qr:    'entry.965325040',
+      rota:  'entry.1257884009'
+    };
+    // =========================================================
+
+    const getV = id => document.getElementById(id).value.trim();
+
     window.onload = () => {
-      document.getElementById('ip').value = localStorage.getItem('ip') || '';
+      document.getElementById('ip').value   = localStorage.getItem('ip') || '';
       document.getElementById('resp').value = localStorage.getItem('rp') || '';
     };
 
@@ -71,137 +74,182 @@
       localStorage.setItem('rp', getV('resp'));
     };
 
+    // Parser CSV compatível com RFC 4180 (lida com campos entre aspas e vírgulas internas)
     function parseCSV(text) {
       if (!text) return [];
-      const separador = text.includes(';') ? ';' : ',';
-      return text.split('\n').map(line => 
-        line.split(separador).map(cell => cell.replace(/["\r]/g, '').trim())
-      ).filter(l => l.length > 0 && l[0] !== "");
+      const rows = [];
+      let row = [], cell = '', inQ = false;
+      // Normaliza separador de linha
+      const chars = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      for (let i = 0; i < chars.length; i++) {
+        const c = chars[i];
+        if (inQ) {
+          if (c === '"' && chars[i + 1] === '"') { cell += '"'; i++; }
+          else if (c === '"') inQ = false;
+          else cell += c;
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { row.push(cell.trim()); cell = ''; }
+          else if (c === '\n') { row.push(cell.trim()); rows.push(row); row = []; cell = ''; }
+          else cell += c;
+        }
+      }
+      row.push(cell.trim());
+      if (row.some(v => v !== '')) rows.push(row);
+      return rows.filter(r => r[0] !== '');
     }
 
-    function obterDataHoje() {
+    function dataHoje() {
       return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date());
     }
 
+    function dataHoraAtual() {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      }).format(new Date());
+    }
+
+    function setStatus(msg, cor) {
+      const st = document.getElementById('status');
+      st.style.display = 'block';
+      st.style.background = cor || '#e6ffed';
+      st.innerText = msg;
+    }
+
+    // ---------- STATUS DE ROTAS ----------
     async function verStatus() {
       document.getElementById('modal').style.display = 'block';
-      document.getElementById('lista').innerHTML = "Carregando...";
-      
+      document.getElementById('lista').innerHTML = 'Carregando...';
+
       try {
-        const [resRota, resLog] = await Promise.all([
-          fetch(`${URL_CSV_ROTA}&nocache=${Date.now()}`).then(r => r.text()),
-          fetch(`${URL_CSV_LOG}&nocache=${Date.now()}`).then(r => r.text())
+        const [txtRota, txtLog] = await Promise.all([
+          fetch(URL_CSV_ROTA + '&nocache=' + Date.now()).then(r => r.text()),
+          fetch(URL_CSV_LOG  + '&nocache=' + Date.now()).then(r => r.text())
         ]);
 
-        const dadosRota = parseCSV(resRota);
-        const dadosLog = parseCSV(resLog);
-        const hoje = obterDataHoje();
+        const dadosRota = parseCSV(txtRota);
+        const dadosLog  = parseCSV(txtLog);
+        const hoje = dataHoje();
 
         let totalPorRota = {};
-        for(let i=1; i<dadosRota.length; i++) {
-          let r = dadosRota[i][1];
-          if(r) totalPorRota[r] = (totalPorRota[r] || 0) + 1;
+        for (let i = 1; i < dadosRota.length; i++) {
+          const r = dadosRota[i][1];
+          if (r) totalPorRota[r] = (totalPorRota[r] || 0) + 1;
         }
 
-        let sacasFeitasHoje = new Set();
-        for(let j=1; j<dadosLog.length; j++) {
-          if(dadosLog[j][0] && dadosLog[j][0].startsWith(hoje) && dadosLog[j][3]) {
-            sacasFeitasHoje.add(dadosLog[j][3].toString().trim());
-          }
+        const sacasHoje = new Set();
+        for (let j = 1; j < dadosLog.length; j++) {
+          if (dadosLog[j][0] && dadosLog[j][0].startsWith(hoje) && dadosLog[j][3])
+            sacasHoje.add(dadosLog[j][3].toString().trim());
         }
 
         let progresso = {};
-        for(let i=1; i<dadosRota.length; i++) {
-          if(!dadosRota[i][0]) continue;
-          let saca = dadosRota[i][0].toString().trim();
-          let rota = dadosRota[i][1];
-          if(!progresso[rota]) progresso[rota] = 0;
-          if(sacasFeitasHoje.has(saca)) progresso[rota]++;
+        for (let i = 1; i < dadosRota.length; i++) {
+          const saca = (dadosRota[i][0] || '').toString().trim();
+          const rota = dadosRota[i][1];
+          if (!saca || !rota) continue;
+          if (!progresso[rota]) progresso[rota] = 0;
+          if (sacasHoje.has(saca)) progresso[rota]++;
         }
 
         let ranking = [];
-        for(let r in totalPorRota) {
-          let qtdT = totalPorRota[r];
-          let qtdP = progresso[r] || 0;
-          ranking.push({ rota: r, pronta: qtdP, total: qtdT, porc: (qtdP / qtdT) * 100 });
+        for (const r in totalPorRota) {
+          const tot = totalPorRota[r], feitas = progresso[r] || 0;
+          ranking.push({ rota: r, pronta: feitas, total: tot, porc: (feitas / tot) * 100 });
         }
         ranking.sort((a, b) => b.porc - a.porc);
 
-        let h = "";
+        if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados.'; return; }
+
+        let h = '';
         ranking.forEach(d => {
-          h += `<div><b>${d.rota}</b>: ${d.pronta}/${d.total} (${Math.round(d.porc)}%)</div>`;
+          const pct = Math.round(d.porc);
+          const cor = pct === 100 ? '#34c759' : pct >= 50 ? '#ff9500' : '#ff3b30';
+          h += `<div class="ranking-item">
+            <span style="min-width:90px"><b>${d.rota}</b></span>
+            <div class="barra-fundo"><div class="barra-fill" style="width:${pct}%;background:${cor}"></div></div>
+            <span style="min-width:80px;text-align:right;color:${cor}">${d.pronta}/${d.total} (${pct}%)</span>
+          </div>`;
         });
-        document.getElementById('lista').innerHTML = h || "Sem dados.";
-      } catch(e) {
-        document.getElementById('lista').innerHTML = "Erro ao carregar dados.";
+        document.getElementById('lista').innerHTML = h;
+
+      } catch (e) {
+        document.getElementById('lista').innerHTML = '<span style="color:red">Erro ao carregar dados. Verifique a conexão.</span>';
       }
     }
 
+    // ---------- PROCESSAR ENTRADA ----------
     async function processar() {
       const btn = document.getElementById('btPrint');
-      const st = document.getElementById('status');
-      
-      if(!getV('ip') || !getV('saca') || !getV('qtd')) return alert("Faltam dados!");
+      const ip    = getV('ip');
+      const sacaId = getV('saca');
+      const qtdVal = parseInt(getV('qtd'));
+
+      if (!ip || !sacaId || !qtdVal || qtdVal < 1) {
+        alert('Preencha IP, Nº Saca e Quantidade.');
+        return;
+      }
 
       btn.disabled = true;
-      st.style.display = 'block';
-      st.style.background = '#e6ffed';
-      st.innerText = "Processando...";
+      setStatus('Buscando dados...', '#fff3cd');
 
       try {
-        const [resBase, resLog] = await Promise.all([
-          fetch(`${URL_CSV_BASE}&nocache=${Date.now()}`).then(r => r.text()),
-          fetch(`${URL_CSV_LOG}&nocache=${Date.now()}`).then(r => r.text())
+        const [txtBase, txtLog] = await Promise.all([
+          fetch(URL_CSV_BASE + '&nocache=' + Date.now()).then(r => r.text()),
+          fetch(URL_CSV_LOG  + '&nocache=' + Date.now()).then(r => r.text())
         ]);
 
-        const baseData = parseCSV(resBase);
-        const logData = parseCSV(resLog);
-        const sacaId = getV('saca').trim();
-        
-        let qrMae = "", rotaSaca = "";
-        for(let i=0; i<baseData.length; i++) {
-          if(baseData[i][1] && baseData[i][1].toString().trim() === sacaId) {
-            qrMae = baseData[i][0];
-            rotaSaca = baseData[i][2];
+        const baseData = parseCSV(txtBase);
+        const logData  = parseCSV(txtLog);
+
+        // Busca na Base: col B = sacaId, col A = QR Mãe, col C = Rota
+        let qrMae = '', rotaSaca = '';
+        for (let i = 0; i < baseData.length; i++) {
+          if ((baseData[i][1] || '').toString().trim() === sacaId) {
+            qrMae    = baseData[i][0] || '';
+            rotaSaca = baseData[i][2] || '';
             break;
           }
         }
 
-        if(!qrMae) {
-          st.style.background = '#ffdce0';
-          st.innerText = "Saca não existe na Base!";
+        if (!qrMae) {
+          setStatus('Saca nao existe na Base!', '#ffdce0');
           btn.disabled = false;
           return;
         }
 
-        const hoje = obterDataHoje();
+        // Verifica se já foi lançada hoje
+        const hoje = dataHoje();
         let jaExiste = false;
-        for(let j=logData.length-1; j>=0; j--) {
-          if(logData[j][0] && logData[j][0].startsWith(hoje) && logData[j][3] && logData[j][3].toString().trim() === sacaId) {
+        for (let j = logData.length - 1; j >= 0; j--) {
+          if (logData[j][0] && logData[j][0].startsWith(hoje) &&
+              (logData[j][3] || '').toString().trim() === sacaId) {
             jaExiste = true;
             break;
           }
         }
 
-        if(jaExiste) {
-          if(!confirm("Saca já lançada hoje. Registrar nova impressão mesmo assim?")) {
-            st.innerText = "Cancelado";
-            btn.disabled = false;
+        if (jaExiste) {
+          btn.disabled = false;
+          if (!confirm('Saca ja lancada hoje.\nRegistrar nova impressao mesmo assim?')) {
+            setStatus('Cancelado.', '#f2f2f7');
             return;
           }
+          btn.disabled = true;
         }
 
-        const dataAtualStr = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date());
-        
-        // Monta o envio oculto para o Google Forms
+        setStatus('Registrando...', '#fff3cd');
+
+        const dataStr = dataHoraAtual();
         const formData = new URLSearchParams();
-        formData.append(FIELDS.data, dataAtualStr);
-        formData.append(FIELDS.resp, getV('resp'));
+        formData.append(FIELDS.data,  dataStr);
+        formData.append(FIELDS.resp,  getV('resp'));
         formData.append(FIELDS.audit, getV('log'));
-        formData.append(FIELDS.saca, sacaId);
-        formData.append(FIELDS.qtd, getV('qtd'));
-        formData.append(FIELDS.qr, qrMae);
-        formData.append(FIELDS.rota, rotaSaca);
+        formData.append(FIELDS.saca,  sacaId);
+        formData.append(FIELDS.qtd,   qtdVal);
+        formData.append(FIELDS.qr,    qrMae);
+        formData.append(FIELDS.rota,  rotaSaca);
 
         await fetch(URL_FORM_SUBMIT, {
           method: 'POST',
@@ -210,27 +258,30 @@
           body: formData
         });
 
-        // Monta o código de impressão ZPL
-        let zpl = "";
-        const qtd = Number(getV('qtd'));
-        for (let k = 1; k <= qtd; k++) {
-          let qr = (k === 1) ? qrMae : `${sacaId} Saca ${k}-${qtd}`;
-          zpl += `^XA^CI28^PW800^LL800^MD25^FO250,30^BQN,2,7^FDQA,${qr}^FS^FO0,360^A0N,70,70^FB800,1,0,C^FD${rotaSaca} - ${sacaId}^FS^FO0,480^A0N,60,60^FB800,1,0,C^FDSaca ${k} de ${qtd}^FS^FO0,620^A0N,25,25^FB800,1,0,C^FD${dataAtualStr} | ${getV('resp')}^FS^FO0,660^A0N,25,25^FB800,1,0,C^FDAUDITORIA: ${getV('log')}^FS^XZ`;
+        // Monta ZPL e envia para impressora
+        let zpl = '';
+        for (let k = 1; k <= qtdVal; k++) {
+          const qr = (k === 1) ? qrMae : `${sacaId} Saca ${k}-${qtdVal}`;
+          zpl += `^XA^CI28^PW800^LL800^MD25^FO250,30^BQN,2,7^FDQA,${qr}^FS` +
+                 `^FO0,360^A0N,70,70^FB800,1,0,C^FD${rotaSaca} - ${sacaId}^FS` +
+                 `^FO0,480^A0N,60,60^FB800,1,0,C^FDSaca ${k} de ${qtdVal}^FS` +
+                 `^FO0,620^A0N,25,25^FB800,1,0,C^FD${dataStr} | ${getV('resp')}^FS` +
+                 `^FO0,660^A0N,25,25^FB800,1,0,C^FDAUDITORIA: ${getV('log')}^FS^XZ`;
         }
 
-        // Envia o ZPL diretamente para a impressora Zebra física na rede interna
-        fetch(`http://${getV('ip')}/pstprnt`, { method: "POST", body: zpl, mode: "no-cors" })
-          .then(() => {
-            st.innerText = "✅ Sucesso!";
-            document.getElementById('saca').value = "";
-            document.getElementById('qtd').value = "";
-          })
-          .catch(() => { st.style.background = '#ffdce0'; st.innerText = "❌ Erro Impressora"; })
-          .finally(() => btn.disabled = false);
+        setStatus('Enviando para impressora...', '#fff3cd');
 
-      } catch(e) {
-        st.style.background = '#ffdce0';
-        st.innerText = "Erro no processamento.";
+        fetch(`http://${ip}/pstprnt`, { method: 'POST', body: zpl, mode: 'no-cors' })
+          .then(() => {
+            setStatus('✅ Sucesso!', '#e6ffed');
+            document.getElementById('saca').value = '';
+            document.getElementById('qtd').value  = '';
+          })
+          .catch(() => setStatus('❌ Erro na impressora. Registro salvo.', '#ffdce0'))
+          .finally(() => { btn.disabled = false; });
+
+      } catch (e) {
+        setStatus('Erro: ' + e.message, '#ffdce0');
         btn.disabled = false;
       }
     }
