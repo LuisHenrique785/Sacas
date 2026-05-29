@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia Visual — Atualizar Base de Dados</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a1a; }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 30px 20px 60px; }
+
+  .cover {
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    color: white; border-radius: 18px; padding: 40px 36px;
+    margin-bottom: 36px; text-align: center;
+  }
+  .cover h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
+  .cover p  { font-size: 16px; opacity: .85; margin-bottom: 6px; }
+  .cover .badge { display: inline-block; background: rgba(255,255,255,.2); border-radius: 20px; padding: 4px 16px; font-size: 13px; margin-top: 12px; }
+
+  .step-card {
+    background: white; border-radius: 16px; margin-bottom: 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08); overflow: hidden;
+  }
+  .step-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 24px; border-bottom: 2px solid #f0f2f5;
+  }
+  .step-num {
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 900; flex-shrink: 0; color: white;
+  }
+  .step-header h2 { font-size: 18px; font-weight: 700; }
+  .step-header p  { font-size: 13px; color: #666; margin-top: 2px; }
+
+  .step-body { padding: 24px; }
+  .step-body ol { padding-left: 20px; }
+  .step-body ol li { margin-bottom: 8px; font-size: 15px; line-height: 1.5; }
+  .step-body ol li b { color: #1a73e8; }
+
+  /* ───── MOCK-UP GENÉRICO ───── */
+  .mockup {
+    background: #f8f9fa; border: 1px solid #dee2e6;
+    border-radius: 12px; margin-top: 20px; overflow: hidden;
+    position: relative;
+  }
+  .mock-bar {
+    background: #3c4043; height: 30px; display: flex;
+    align-items: center; padding: 0 12px; gap: 8px;
+  }
+  .mock-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .mock-url {
+    flex: 1; background: #5f6368; border-radius: 20px;
+    height: 18px; margin: 0 12px; display: flex; align-items: center;
+    padding: 0 10px;
+  }
+  .mock-url span { color: #e8eaed; font-size: 11px; }
+
+  /* ───── GOOGLE SHEETS MOCK ───── */
+  .gs-wrap { background: white; }
+  .gs-toolbar {
+    background: white; padding: 0 16px;
+    display: flex; align-items: center; gap: 0;
+    border-bottom: 1px solid #e0e0e0; height: 40px;
+  }
+  .gs-menu-item {
+    padding: 8px 12px; font-size: 13px; color: #202124;
+    cursor: pointer; border-radius: 4px;
+  }
+  .gs-menu-item.hl { background: #e8f0fe; color: #1a73e8; font-weight: 700; position: relative; }
+  .gs-sheet-title {
+    padding: 8px 16px; font-size: 14px; color: #202124;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .gs-sheets-icon { font-size: 22px; }
+  .gs-title-text { font-size: 16px; font-weight: 500; }
+  .gs-grid {
+    display: grid; grid-template-columns: 40px repeat(3, 1fr);
+    font-size: 12px;
+  }
+  .gs-cell {
+    border: 1px solid #e0e0e0; padding: 5px 8px;
+    white-space: nowrap; overflow: hidden;
+  }
+  .gs-cell.header { background: #f8f9fa; font-weight: 600; color: #444; }
+  .gs-cell.row-num { background: #f8f9fa; color: #999; text-align: center; }
+  .gs-tabs {
+    display: flex; border-top: 1px solid #e0e0e0;
+    padding: 0 8px; background: #f8f9fa; height: 32px; align-items: flex-end;
+  }
+  .gs-tab {
+    padding: 4px 16px; font-size: 12px; border-radius: 4px 4px 0 0;
+    cursor: pointer; color: #444; border: 1px solid transparent;
+  }
+  .gs-tab.active { background: white; border-color: #e0e0e0; border-bottom-color: white; color: #1a73e8; font-weight: 600; }
+
+  /* dropdown menu */
+  .dropdown-menu {
+    position: absolute; background: white; border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.25); z-index: 10;
+    min-width: 220px; padding: 4px 0; font-size: 13px;
+  }
+  .dm-item { padding: 8px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+  .dm-item:hover { background: #f5f5f5; }
+  .dm-item.hl { background: #e8f0fe; color: #1a73e8; font-weight: 600; }
+  .dm-item .arrow { margin-left: auto; color: #999; }
+  .dm-sub {
+    position: absolute; left: 100%; top: 0;
+    background: white; border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    min-width: 260px; padding: 4px 0; font-size: 13px;
+  }
+  .dm-sub-item { padding: 9px 16px; cursor: pointer; }
+  .dm-sub-item.hl {
+    background: #1a73e8; color: white; font-weight: 700;
+  }
+
+  /* ───── APP MOCK ───── */
+  .app-wrap { background: #f2f2f7; padding: 20px; }
+  .app-card {
+    background: white; border-radius: 16px; padding: 20px;
+    max-width: 380px; margin: 0 auto;
+    box-shadow: 0 2px 10px rgba(0,0,0,.1);
+  }
+  .app-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #1c1c1e; }
+  .app-field { margin-bottom: 12px; }
+  .app-label { font-size: 11px; color: #8e8e93; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+  .app-input {
+    width: 100%; border: 1px solid #d1d1d6; border-radius: 10px;
+    padding: 10px 12px; font-size: 15px; color: #1c1c1e; background: #f9f9f9;
+  }
+  .app-btn-green {
+    width: 100%; padding: 15px; background: #34c759; color: white;
+    border: none; border-radius: 10px; font-size: 18px; font-weight: 700;
+    margin-bottom: 12px; cursor: pointer;
+  }
+  .app-btn-blue {
+    width: 100%; padding: 10px; background: #007aff; color: white;
+    border: none; border-radius: 10px; margin-bottom: 8px; font-size: 15px; cursor: pointer;
+  }
+  .app-btn-orange {
+    width: 100%; padding: 10px; background: #ff9500; color: white;
+    border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .app-btn-orange.hl { box-shadow: 0 0 0 4px rgba(255,149,0,.4); animation: pulse 1.2s infinite; }
+  .app-btn-green-sm {
+    width: 100%; padding: 14px; background: #34c759; color: white;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .app-btn-gray {
+    width: 100%; padding: 10px; background: #f2f2f7; color: #1c1c1e;
+    border: none; border-radius: 10px; font-size: 14px; cursor: pointer; margin-top: 8px;
+  }
+
+  /* modal */
+  .modal-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.55); display: flex; align-items: flex-start;
+    justify-content: center; padding-top: 30px; border-radius: 12px;
+  }
+  .modal-box {
+    background: white; border-radius: 16px; padding: 20px;
+    width: 340px; max-height: 90%;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .modal-sub { font-size: 12px; color: #666; margin-bottom: 16px; line-height: 1.4; }
+  .upload-zone {
+    border: 2px dashed #c7c7cc; border-radius: 10px;
+    padding: 14px; text-align: center; margin-bottom: 10px;
+    background: #f9f9f9; cursor: pointer;
+  }
+  .upload-zone.hl { border-color: #34c759; background: #f0fff4; }
+  .upload-zone .icon { font-size: 22px; margin-bottom: 4px; }
+  .upload-zone .label { font-size: 13px; color: #444; }
+  .upload-zone .count { font-size: 12px; color: #34c759; font-weight: 700; margin-top: 4px; }
+  .progress-bar { height: 6px; background: #e5e5ea; border-radius: 3px; margin: 8px 0; overflow: hidden; }
+  .progress-fill { height: 6px; border-radius: 3px; }
+
+  /* ───── ARROW / HIGHLIGHT ───── */
+  .arrow-label {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin-top: 16px; background: #fff3e0;
+    border-left: 4px solid #ff9500; border-radius: 8px; padding: 10px 14px;
+  }
+  .arrow-label .emoji { font-size: 22px; flex-shrink: 0; }
+  .arrow-label p { font-size: 13px; line-height: 1.5; color: #444; }
+  .arrow-label p b { color: #e65100; }
+
+  .tip {
+    background: #e8f5e9; border-left: 4px solid #34c759;
+    border-radius: 8px; padding: 10px 14px; margin-top: 12px;
+    font-size: 13px; color: #2e7d32; line-height: 1.5;
+  }
+  .warn {
+    background: #fff3e0; border-left: 4px solid #ff9500;
+    border-radius: 8px; padding: 10px 14px; margin-top: 12px;
+    font-size: 13px; color: #e65100; line-height: 1.5;
+  }
+
+  /* highlight ring */
+  .ring {
+    outline: 3px solid #ff3b30;
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  /* ───── SECTION DIVIDER ───── */
+  .section-title {
+    font-size: 13px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #8e8e93; margin: 36px 0 16px;
+  }
+
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 4px rgba(255,149,0,.4); }
+    50%      { box-shadow: 0 0 0 8px rgba(255,149,0,.1); }
+  }
+
+  /* print */
+  @media print {
+    body { background: white; }
+    .page { padding: 10px; }
+    .step-card { break-inside: avoid; }
+  }
+
+  /* ───── STEP COLORS ───── */
+  .c1 { background: #1a73e8; }
+  .c2 { background: #1a73e8; }
+  .c3 { background: #1a73e8; }
+  .c4 { background: #34c759; }
+  .c5 { background: #ff9500; }
+  .c6 { background: #ff9500; }
+  .c7 { background: #ff9500; }
+  .c8 { background: #ff3b30; }
+  .c9 { background: #8e44ad; }
+
+  .sep { border: none; border-top: 2px dashed #dee2e6; margin: 10px 0 24px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- CAPA -->
+  <div class="cover">
+    <div style="font-size:48px;margin-bottom:12px">📋</div>
+    <h1>Como Atualizar a Base de Dados</h1>
+    <p>Guia visual passo a passo para baixar a planilha e importar no sistema</p>
+    <p>Sistema de Auditoria de Sacas — Mercado Livre</p>
+    <div class="badge">⏱ Leva em média 2 minutos por dia</div>
+  </div>
+
+  <!-- PARTE 1 -->
+  <div class="section-title">📄 Parte 1 — Baixar os arquivos do Google Sheets</div>
+
+  <!-- PASSO 1 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c1">1</div>
+      <div>
+        <h2>Abrir o Google Sheets e ir na aba "Base"</h2>
+        <p>Primeiro acesse a planilha e clique na aba correta</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Abra o navegador e acesse o <b>Google Sheets</b> com o seu login <b>@mercadolivre.com</b></li>
+        <li>Abra a planilha de sacas</li>
+        <li>Na parte de baixo da tela, clique na aba chamada <b>Base</b></li>
+      </ol>
+
+      <!-- MOCK: Google Sheets com aba Base ativa -->
+      <div class="mockup" style="margin-top:20px">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>docs.google.com/spreadsheets/d/1EZ9fXbCu8...</span></div>
+        </div>
+        <div class="gs-wrap">
+          <div class="gs-sheet-title">
+            <span class="gs-sheets-icon">📊</span>
+            <span class="gs-title-text">Planilha de Sacas — Auditoria</span>
+          </div>
+          <div class="gs-toolbar">
+            <div class="gs-menu-item">Arquivo</div>
+            <div class="gs-menu-item">Editar</div>
+            <div class="gs-menu-item">Visualizar</div>
+            <div class="gs-menu-item">Inserir</div>
+            <div class="gs-menu-item">Formatar</div>
+          </div>
+          <div class="gs-grid" style="margin:0 8px">
+            <div class="gs-cell header"></div>
+            <div class="gs-cell header">A — qr_mae</div>
+            <div class="gs-cell header">B — saca_id</div>
+            <div class="gs-cell header">C — rota</div>
+            <div class="gs-cell row-num">1</div>
+            <div class="gs-cell">QR_MAE_001</div>
+            <div class="gs-cell">SACA_0001</div>
+            <div class="gs-cell">ROTA A</div>
+            <div class="gs-cell row-num">2</div>
+            <div class="gs-cell">QR_MAE_002</div>
+            <div class="gs-cell">SACA_0002</div>
+            <div class="gs-cell">ROTA B</div>
+            <div class="gs-cell row-num">3</div>
+            <div class="gs-cell">QR_MAE_003</div>
+            <div class="gs-cell">SACA_0003</div>
+            <div class="gs-cell">ROTA A</div>
+          </div>
+          <div class="gs-tabs">
+            <div class="gs-tab">Log</div>
+            <div class="gs-tab active ring">Base</div>
+            <div class="gs-tab">Rota</div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-label" style="margin-top:12px">
+        <span class="emoji">👆</span>
+        <p>Clique na aba <b>Base</b> (destacada em vermelho). Você deve ver as colunas <b>qr_mae</b>, <b>saca_id</b> e <b>rota</b>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 2 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c2">2</div>
+      <div>
+        <h2>Baixar a aba "Base" como CSV</h2>
+        <p>Menu Arquivo → Fazer download → CSV</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Com a aba <b>Base</b> aberta, clique em <b>Arquivo</b> no menu superior</li>
+        <li>Passe o mouse em <b>"Fazer download"</b></li>
+        <li>Clique em <b>"Valores separados por vírgula (.csv)"</b></li>
+        <li>O arquivo vai ser salvo automaticamente na sua pasta <b>Downloads</b></li>
+      </ol>
+
+      <!-- MOCK: Menu Arquivo aberto -->
+      <div class="mockup" style="margin-top:20px; min-height: 280px">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>docs.google.com/spreadsheets/d/1EZ9fXbCu8...</span></div>
+        </div>
+        <div class="gs-wrap" style="position:relative; min-height:240px">
+          <div class="gs-toolbar">
+            <div class="gs-menu-item hl ring">Arquivo</div>
+            <div class="gs-menu-item">Editar</div>
+            <div class="gs-menu-item">Visualizar</div>
+          </div>
+          <!-- dropdown Arquivo -->
+          <div class="dropdown-menu" style="top:40px; left:8px">
+            <div class="dm-item">Novo</div>
+            <div class="dm-item">Abrir</div>
+            <div class="dm-item">Renomear</div>
+            <div class="dm-item">Mover</div>
+            <hr style="margin:4px 0; border-color:#eee">
+            <div class="dm-item hl ring" style="position:relative">
+              📥 Fazer download
+              <span class="arrow">▶</span>
+              <!-- sub-menu -->
+              <div class="dm-sub" style="top:0;left:220px">
+                <div class="dm-sub-item">Microsoft Excel (.xlsx)</div>
+                <div class="dm-sub-item">Documento OpenDocument (.ods)</div>
+                <div class="dm-sub-item">PDF (.pdf)</div>
+                <div class="dm-sub-item">Página da web (.html)</div>
+                <div class="dm-sub-item hl ring">📄 Valores separados por vírgula (.csv)</div>
+                <div class="dm-sub-item">Texto separado por tabulação (.tsv)</div>
+              </div>
+            </div>
+            <div class="dm-item">Compartilhar</div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-label" style="margin-top:12px">
+        <span class="emoji">👆</span>
+        <p>Clique em <b>Arquivo → Fazer download → Valores separados por vírgula (.csv)</b>. O arquivo vai aparecer na sua pasta de downloads.</p>
+      </div>
+      <div class="tip">✅ Dica: Renomeie o arquivo baixado para <b>Base.csv</b> para ficar mais fácil de encontrar.</div>
+    </div>
+  </div>
+
+  <!-- PASSO 3 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c3">3</div>
+      <div>
+        <h2>Repetir o processo na aba "Rota"</h2>
+        <p>Mesmos passos, mas agora na aba Rota</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Volte ao Sheets e clique na aba <b>Rota</b> (parte inferior)</li>
+        <li>Você deve ver as colunas <b>saca_id</b> e <b>rota</b></li>
+        <li>Clique em <b>Arquivo → Fazer download → Valores separados por vírgula (.csv)</b></li>
+        <li>Salve como <b>Rota.csv</b></li>
+      </ol>
+
+      <!-- MOCK: Sheets com aba Rota ativa -->
+      <div class="mockup" style="margin-top:20px">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>docs.google.com/spreadsheets/d/1EZ9fXbCu8...</span></div>
+        </div>
+        <div class="gs-wrap">
+          <div class="gs-sheet-title">
+            <span class="gs-sheets-icon">📊</span>
+            <span class="gs-title-text">Planilha de Sacas — Auditoria</span>
+          </div>
+          <div class="gs-toolbar">
+            <div class="gs-menu-item">Arquivo</div>
+            <div class="gs-menu-item">Editar</div>
+            <div class="gs-menu-item">Visualizar</div>
+          </div>
+          <div class="gs-grid" style="margin:0 8px; grid-template-columns: 40px 1fr 1fr;">
+            <div class="gs-cell header"></div>
+            <div class="gs-cell header">A — saca_id</div>
+            <div class="gs-cell header">B — rota</div>
+            <div class="gs-cell row-num">1</div>
+            <div class="gs-cell">SACA_0001</div>
+            <div class="gs-cell">ROTA A</div>
+            <div class="gs-cell row-num">2</div>
+            <div class="gs-cell">SACA_0002</div>
+            <div class="gs-cell">ROTA B</div>
+            <div class="gs-cell row-num">3</div>
+            <div class="gs-cell">SACA_0003</div>
+            <div class="gs-cell">ROTA A</div>
+          </div>
+          <div class="gs-tabs">
+            <div class="gs-tab">Log</div>
+            <div class="gs-tab">Base</div>
+            <div class="gs-tab active ring">Rota</div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-label" style="margin-top:12px">
+        <span class="emoji">👆</span>
+        <p>Clique na aba <b>Rota</b> (destacada em vermelho). Você verá as colunas <b>saca_id</b> e <b>rota</b>. Então faça o download igual ao passo anterior.</p>
+      </div>
+      <div class="tip">✅ Ao final você deve ter <b>dois arquivos</b> na sua pasta Downloads: <b>Base.csv</b> e <b>Rota.csv</b></div>
+    </div>
+  </div>
+
+  <!-- PARTE 2 -->
+  <div class="section-title">📱 Parte 2 — Importar no aplicativo</div>
+
+  <!-- PASSO 4 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c4">4</div>
+      <div>
+        <h2>Abrir o aplicativo de auditoria</h2>
+        <p>Acessar o sistema no navegador</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Abra o navegador (Chrome ou Edge)</li>
+        <li>Digite o endereço: <b>https://luishenrique785.github.io/Sacas/</b></li>
+        <li>A tela principal do app vai aparecer com os campos de preenchimento</li>
+      </ol>
+
+      <!-- MOCK: App aberto -->
+      <div class="mockup" style="margin-top:20px">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>luishenrique785.github.io/Sacas/</span></div>
+        </div>
+        <div class="app-wrap" style="padding:16px">
+          <div class="app-card">
+            <div class="app-title">📦 Auditoria de Sacas</div>
+            <div class="app-field">
+              <div class="app-label">IP da Impressora</div>
+              <div class="app-input" style="color:#aaa">10.29.180.108</div>
+            </div>
+            <div class="app-field">
+              <div class="app-label">Responsável</div>
+              <div class="app-input" style="color:#aaa">Seu nome</div>
+            </div>
+            <div class="app-field">
+              <div class="app-label">Tipo de Auditoria</div>
+              <div class="app-input" style="color:#aaa">Entrada / Saída</div>
+            </div>
+            <div class="app-btn-green" style="margin-bottom:12px">IMPRIMIR</div>
+            <div class="app-btn-blue">📊 VER STATUS ROTAS</div>
+            <div class="app-btn-orange">⬆️ ATUALIZAR BASE / ROTA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 5 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c5">5</div>
+      <div>
+        <h2>Clicar em "⬆️ ATUALIZAR BASE / ROTA"</h2>
+        <p>Botão laranja na parte inferior da tela</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Role a tela para baixo até encontrar o botão <b>laranja</b></li>
+        <li>Clique em <b>⬆️ ATUALIZAR BASE / ROTA</b></li>
+        <li>Uma janela de upload vai aparecer sobre a tela</li>
+      </ol>
+
+      <!-- MOCK: App com botão laranja destacado -->
+      <div class="mockup" style="margin-top:20px">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>luishenrique785.github.io/Sacas/</span></div>
+        </div>
+        <div class="app-wrap" style="padding:16px">
+          <div class="app-card">
+            <div class="app-title">📦 Auditoria de Sacas</div>
+            <div class="app-field">
+              <div class="app-label">IP da Impressora</div>
+              <div class="app-input">10.29.180.108</div>
+            </div>
+            <div class="app-btn-green" style="margin-bottom:12px;opacity:.5">IMPRIMIR</div>
+            <div class="app-btn-blue" style="opacity:.5">📊 VER STATUS ROTAS</div>
+            <div class="app-btn-orange ring" style="outline-color:#ff3b30; outline-width:4px; outline-offset:4px">⬆️ ATUALIZAR BASE / ROTA</div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-label" style="margin-top:12px">
+        <span class="emoji">👆</span>
+        <p>Clique no botão <b>laranja</b> destacado em vermelho acima. Uma nova janela vai abrir.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 6 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c6">6</div>
+      <div>
+        <h2>Selecionar o arquivo Base.csv</h2>
+        <p>Clique na área de upload da Base e escolha o arquivo</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Na janela que abriu, você vai ver dois blocos de upload</li>
+        <li>Clique no <b>primeiro bloco</b> (que diz "📁 Selecionar arquivo Base.csv")</li>
+        <li>A janela de arquivos do seu computador vai abrir</li>
+        <li>Navegue até a pasta <b>Downloads</b></li>
+        <li>Selecione o arquivo <b>Base.csv</b> e clique em <b>Abrir</b></li>
+        <li>Embaixo vai aparecer em <b>verde</b>: "XXXX sacas carregadas"</li>
+      </ol>
+
+      <!-- MOCK: Modal com upload Base destacado -->
+      <div class="mockup" style="margin-top:20px; min-height:400px; position:relative">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>luishenrique785.github.io/Sacas/</span></div>
+        </div>
+        <div class="app-wrap" style="padding:16px; position:relative; min-height:360px">
+          <!-- App de fundo -->
+          <div class="app-card" style="opacity:.3">
+            <div class="app-title">📦 Auditoria de Sacas</div>
+            <div class="app-btn-orange">⬆️ ATUALIZAR BASE / ROTA</div>
+          </div>
+          <!-- Modal -->
+          <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);border-radius:0 0 12px 12px;display:flex;align-items:flex-start;justify-content:center;padding-top:20px">
+            <div class="modal-box">
+              <div class="modal-title">⬆️ Atualizar Base / Rota</div>
+              <div class="modal-sub">Baixe as abas como CSV no Sheets.<br>Depois selecione os arquivos abaixo:</div>
+
+              <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:6px;text-transform:uppercase">Base</div>
+              <div class="upload-zone ring" style="outline-color:#ff3b30;outline-width:3px">
+                <div class="icon">📁</div>
+                <div class="label">Selecionar arquivo Base.csv</div>
+              </div>
+
+              <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:6px;text-transform:uppercase;margin-top:8px">Rota</div>
+              <div class="upload-zone">
+                <div class="icon">📁</div>
+                <div class="label">Selecionar arquivo Rota.csv</div>
+              </div>
+
+              <div class="progress-bar"><div class="progress-fill" style="width:0%;background:#007aff"></div></div>
+              <button class="app-btn-green-sm" style="opacity:.4;cursor:not-allowed;margin-top:4px">IMPORTAR PARA O BANCO</button>
+              <button class="app-btn-gray">FECHAR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-label" style="margin-top:12px">
+        <span class="emoji">👆</span>
+        <p>Clique na área <b>Base</b> (destacada em vermelho). Vai abrir uma janela para você selecionar o arquivo <b>Base.csv</b> que você baixou.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 7 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c7">7</div>
+      <div>
+        <h2>Selecionar o arquivo Rota.csv</h2>
+        <p>Mesmo processo para o segundo arquivo</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Agora clique no <b>segundo bloco</b> (que diz "📁 Selecionar arquivo Rota.csv")</li>
+        <li>Selecione o arquivo <b>Rota.csv</b> na pasta Downloads</li>
+        <li>Embaixo aparece em <b>verde</b>: "XXXX sacas carregadas"</li>
+        <li>O botão <b>IMPORTAR PARA O BANCO</b> vai ficar verde e clicável</li>
+      </ol>
+
+      <!-- MOCK: Modal com ambos preenchidos -->
+      <div class="mockup" style="margin-top:20px; min-height:420px; position:relative">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>luishenrique785.github.io/Sacas/</span></div>
+        </div>
+        <div class="app-wrap" style="padding:16px; position:relative; min-height:380px">
+          <div class="app-card" style="opacity:.3">
+            <div class="app-title">📦 Auditoria de Sacas</div>
+            <div class="app-btn-orange">⬆️ ATUALIZAR BASE / ROTA</div>
+          </div>
+          <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);border-radius:0 0 12px 12px;display:flex;align-items:flex-start;justify-content:center;padding-top:20px">
+            <div class="modal-box">
+              <div class="modal-title">⬆️ Atualizar Base / Rota</div>
+              <div class="modal-sub">Arquivos carregados com sucesso!</div>
+
+              <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:6px;text-transform:uppercase">Base</div>
+              <div class="upload-zone" style="border-color:#34c759;background:#f0fff4">
+                <div class="icon">✅</div>
+                <div class="label">Base.csv</div>
+                <div class="count">3.847 sacas carregadas</div>
+              </div>
+
+              <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:6px;text-transform:uppercase;margin-top:8px">Rota</div>
+              <div class="upload-zone ring" style="outline-color:#ff3b30;outline-width:3px">
+                <div class="icon">📁</div>
+                <div class="label">Selecionar arquivo Rota.csv</div>
+              </div>
+
+              <div class="progress-bar"><div class="progress-fill" style="width:0%;background:#007aff"></div></div>
+              <button class="app-btn-green-sm" style="margin-top:4px">IMPORTAR PARA O BANCO</button>
+              <button class="app-btn-gray">FECHAR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-label" style="margin-top:12px">
+        <span class="emoji">👆</span>
+        <p>Clique na área <b>Rota</b> e selecione o <b>Rota.csv</b>. Note que o Base já mostra em verde <b>3.847 sacas carregadas</b> — o número vai variar conforme sua planilha.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 8 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c8">8</div>
+      <div>
+        <h2>Clicar em "IMPORTAR PARA O BANCO" e aguardar</h2>
+        <p>Aguarde a barra de progresso completar — não feche a janela</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Com os dois arquivos carregados, clique em <b>IMPORTAR PARA O BANCO</b></li>
+        <li>Uma barra azul de progresso vai avançar</li>
+        <li><b>Não feche a janela</b> enquanto a barra estiver avançando</li>
+        <li>Quando terminar, aparece uma mensagem de sucesso</li>
+        <li>Clique em <b>OK</b> no aviso e depois em <b>FECHAR</b></li>
+      </ol>
+
+      <!-- MOCK: Modal em progresso -->
+      <div class="mockup" style="margin-top:20px; min-height:420px; position:relative">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>luishenrique785.github.io/Sacas/</span></div>
+        </div>
+        <div class="app-wrap" style="padding:16px; position:relative; min-height:380px">
+          <div class="app-card" style="opacity:.3">
+            <div class="app-title">📦 Auditoria de Sacas</div>
+            <div class="app-btn-orange">⬆️ ATUALIZAR BASE / ROTA</div>
+          </div>
+          <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);border-radius:0 0 12px 12px;display:flex;align-items:flex-start;justify-content:center;padding-top:20px">
+            <div class="modal-box">
+              <div class="modal-title">⬆️ Atualizar Base / Rota</div>
+              <div class="modal-sub">Importando... aguarde</div>
+
+              <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:6px;text-transform:uppercase">Base</div>
+              <div class="upload-zone" style="border-color:#34c759;background:#f0fff4">
+                <div class="icon">✅</div>
+                <div class="label">Base.csv</div>
+                <div class="count">3.847 sacas carregadas</div>
+              </div>
+
+              <div style="font-size:12px;font-weight:700;color:#444;margin-bottom:6px;text-transform:uppercase;margin-top:8px">Rota</div>
+              <div class="upload-zone" style="border-color:#34c759;background:#f0fff4">
+                <div class="icon">✅</div>
+                <div class="label">Rota.csv</div>
+                <div class="count">3.847 sacas carregadas</div>
+              </div>
+
+              <!-- Barra em progresso (65%) -->
+              <div class="progress-bar" style="margin:12px 0">
+                <div class="progress-fill ring" style="width:65%;background:#007aff;outline-color:#ff3b30;outline-offset:2px">
+                </div>
+              </div>
+              <div style="font-size:11px;color:#666;text-align:center;margin-bottom:8px">Importando lote 6 de 9... aguarde</div>
+              <button class="app-btn-green-sm" style="opacity:.4;cursor:not-allowed">IMPORTAR PARA O BANCO</button>
+              <button class="app-btn-gray" style="opacity:.4;cursor:not-allowed">FECHAR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-label" style="margin-top:12px">
+        <span class="emoji">⏳</span>
+        <p>A barra azul vai avançar enquanto os dados são enviados. <b>Não feche a janela</b>. O tempo depende da quantidade de sacas — geralmente menos de 30 segundos.</p>
+      </div>
+      <div class="warn">⚠️ Se a barra travar por mais de 1 minuto, feche a janela e tente novamente. Verifique sua conexão com a internet.</div>
+    </div>
+  </div>
+
+  <!-- PASSO 9 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num c9">9</div>
+      <div>
+        <h2>Confirmar o sucesso</h2>
+        <p>Verificar que os dados foram importados corretamente</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Quando terminar, vai aparecer um aviso: <b>"Base: X linhas. Rota: Y linhas."</b></li>
+        <li>Clique em <b>OK</b></li>
+        <li>Clique em <b>FECHAR</b> para fechar a janela de upload</li>
+        <li>Clique em <b>📊 VER STATUS ROTAS</b> para confirmar que as rotas aparecem</li>
+      </ol>
+
+      <!-- MOCK: Alerta de sucesso -->
+      <div class="mockup" style="margin-top:20px; min-height:300px; position:relative">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-url"><span>luishenrique785.github.io/Sacas/</span></div>
+        </div>
+        <div class="app-wrap" style="padding:16px; position:relative; min-height:260px; display:flex; align-items:center; justify-content:center">
+          <!-- Dialog do browser -->
+          <div style="background:white;border-radius:12px;box-shadow:0 4px 30px rgba(0,0,0,.35);padding:24px;max-width:300px;width:100%;text-align:center">
+            <div style="font-size:36px;margin-bottom:12px">✅</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:8px;color:#1c1c1e">Importação concluída!</div>
+            <div style="font-size:13px;color:#444;margin-bottom:20px;line-height:1.5">
+              Base: <b>3.847 linhas</b> importadas.<br>
+              Rota: <b>3.847 linhas</b> importadas.
+            </div>
+            <button class="ring" style="background:#007aff;color:white;border:none;border-radius:8px;padding:10px 40px;font-size:16px;font-weight:700;cursor:pointer">OK</button>
+          </div>
+        </div>
+      </div>
+      <div class="tip">✅ Pronto! Os dados estão atualizados. Agora qualquer pessoa que abrir o app vai ver os dados novos do dia.</div>
+    </div>
+  </div>
+
+  <!-- RESUMO FINAL -->
+  <div class="step-card" style="border: 2px solid #1a73e8">
+    <div class="step-header" style="background:#e8f0fe">
+      <div style="font-size:32px">⚡</div>
+      <div>
+        <h2 style="color:#1a73e8">Resumo — 5 cliques por dia</h2>
+        <p>Cole isso num bilhete ou post-it na estação de trabalho</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div style="background:#f8f9fa;border-radius:12px;padding:20px;font-size:14px;line-height:2">
+        <b>1.</b> Google Sheets → aba <b>Base</b> → Arquivo → Download → <b>CSV</b><br>
+        <b>2.</b> Google Sheets → aba <b>Rota</b> → Arquivo → Download → <b>CSV</b><br>
+        <b>3.</b> Abrir <b>https://luishenrique785.github.io/Sacas/</b><br>
+        <b>4.</b> Clicar <b>⬆️ ATUALIZAR BASE / ROTA</b><br>
+        <b>5.</b> Selecionar <b>Base.csv</b> → Selecionar <b>Rota.csv</b><br>
+        <b>6.</b> Clicar <b>IMPORTAR PARA O BANCO</b> → aguardar → <b>OK</b>
+      </div>
+      <div style="margin-top:16px;font-size:13px;color:#666;text-align:center">
+        Fazer isso todo dia antes de começar a auditoria ⏱ ~2 minutos
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
