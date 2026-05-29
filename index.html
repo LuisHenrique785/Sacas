@@ -8,32 +8,39 @@
     * { box-sizing: border-box; }
     body { font-family: sans-serif; background: #f2f2f7; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
     .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 340px; }
-    input  { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+    input[type=text], input[type=number] { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
     .btn-green  { width: 100%; padding: 15px; background: #34c759; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
     .btn-green:disabled { background: #a0a0a0; cursor: not-allowed; }
-    .btn-blue   { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-size: 15px; }
+    .btn-blue   { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; }
+    .btn-orange { width: 100%; padding: 10px; background: #ff9500; color: white; border: none; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-size: 15px; font-weight: bold; }
     #status { margin-top: 10px; font-size: 14px; text-align: center; padding: 10px; border-radius: 8px; display: none; }
-    #modal  { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
-    .m-cont { background: white; margin: 10% auto; padding: 20px; width: 85%; max-width: 380px; border-radius: 15px; max-height: 75vh; overflow-y: auto; }
+    .modal-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
+    .m-cont { background: white; margin: 8% auto; padding: 20px; width: 88%; max-width: 380px; border-radius: 15px; max-height: 80vh; overflow-y: auto; }
     .ranking-item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .barra-fundo  { background: #e5e5ea; border-radius: 4px; height: 8px; flex: 1; }
     .barra-fill   { height: 8px; border-radius: 4px; }
-    #setupBanner  { background: #fff3cd; border: 1px solid #ffc107; padding: 14px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; width: 100%; max-width: 340px; line-height: 1.6; display: none; }
+
+    /* Upload section */
+    .upload-box { border: 2px dashed #ccc; border-radius: 10px; padding: 14px; margin: 8px 0; text-align: center; cursor: pointer; position: relative; transition: border-color .2s; }
+    .upload-box:hover, .upload-box.has-file { border-color: #007aff; background: #f0f6ff; }
+    .upload-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-label { font-size: 13px; color: #555; pointer-events: none; }
+    .upload-preview { font-size: 12px; color: #34c759; margin-top: 4px; font-weight: bold; pointer-events: none; }
+    .progress-bar { height: 6px; background: #e5e5ea; border-radius: 3px; margin: 8px 0; overflow: hidden; }
+    .progress-fill { height: 6px; background: #007aff; border-radius: 3px; transition: width .3s; }
+    #setupBanner { background: #fff3cd; border: 1px solid #ffc107; padding: 14px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; width: 100%; max-width: 340px; line-height: 1.6; display: none; }
   </style>
 </head>
 <body>
 
-  <!-- Banner de setup (aparece somente quando SUPABASE_URL estiver vazio) -->
   <div id="setupBanner">
-    <b>&#9888;&#65039; Supabase nao configurado</b><br><br>
-    Siga o guia no README do repositorio para:<br>
-    1. Criar projeto gratuito em <b>supabase.com</b><br>
-    2. Criar as tabelas <code>base</code>, <code>rota</code>, <code>log</code><br>
-    3. Importar os dados das abas do Google Sheets<br>
-    4. Preencher <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code> neste arquivo
+    <b>&#9888;&#65039; Supabase nao configurado</b><br>
+    Preencha <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code> no HTML.<br>
+    Consulte o arquivo <b>SETUP.md</b> do repositorio.
   </div>
 
-  <button class="btn-blue" id="btnStatus" onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
+  <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
+  <button class="btn-orange" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
 
   <div class="card">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
@@ -47,23 +54,66 @@
     <div id="status"></div>
   </div>
 
-  <div id="modal">
+  <!-- Modal: Ranking Rotas -->
+  <div id="modalRanking" class="modal-bg">
     <div class="m-cont">
       <h3 style="margin-top:0">Ranking Rotas</h3>
       <div id="lista"></div>
-      <button style="width:100%;margin-top:15px;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:15px;cursor:pointer" onclick="document.getElementById('modal').style.display='none'">FECHAR</button>
+      <button style="width:100%;margin-top:15px;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:15px;cursor:pointer" onclick="fecharModal('modalRanking')">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Atualizar Base / Rota -->
+  <div id="modalAtualizar" class="modal-bg">
+    <div class="m-cont">
+      <h3 style="margin-top:0">&#11014;&#65039; Atualizar Base / Rota</h3>
+
+      <p style="font-size:13px;color:#555;margin:0 0 12px">
+        No Google Sheets, abra cada aba e faca:<br>
+        <b>Arquivo &#8594; Fazer download &#8594; .csv</b><br>
+        Depois selecione os arquivos abaixo:
+      </p>
+
+      <!-- Upload Base -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:13px;font-weight:bold;margin-bottom:4px">Aba: Base &nbsp;<span style="font-weight:normal;color:#888">(QR Mae | Saca ID | Rota)</span></div>
+        <div class="upload-box" id="boxBase">
+          <input type="file" accept=".csv,.CSV" onchange="carregarCSV(this,'base')">
+          <div class="upload-label" id="labelBase">&#128193; Selecionar arquivo Base.csv</div>
+          <div class="upload-preview" id="previewBase"></div>
+        </div>
+      </div>
+
+      <!-- Upload Rota -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:bold;margin-bottom:4px">Aba: Rota &nbsp;<span style="font-weight:normal;color:#888">(Saca ID | Rota)</span></div>
+        <div class="upload-box" id="boxRota">
+          <input type="file" accept=".csv,.CSV" onchange="carregarCSV(this,'rota')">
+          <div class="upload-label" id="labelRota">&#128193; Selecionar arquivo Rota.csv</div>
+          <div class="upload-preview" id="previewRota"></div>
+        </div>
+      </div>
+
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div id="importStatus" style="font-size:13px;text-align:center;min-height:18px;margin-bottom:10px"></div>
+
+      <button id="btnImportar" class="btn-green" onclick="importar()" disabled style="margin-bottom:8px">IMPORTAR PARA O BANCO</button>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalAtualizar')">FECHAR</button>
     </div>
   </div>
 
   <script>
     // ================================================================
     // CONFIGURAÇÃO SUPABASE
-    // Crie o projeto em: https://supabase.com (gratis)
-    // Copie a URL e a chave "anon public" em: Settings → API
+    // Crie o projeto gratis em: https://supabase.com
+    // Settings → API → copie Project URL e chave "anon public"
     // ================================================================
     const SUPABASE_URL = '';   // ex: https://xyzxyz.supabase.co
-    const SUPABASE_KEY = '';   // chave "anon public"
+    const SUPABASE_KEY = '';   // chave anon public (começa com eyJ...)
     // ================================================================
+
+    let dadosBase = null;  // rows parsed do CSV Base
+    let dadosRota = null;  // rows parsed do CSV Rota
 
     window.onload = () => {
       document.getElementById('ip').value   = localStorage.getItem('ip') || '';
@@ -75,32 +125,161 @@
     };
 
     const getV = id => document.getElementById(id).value.trim();
-    const sv = () => {
-      localStorage.setItem('ip', getV('ip'));
-      localStorage.setItem('rp', getV('resp'));
-    };
+    const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
+    const fecharModal = id => document.getElementById(id).style.display = 'none';
 
-    // Wrapper para chamadas REST do Supabase
+    // ---- Supabase REST wrapper ----
     async function sb(path, options = {}) {
-      const url = SUPABASE_URL + '/rest/v1/' + path;
-      const resp = await fetch(url, {
-        ...options,
+      const method = options.method || 'GET';
+      const resp = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+        method,
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': 'Bearer ' + SUPABASE_KEY,
           'Content-Type': 'application/json',
-          'Prefer': options.method === 'POST' ? 'return=minimal' : undefined,
+          'Prefer': 'return=minimal',
           ...(options.headers || {})
-        }
+        },
+        body: options.body
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
-        throw new Error(e.message || e.error || 'HTTP ' + resp.status);
+        throw new Error(e.message || e.hint || ('HTTP ' + resp.status));
       }
-      if (resp.status === 204 || options.method === 'POST') return null;
-      return resp.json();
+      if (method === 'GET') return resp.json();
+      return null;
     }
 
+    // ---- CSV Parser RFC 4180 ----
+    function parseCSV(text) {
+      if (!text) return [];
+      const rows = [];
+      let row = [], cell = '', inQ = false;
+      const s = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (inQ) {
+          if (c === '"' && s[i+1] === '"') { cell += '"'; i++; }
+          else if (c === '"') inQ = false;
+          else cell += c;
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { row.push(cell.trim()); cell = ''; }
+          else if (c === '\n') { row.push(cell.trim()); rows.push(row); row = []; cell = ''; }
+          else cell += c;
+        }
+      }
+      row.push(cell.trim());
+      if (row.some(v => v !== '')) rows.push(row);
+      return rows.filter(r => r.join('').trim() !== '');
+    }
+
+    // ---- Leitura do CSV selecionado ----
+    function carregarCSV(input, tipo) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rows = parseCSV(e.target.result);
+        const dados = rows.slice(1); // pula cabeçalho
+
+        if (tipo === 'base') {
+          dadosBase = dados
+            .map(r => ({ qr_mae: r[0]||'', saca_id: (r[1]||'').trim(), rota: r[2]||'' }))
+            .filter(r => r.saca_id);
+          document.getElementById('labelBase').innerText   = '✓ ' + file.name;
+          document.getElementById('previewBase').innerText = dadosBase.length + ' sacas carregadas';
+          document.getElementById('boxBase').classList.add('has-file');
+        } else {
+          dadosRota = dados
+            .map(r => ({ saca_id: (r[0]||'').trim(), rota: r[1]||'' }))
+            .filter(r => r.saca_id);
+          document.getElementById('labelRota').innerText   = '✓ ' + file.name;
+          document.getElementById('previewRota').innerText = dadosRota.length + ' sacas carregadas';
+          document.getElementById('boxRota').classList.add('has-file');
+        }
+
+        document.getElementById('btnImportar').disabled = !dadosBase && !dadosRota;
+        document.getElementById('importStatus').innerText = '';
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    // ---- Importa para Supabase ----
+    async function importar() {
+      const btn = document.getElementById('btnImportar');
+      const st  = document.getElementById('importStatus');
+      const bar = document.getElementById('progressFill');
+      btn.disabled = true;
+      st.style.color = '#333';
+
+      const tarefas = [];
+      if (dadosBase) tarefas.push({ tabela: 'base', dados: dadosBase });
+      if (dadosRota) tarefas.push({ tabela: 'rota', dados: dadosRota });
+
+      let progTotal = 0;
+      // Calcula total de operações: 1 delete + N batches de insert por tabela
+      const batchSize = 500;
+      for (const t of tarefas) progTotal += 1 + Math.ceil(t.dados.length / batchSize);
+      let progFeito = 0;
+
+      function atualizarBarra() {
+        progFeito++;
+        bar.style.width = Math.round((progFeito / progTotal) * 100) + '%';
+      }
+
+      try {
+        for (const { tabela, dados } of tarefas) {
+          // Apaga todos os dados antigos
+          st.innerText = 'Limpando tabela ' + tabela + '...';
+          await sb(tabela + '?id=gte.0', { method: 'DELETE' });
+          atualizarBarra();
+
+          // Insere em lotes
+          const total = dados.length;
+          for (let i = 0; i < total; i += batchSize) {
+            const lote = dados.slice(i, i + batchSize);
+            st.innerText = 'Gravando ' + tabela + ': ' + Math.min(i + batchSize, total) + '/' + total;
+            await sb(tabela, { method: 'POST', body: JSON.stringify(lote) });
+            atualizarBarra();
+          }
+        }
+
+        bar.style.width = '100%';
+        bar.style.background = '#34c759';
+        st.style.color = '#34c759';
+        st.innerText = '✅ Importacao concluida! Base: ' +
+          (dadosBase ? dadosBase.length + ' sacas' : 'nao alterada') + ' | Rota: ' +
+          (dadosRota ? dadosRota.length + ' sacas' : 'nao alterada');
+
+        dadosBase = dadosRota = null;
+
+      } catch (e) {
+        st.style.color = '#ff3b30';
+        st.innerText = 'Erro: ' + e.message;
+        bar.style.background = '#ff3b30';
+      }
+      btn.disabled = false;
+    }
+
+    function abrirAtualizar() {
+      // Reset estado
+      dadosBase = dadosRota = null;
+      document.getElementById('labelBase').innerText   = '📁 Selecionar arquivo Base.csv';
+      document.getElementById('labelRota').innerText   = '📁 Selecionar arquivo Rota.csv';
+      document.getElementById('previewBase').innerText = '';
+      document.getElementById('previewRota').innerText = '';
+      document.getElementById('importStatus').innerText = '';
+      document.getElementById('progressFill').style.width      = '0%';
+      document.getElementById('progressFill').style.background = '#007aff';
+      document.getElementById('btnImportar').disabled = true;
+      document.getElementById('boxBase').classList.remove('has-file');
+      document.getElementById('boxRota').classList.remove('has-file');
+      document.getElementById('modalAtualizar').style.display = 'block';
+    }
+
+    // ---- Datas ----
     function dataHoje() {
       return new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }).format(new Date());
     }
@@ -118,31 +297,28 @@
 
     // -------- STATUS DAS ROTAS --------
     async function verStatus() {
-      document.getElementById('modal').style.display = 'block';
+      document.getElementById('modalRanking').style.display = 'block';
       document.getElementById('lista').innerHTML = 'Carregando...';
       try {
         const hoje = dataHoje();
-
-        // Busca todas as rotas e log de hoje em paralelo
-        const [dadosRota, dadosLog] = await Promise.all([
+        const [rotaRows, logRows] = await Promise.all([
           sb('rota?select=saca_id,rota'),
           sb('log?select=saca_id&data=like.' + encodeURIComponent(hoje + '%'))
         ]);
 
         let totalPorRota = {};
-        for (const row of dadosRota) {
-          if (row.rota) totalPorRota[row.rota] = (totalPorRota[row.rota] || 0) + 1;
+        for (const r of rotaRows) {
+          if (r.rota) totalPorRota[r.rota] = (totalPorRota[r.rota] || 0) + 1;
         }
 
-        const sacasHoje = new Set(dadosLog.map(r => (r.saca_id || '').trim()));
+        const sacasHoje = new Set(logRows.map(r => (r.saca_id || '').trim()));
 
         let progresso = {};
-        for (const row of dadosRota) {
-          const saca = (row.saca_id || '').trim();
-          const rota = row.rota;
-          if (!saca || !rota) continue;
-          if (!progresso[rota]) progresso[rota] = 0;
-          if (sacasHoje.has(saca)) progresso[rota]++;
+        for (const r of rotaRows) {
+          const s = (r.saca_id || '').trim(), rt = r.rota;
+          if (!s || !rt) continue;
+          if (!progresso[rt]) progresso[rt] = 0;
+          if (sacasHoje.has(s)) progresso[rt]++;
         }
 
         const ranking = [];
@@ -152,7 +328,7 @@
         }
         ranking.sort((a, b) => b.porc - a.porc);
 
-        if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados na tabela rota.'; return; }
+        if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados.'; return; }
 
         let h = '';
         for (const d of ranking) {
@@ -165,7 +341,6 @@
                '</div>';
         }
         document.getElementById('lista').innerHTML = h;
-
       } catch (e) {
         document.getElementById('lista').innerHTML = '<span style="color:#c0392b">Erro: ' + e.message + '</span>';
       }
@@ -187,7 +362,6 @@
       setStatus('Buscando saca na Base...', '#fff3cd');
 
       try {
-        // Busca a saca na tabela base
         const baseRows = await sb('base?saca_id=eq.' + encodeURIComponent(sacaId) + '&select=qr_mae,rota&limit=1');
 
         if (!baseRows || !baseRows.length || !baseRows[0].qr_mae) {
@@ -198,7 +372,6 @@
         const qrMae    = baseRows[0].qr_mae;
         const rotaSaca = baseRows[0].rota || '';
 
-        // Verifica se já foi lançada hoje
         setStatus('Verificando historico...', '#fff3cd');
         const hoje = dataHoje();
         const logHoje = await sb(
@@ -216,8 +389,7 @@
           btn.disabled = true;
         }
 
-        // Grava no log
-        setStatus('Registrando no sistema...', '#fff3cd');
+        setStatus('Registrando...', '#fff3cd');
         const dataStr = dataHoraAtual();
         await sb('log', {
           method: 'POST',
@@ -232,7 +404,6 @@
           })
         });
 
-        // Gera ZPL e envia para impressora
         setStatus('Enviando para impressora...', '#fff3cd');
         let zpl = '';
         for (let k = 1; k <= qtdVal; k++) {
