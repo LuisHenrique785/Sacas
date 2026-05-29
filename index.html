@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema Auditoria - Oficial</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { font-family: sans-serif; background: #f2f2f7; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
@@ -128,26 +129,12 @@
     const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
     const fecharModal = id => document.getElementById(id).style.display = 'none';
 
-    // ---- Supabase REST wrapper ----
-    async function sb(path, options = {}) {
-      const method = options.method || 'GET';
-      const resp = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-        method,
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-          ...(options.headers || {})
-        },
-        body: options.body
-      });
-      if (!resp.ok) {
-        const e = await resp.json().catch(() => ({}));
-        throw new Error(e.message || e.hint || ('HTTP ' + resp.status));
-      }
-      if (method === 'GET') return resp.json();
-      return null;
+    // ---- Cliente Supabase oficial ----
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function sbCheck(result) {
+      if (result.error) throw new Error(result.error.message || JSON.stringify(result.error));
+      return result.data;
     }
 
     // ---- CSV Parser RFC 4180 ----
@@ -233,7 +220,7 @@
         for (const { tabela, dados } of tarefas) {
           // Apaga todos os dados antigos
           st.innerText = 'Limpando tabela ' + tabela + '...';
-          await sb(tabela + '?id=gte.0', { method: 'DELETE' });
+          await sbCheck(await db.from(tabela).delete().gte('id', 0));
           atualizarBarra();
 
           // Insere em lotes
@@ -241,7 +228,7 @@
           for (let i = 0; i < total; i += batchSize) {
             const lote = dados.slice(i, i + batchSize);
             st.innerText = 'Gravando ' + tabela + ': ' + Math.min(i + batchSize, total) + '/' + total;
-            await sb(tabela, { method: 'POST', body: JSON.stringify(lote) });
+            await sbCheck(await db.from(tabela).insert(lote));
             atualizarBarra();
           }
         }
@@ -302,8 +289,8 @@
       try {
         const hoje = dataHoje();
         const [rotaRows, logRows] = await Promise.all([
-          sb('rota?select=saca_id,rota'),
-          sb('log?select=saca_id&data=like.' + encodeURIComponent(hoje + '%'))
+          sbCheck(await db.from('rota').select('saca_id,rota')),
+          sbCheck(await db.from('log').select('saca_id').like('data', hoje + '%'))
         ]);
 
         let totalPorRota = {};
@@ -362,7 +349,9 @@
       setStatus('Buscando saca na Base...', '#fff3cd');
 
       try {
-        const baseRows = await sb('base?saca_id=eq.' + encodeURIComponent(sacaId) + '&select=qr_mae,rota&limit=1');
+        const baseRows = await sbCheck(
+          await db.from('base').select('qr_mae,rota').eq('saca_id', sacaId).limit(1)
+        );
 
         if (!baseRows || !baseRows.length || !baseRows[0].qr_mae) {
           setStatus('Saca nao encontrada na Base!', '#ffdce0');
@@ -374,10 +363,8 @@
 
         setStatus('Verificando historico...', '#fff3cd');
         const hoje = dataHoje();
-        const logHoje = await sb(
-          'log?saca_id=eq.' + encodeURIComponent(sacaId) +
-          '&data=like.' + encodeURIComponent(hoje + '%') +
-          '&select=id&limit=1'
+        const logHoje = await sbCheck(
+          await db.from('log').select('id').eq('saca_id', sacaId).like('data', hoje + '%').limit(1)
         );
 
         if (logHoje && logHoje.length > 0) {
@@ -391,18 +378,15 @@
 
         setStatus('Registrando...', '#fff3cd');
         const dataStr = dataHoraAtual();
-        await sb('log', {
-          method: 'POST',
-          body: JSON.stringify({
-            data:        dataStr,
-            responsavel: getV('resp'),
-            auditoria:   getV('log'),
-            saca_id:     sacaId,
-            qtd:         qtdVal,
-            qr_mae:      qrMae,
-            rota:        rotaSaca
-          })
-        });
+        await sbCheck(await db.from('log').insert({
+          data:        dataStr,
+          responsavel: getV('resp'),
+          auditoria:   getV('log'),
+          saca_id:     sacaId,
+          qtd:         qtdVal,
+          qr_mae:      qrMae,
+          rota:        rotaSaca
+        }));
 
         setStatus('Enviando para impressora...', '#fff3cd');
         let zpl = '';
