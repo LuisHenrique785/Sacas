@@ -49,14 +49,28 @@ create table log (
   rota text
 );
 
--- Libera acesso publico via chave anon (necessario para o app funcionar)
-alter table base enable row level security;
-alter table rota enable row level security;
-alter table log  enable row level security;
+-- Tabela Erros (falhas de impressao: saca nao encontrada ou impressora inacessivel)
+create table erros (
+  id bigserial primary key,
+  data text,
+  responsavel text,
+  auditoria text,
+  saca_id text,
+  qtd integer,
+  ip text,
+  motivo text
+);
 
-create policy "acesso publico" on base for all using (true) with check (true);
-create policy "acesso publico" on rota for all using (true) with check (true);
-create policy "acesso publico" on log  for all using (true) with check (true);
+-- Libera acesso publico via chave anon (necessario para o app funcionar)
+alter table base  enable row level security;
+alter table rota  enable row level security;
+alter table log   enable row level security;
+alter table erros enable row level security;
+
+create policy "acesso publico" on base  for all using (true) with check (true);
+create policy "acesso publico" on rota  for all using (true) with check (true);
+create policy "acesso publico" on log   for all using (true) with check (true);
+create policy "acesso publico" on erros for all using (true) with check (true);
 ```
 
 ---

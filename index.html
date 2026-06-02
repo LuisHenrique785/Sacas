@@ -47,6 +47,14 @@
     .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
     .btn-export { padding: 8px 14px; background: #00a650; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
     .btn-buscar { width: 100%; padding: 11px; background: #6c3dd3; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 6px; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #e0e0e0; padding-bottom: 0; }
+    .tab-btn { flex: 1; padding: 10px 8px; border: none; background: #f2f2f7; color: #666; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 13px; font-weight: 700; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab-btn.tab-active { background: white; color: #6c3dd3; border-bottom-color: #6c3dd3; }
+    .tab-sec { display: none; }
+    .tab-sec.tab-vis { display: block; }
+    .motivo-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .motivo-badge.nf  { background: #ffdce0; color: #c0392b; }
+    .motivo-badge.imp { background: #fff3cd; color: #856404; }
   </style>
 </head>
 <body>
@@ -91,57 +99,73 @@
   <div id="modalLog" class="modal-bg">
     <div class="m-cont-log">
       <div class="log-header">
-        <h3 style="margin:0">&#128203; Consultar Log de Auditoria</h3>
-        <button class="btn-export" onclick="exportarLog()">&#11015;&#65039; Exportar CSV</button>
+        <h3 style="margin:0">&#128203; Consultas</h3>
+        <button class="btn-export" id="btnExport" onclick="exportarAtivo()">&#11015;&#65039; Exportar CSV</button>
       </div>
 
-      <div class="filter-grid">
-        <div>
-          <label>Periodo — De</label>
-          <input type="date" id="filtroDataDe">
+      <!-- Abas -->
+      <div class="tabs">
+        <button id="tabBtnLog"   class="tab-btn tab-active" onclick="trocarTab('log')">&#128203; Log de Auditoria</button>
+        <button id="tabBtnErros" class="tab-btn"            onclick="trocarTab('erros')">&#128534; Erros de Impressao</button>
+      </div>
+
+      <!-- ── ABA: LOG ── -->
+      <div id="secLog" class="tab-sec tab-vis">
+        <div class="filter-grid">
+          <div><label>Periodo — De</label><input type="date" id="filtroDataDe"></div>
+          <div><label>Periodo — Ate</label><input type="date" id="filtroDataAte"></div>
+          <div><label>Responsavel</label><input type="text" id="filtroResp" placeholder="Todos"></div>
+          <div><label>Rota</label><input type="text" id="filtroRota" placeholder="Todas"></div>
+          <div><label>Auditoria</label><input type="text" id="filtroAudit" placeholder="Todas"></div>
+          <div><label>Saca ID</label><input type="text" id="filtroSaca" placeholder="Todas"></div>
         </div>
-        <div>
-          <label>Periodo — Ate</label>
-          <input type="date" id="filtroDataAte">
-        </div>
-        <div>
-          <label>Responsavel</label>
-          <input type="text" id="filtroResp" placeholder="Todos">
-        </div>
-        <div>
-          <label>Rota</label>
-          <input type="text" id="filtroRota" placeholder="Todas">
-        </div>
-        <div>
-          <label>Auditoria</label>
-          <input type="text" id="filtroAudit" placeholder="Todas">
-        </div>
-        <div>
-          <label>Saca ID</label>
-          <input type="text" id="filtroSaca" placeholder="Todas">
+        <button class="btn-buscar" onclick="buscarLog()">&#128269; BUSCAR</button>
+        <div class="log-info" id="logInfo"></div>
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th><th>Responsavel</th><th>Auditoria</th>
+                <th>Saca ID</th><th style="text-align:center">Qtd</th><th>QR Mae</th><th>Rota</th>
+              </tr>
+            </thead>
+            <tbody id="logBody">
+              <tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <button class="btn-buscar" onclick="buscarLog()">&#128269; BUSCAR</button>
-      <div class="log-info" id="logInfo"></div>
-
-      <div class="log-table-wrap">
-        <table class="log-table">
-          <thead>
-            <tr>
-              <th>Data / Hora</th>
-              <th>Responsavel</th>
-              <th>Auditoria</th>
-              <th>Saca ID</th>
-              <th style="text-align:center">Qtd</th>
-              <th>QR Mae</th>
-              <th>Rota</th>
-            </tr>
-          </thead>
-          <tbody id="logBody">
-            <tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>
-          </tbody>
-        </table>
+      <!-- ── ABA: ERROS ── -->
+      <div id="secErros" class="tab-sec">
+        <div class="filter-grid">
+          <div><label>Periodo — De</label><input type="date" id="erroDataDe"></div>
+          <div><label>Periodo — Ate</label><input type="date" id="erroDataAte"></div>
+          <div><label>Responsavel</label><input type="text" id="erroResp" placeholder="Todos"></div>
+          <div><label>Saca ID</label><input type="text" id="erroSaca" placeholder="Todas"></div>
+          <div><label>Motivo</label>
+            <select id="erroMotivo" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;background:white">
+              <option value="">Todos</option>
+              <option value="nao encontrada">Saca nao encontrada</option>
+              <option value="impressora">Falha na impressora</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-buscar" style="background:#c0392b" onclick="buscarErros()">&#128269; BUSCAR ERROS</button>
+        <div class="log-info" id="erroInfo"></div>
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th><th>Responsavel</th><th>Saca ID</th>
+                <th style="text-align:center">Qtd</th><th>IP</th><th>Motivo</th><th>Auditoria</th>
+              </tr>
+            </thead>
+            <tbody id="erroBody">
+              <tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharModal('modalLog')">FECHAR</button>
@@ -222,9 +246,21 @@
     const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
     const fecharModal = id => document.getElementById(id).style.display = 'none';
 
+    // ---- Abas do modal de consulta ----
+    let abaAtiva = 'log';
+    function trocarTab(aba) {
+      abaAtiva = aba;
+      document.getElementById('secLog').classList.toggle('tab-vis',   aba === 'log');
+      document.getElementById('secErros').classList.toggle('tab-vis', aba === 'erros');
+      document.getElementById('tabBtnLog').classList.toggle('tab-active',   aba === 'log');
+      document.getElementById('tabBtnErros').classList.toggle('tab-active', aba === 'erros');
+    }
+    function exportarAtivo() { abaAtiva === 'log' ? exportarLog() : exportarErros(); }
+
     // ---- Consulta de Log ----
     const LOG_SENHA = '99581202@';
     let logAtual = [];
+    let errosAtual = [];
 
     function abrirLog() {
       document.getElementById('inputSenha').value = '';
@@ -236,15 +272,16 @@
     function verificarSenha() {
       if (document.getElementById('inputSenha').value === LOG_SENHA) {
         fecharModal('modalSenha');
-        document.getElementById('filtroDataDe').value = '';
-        document.getElementById('filtroDataAte').value = '';
-        document.getElementById('filtroResp').value  = '';
-        document.getElementById('filtroRota').value  = '';
-        document.getElementById('filtroAudit').value = '';
-        document.getElementById('filtroSaca').value  = '';
-        document.getElementById('logInfo').innerText = '';
-        document.getElementById('logBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>';
-        logAtual = [];
+        ['filtroDataDe','filtroDataAte','filtroResp','filtroRota','filtroAudit','filtroSaca',
+         'erroDataDe','erroDataAte','erroResp','erroSaca'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('erroMotivo').value = '';
+        document.getElementById('logInfo').innerText  = '';
+        document.getElementById('erroInfo').innerText = '';
+        const vazio = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>';
+        document.getElementById('logBody').innerHTML  = vazio;
+        document.getElementById('erroBody').innerHTML = vazio;
+        logAtual = []; errosAtual = [];
+        trocarTab('log');
         document.getElementById('modalLog').style.display = 'block';
       } else {
         document.getElementById('erroSenha').style.display = 'block';
@@ -326,12 +363,95 @@
         ['data','responsavel','auditoria','saca_id','qtd','qr_mae','rota']
         .map(k => '"' + String(r[k] ?? '').replace(/"/g, '""') + '"').join(',')
       );
-      const csv  = cab + '\n' + linhas.join('\n');
+      baixarCSV(cab + '\n' + linhas.join('\n'), 'log-auditoria-' + new Date().toISOString().slice(0,10) + '.csv');
+    }
+
+    async function buscarErros() {
+      const body = document.getElementById('erroBody');
+      const info = document.getElementById('erroInfo');
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Buscando...</td></tr>';
+      info.innerText = '';
+      try {
+        const de     = document.getElementById('erroDataDe').value;
+        const ate    = document.getElementById('erroDataAte').value;
+        const resp   = document.getElementById('erroResp').value.trim();
+        const saca   = document.getElementById('erroSaca').value.trim();
+        const motivo = document.getElementById('erroMotivo').value;
+
+        let q = db.from('erros').select('*').order('id', { ascending: false }).limit(2000);
+        if (resp)   q = q.ilike('responsavel', '%' + resp   + '%');
+        if (saca)   q = q.ilike('saca_id',     '%' + saca   + '%');
+        if (motivo) q = q.ilike('motivo',       '%' + motivo + '%');
+
+        let rows = await sbCheck(await q) || [];
+
+        if (de || ate) {
+          const deDt  = de  ? new Date(de)  : null;
+          const ateDt = ate ? new Date(ate + 'T23:59:59') : null;
+          rows = rows.filter(r => {
+            const d = parseDateBR(r.data);
+            if (!d) return true;
+            if (deDt  && d < deDt)  return false;
+            if (ateDt && d > ateDt) return false;
+            return true;
+          });
+        }
+
+        errosAtual = rows;
+        if (!errosAtual.length) {
+          body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Nenhum erro encontrado</td></tr>';
+          info.innerText = '0 registros';
+          return;
+        }
+        info.innerText = errosAtual.length + ' registro' + (errosAtual.length > 1 ? 's' : '');
+        body.innerHTML = errosAtual.map(r => {
+          const isNF  = (r.motivo || '').toLowerCase().includes('encontrada');
+          const badge = '<span class="motivo-badge ' + (isNF ? 'nf' : 'imp') + '">' + (r.motivo || '') + '</span>';
+          return '<tr>' +
+            '<td>' + (r.data || '') + '</td>' +
+            '<td>' + (r.responsavel || '') + '</td>' +
+            '<td><b>' + (r.saca_id || '') + '</b></td>' +
+            '<td style="text-align:center">' + (r.qtd ?? '') + '</td>' +
+            '<td>' + (r.ip || '') + '</td>' +
+            '<td>' + badge + '</td>' +
+            '<td>' + (r.auditoria || '') + '</td>' +
+            '</tr>';
+        }).join('');
+      } catch (e) {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b;padding:24px">Erro: ' + e.message + '</td></tr>';
+      }
+    }
+
+    function exportarErros() {
+      if (!errosAtual.length) { alert('Faca uma busca primeiro.'); return; }
+      const cab = 'data,responsavel,saca_id,qtd,ip,motivo,auditoria';
+      const linhas = errosAtual.map(r =>
+        ['data','responsavel','saca_id','qtd','ip','motivo','auditoria']
+        .map(k => '"' + String(r[k] ?? '').replace(/"/g, '""') + '"').join(',')
+      );
+      baixarCSV(cab + '\n' + linhas.join('\n'), 'erros-impressao-' + new Date().toISOString().slice(0,10) + '.csv');
+    }
+
+    function baixarCSV(csv, nome) {
       const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
-      a.href = url; a.download = 'log-auditoria-' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+      a.href = url; a.download = nome; a.click();
       URL.revokeObjectURL(url);
+    }
+
+    async function gravarErro(saca_id, qtd, ip, auditoria, motivo) {
+      try {
+        await db.from('erros').insert({
+          data:        dataHoraAtual(),
+          responsavel: getV('resp'),
+          auditoria,
+          saca_id,
+          qtd,
+          ip,
+          motivo
+        });
+      } catch (_) { /* silencioso — nao bloqueia o fluxo */ }
     }
 
     // ---- Cliente Supabase oficial ----
@@ -560,6 +680,7 @@
 
         if (!baseRows || !baseRows.length || !baseRows[0].qr_mae) {
           setStatus('Saca nao encontrada na Base!', '#ffdce0');
+          gravarErro(sacaId, qtdVal, ip, getV('log'), 'Saca nao encontrada na base');
           btn.disabled = false;
           return;
         }
@@ -611,7 +732,10 @@
             document.getElementById('saca').value = '';
             document.getElementById('qtd').value  = '';
           })
-          .catch(() => setStatus('Registro salvo. Erro na impressora — verifique o IP.', '#ffdce0'))
+          .catch(() => {
+            setStatus('Registro salvo. Erro na impressora — verifique o IP.', '#ffdce0');
+            gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
+          })
           .finally(() => { btn.disabled = false; });
 
       } catch (e) {
