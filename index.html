@@ -30,6 +30,23 @@
     .progress-bar { height: 6px; background: #e5e5ea; border-radius: 3px; margin: 8px 0; overflow: hidden; }
     .progress-fill { height: 6px; background: #007aff; border-radius: 3px; transition: width .3s; }
     #setupBanner { background: #fff3cd; border: 1px solid #ffc107; padding: 14px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; width: 100%; max-width: 340px; line-height: 1.6; display: none; }
+    .btn-purple { width: 100%; padding: 10px; background: #6c3dd3; color: white; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: bold; }
+
+    /* Log modal */
+    .m-cont-log { background: white; margin: 4% auto; padding: 20px; width: 95%; max-width: 720px; border-radius: 15px; max-height: 90vh; overflow-y: auto; }
+    .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
+    .filter-grid label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #888; display: block; margin-bottom: 3px; }
+    .filter-grid input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; }
+    .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .log-table th { background: #1a1f63; color: #FFE600; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 700; white-space: nowrap; position: sticky; top: 0; }
+    .log-table td { padding: 7px 10px; border-bottom: 1px solid #eee; white-space: nowrap; color: #333; }
+    .log-table tr:nth-child(even) td { background: #fafafa; }
+    .log-table tr:hover td { background: #f0f2ff; }
+    .log-table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; margin-top: 10px; }
+    .log-info { font-size: 12px; color: #666; margin: 6px 0; min-height: 16px; }
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .btn-export { padding: 8px 14px; background: #00a650; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-buscar { width: 100%; padding: 11px; background: #6c3dd3; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 6px; }
   </style>
 </head>
 <body>
@@ -41,6 +58,7 @@
   </div>
 
   <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
+  <button class="btn-purple" onclick="abrirLog()">&#128203; CONSULTAR LOG</button>
   <button class="btn-orange" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
 
   <div class="card">
@@ -53,6 +71,77 @@
     <input type="number" id="qtd"  placeholder="Quantidade" min="1">
     <button id="btPrint" class="btn-green" onclick="processar()">IMPRIMIR</button>
     <div id="status"></div>
+  </div>
+
+  <!-- Modal: Senha Log -->
+  <div id="modalSenha" class="modal-bg">
+    <div class="m-cont" style="max-width:320px">
+      <h3 style="margin-top:0">&#128274; Acesso Restrito</h3>
+      <p style="font-size:13px;color:#555;margin-bottom:14px">Esta area e restrita. Informe a senha para consultar o log.</p>
+      <input type="password" id="inputSenha" placeholder="Senha de acesso"
+             style="width:100%;padding:12px;margin:4px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px;"
+             onkeydown="if(event.key==='Enter')verificarSenha()">
+      <div id="erroSenha" style="color:#ff3b30;font-size:13px;text-align:center;margin-bottom:8px;display:none">&#10060; Senha incorreta. Tente novamente.</div>
+      <button class="btn-purple" onclick="verificarSenha()" style="margin-bottom:8px">ACESSAR</button>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalSenha')">CANCELAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Consultar Log -->
+  <div id="modalLog" class="modal-bg">
+    <div class="m-cont-log">
+      <div class="log-header">
+        <h3 style="margin:0">&#128203; Consultar Log de Auditoria</h3>
+        <button class="btn-export" onclick="exportarLog()">&#11015;&#65039; Exportar CSV</button>
+      </div>
+
+      <div class="filter-grid">
+        <div>
+          <label>Data</label>
+          <input type="date" id="filtroData">
+        </div>
+        <div>
+          <label>Responsavel</label>
+          <input type="text" id="filtroResp" placeholder="Todos">
+        </div>
+        <div>
+          <label>Rota</label>
+          <input type="text" id="filtroRota" placeholder="Todas">
+        </div>
+        <div>
+          <label>Auditoria</label>
+          <input type="text" id="filtroAudit" placeholder="Todas">
+        </div>
+        <div>
+          <label>Saca ID</label>
+          <input type="text" id="filtroSaca" placeholder="Todas">
+        </div>
+      </div>
+
+      <button class="btn-buscar" onclick="buscarLog()">&#128269; BUSCAR</button>
+      <div class="log-info" id="logInfo"></div>
+
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>Data / Hora</th>
+              <th>Responsavel</th>
+              <th>Auditoria</th>
+              <th>Saca ID</th>
+              <th style="text-align:center">Qtd</th>
+              <th>QR Mae</th>
+              <th>Rota</th>
+            </tr>
+          </thead>
+          <tbody id="logBody">
+            <tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharModal('modalLog')">FECHAR</button>
+    </div>
   </div>
 
   <!-- Modal: Ranking Rotas -->
@@ -128,6 +217,101 @@
     const getV = id => document.getElementById(id).value.trim();
     const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
     const fecharModal = id => document.getElementById(id).style.display = 'none';
+
+    // ---- Consulta de Log ----
+    const LOG_SENHA = '99581202@';
+    let logAtual = [];
+
+    function abrirLog() {
+      document.getElementById('inputSenha').value = '';
+      document.getElementById('erroSenha').style.display = 'none';
+      document.getElementById('modalSenha').style.display = 'block';
+      setTimeout(() => document.getElementById('inputSenha').focus(), 100);
+    }
+
+    function verificarSenha() {
+      if (document.getElementById('inputSenha').value === LOG_SENHA) {
+        fecharModal('modalSenha');
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('filtroData').value  = hoje;
+        document.getElementById('filtroResp').value  = '';
+        document.getElementById('filtroRota').value  = '';
+        document.getElementById('filtroAudit').value = '';
+        document.getElementById('filtroSaca').value  = '';
+        document.getElementById('logInfo').innerText = '';
+        document.getElementById('logBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>';
+        logAtual = [];
+        document.getElementById('modalLog').style.display = 'block';
+      } else {
+        document.getElementById('erroSenha').style.display = 'block';
+        document.getElementById('inputSenha').value = '';
+        document.getElementById('inputSenha').focus();
+      }
+    }
+
+    async function buscarLog() {
+      const body = document.getElementById('logBody');
+      const info = document.getElementById('logInfo');
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Buscando...</td></tr>';
+      info.innerText = '';
+      try {
+        const dataInput = document.getElementById('filtroData').value;
+        const resp  = document.getElementById('filtroResp').value.trim();
+        const rota  = document.getElementById('filtroRota').value.trim();
+        const audit = document.getElementById('filtroAudit').value.trim();
+        const saca  = document.getElementById('filtroSaca').value.trim();
+
+        let q = db.from('log').select('*').order('id', { ascending: false }).limit(500);
+        if (dataInput) {
+          const [y, m, d] = dataInput.split('-');
+          q = q.like('data', d + '/' + m + '/' + y + '%');
+        }
+        if (resp)  q = q.ilike('responsavel', '%' + resp  + '%');
+        if (rota)  q = q.ilike('rota',        '%' + rota  + '%');
+        if (audit) q = q.ilike('auditoria',   '%' + audit + '%');
+        if (saca)  q = q.ilike('saca_id',     '%' + saca  + '%');
+
+        logAtual = await sbCheck(await q) || [];
+
+        if (!logAtual.length) {
+          body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Nenhum registro encontrado</td></tr>';
+          info.innerText = '0 registros';
+          return;
+        }
+
+        const limite = logAtual.length === 500 ? ' (limite de 500 — refine os filtros para ver mais)' : '';
+        info.innerText = logAtual.length + ' registro' + (logAtual.length > 1 ? 's' : '') + limite;
+
+        body.innerHTML = logAtual.map(r =>
+          '<tr>' +
+          '<td>' + (r.data || '') + '</td>' +
+          '<td>' + (r.responsavel || '') + '</td>' +
+          '<td>' + (r.auditoria || '') + '</td>' +
+          '<td><b>' + (r.saca_id || '') + '</b></td>' +
+          '<td style="text-align:center">' + (r.qtd ?? '') + '</td>' +
+          '<td>' + (r.qr_mae || '') + '</td>' +
+          '<td>' + (r.rota || '') + '</td>' +
+          '</tr>'
+        ).join('');
+      } catch (e) {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b;padding:24px">Erro: ' + e.message + '</td></tr>';
+      }
+    }
+
+    function exportarLog() {
+      if (!logAtual.length) { alert('Faca uma busca primeiro.'); return; }
+      const cab = 'data,responsavel,auditoria,saca_id,qtd,qr_mae,rota';
+      const linhas = logAtual.map(r =>
+        ['data','responsavel','auditoria','saca_id','qtd','qr_mae','rota']
+        .map(k => '"' + String(r[k] ?? '').replace(/"/g, '""') + '"').join(',')
+      );
+      const csv  = cab + '\n' + linhas.join('\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'log-auditoria-' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
 
     // ---- Cliente Supabase oficial ----
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
