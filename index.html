@@ -97,8 +97,12 @@
 
       <div class="filter-grid">
         <div>
-          <label>Data</label>
-          <input type="date" id="filtroData">
+          <label>Periodo — De</label>
+          <input type="date" id="filtroDataDe">
+        </div>
+        <div>
+          <label>Periodo — Ate</label>
+          <input type="date" id="filtroDataAte">
         </div>
         <div>
           <label>Responsavel</label>
@@ -232,8 +236,8 @@
     function verificarSenha() {
       if (document.getElementById('inputSenha').value === LOG_SENHA) {
         fecharModal('modalSenha');
-        const hoje = new Date().toISOString().split('T')[0];
-        document.getElementById('filtroData').value  = hoje;
+        document.getElementById('filtroDataDe').value = '';
+        document.getElementById('filtroDataAte').value = '';
         document.getElementById('filtroResp').value  = '';
         document.getElementById('filtroRota').value  = '';
         document.getElementById('filtroAudit').value = '';
@@ -249,29 +253,46 @@
       }
     }
 
+    function parseDateBR(str) {
+      const m = (str || '').match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
+    }
+
     async function buscarLog() {
       const body = document.getElementById('logBody');
       const info = document.getElementById('logInfo');
       body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Buscando...</td></tr>';
       info.innerText = '';
       try {
-        const dataInput = document.getElementById('filtroData').value;
+        const de    = document.getElementById('filtroDataDe').value;
+        const ate   = document.getElementById('filtroDataAte').value;
         const resp  = document.getElementById('filtroResp').value.trim();
         const rota  = document.getElementById('filtroRota').value.trim();
         const audit = document.getElementById('filtroAudit').value.trim();
         const saca  = document.getElementById('filtroSaca').value.trim();
 
-        let q = db.from('log').select('*').order('id', { ascending: false }).limit(500);
-        if (dataInput) {
-          const [y, m, d] = dataInput.split('-');
-          q = q.like('data', d + '/' + m + '/' + y + '%');
-        }
+        let q = db.from('log').select('*').order('id', { ascending: false }).limit(2000);
         if (resp)  q = q.ilike('responsavel', '%' + resp  + '%');
         if (rota)  q = q.ilike('rota',        '%' + rota  + '%');
         if (audit) q = q.ilike('auditoria',   '%' + audit + '%');
         if (saca)  q = q.ilike('saca_id',     '%' + saca  + '%');
 
-        logAtual = await sbCheck(await q) || [];
+        let rows = await sbCheck(await q) || [];
+
+        // Filtra por período no cliente (datas salvas como DD/MM/YYYY HH:MM)
+        if (de || ate) {
+          const deDt  = de  ? new Date(de)  : null;
+          const ateDt = ate ? new Date(ate + 'T23:59:59') : null;
+          rows = rows.filter(r => {
+            const d = parseDateBR(r.data);
+            if (!d) return true;
+            if (deDt  && d < deDt)  return false;
+            if (ateDt && d > ateDt) return false;
+            return true;
+          });
+        }
+
+        logAtual = rows;
 
         if (!logAtual.length) {
           body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Nenhum registro encontrado</td></tr>';
@@ -279,7 +300,7 @@
           return;
         }
 
-        const limite = logAtual.length === 500 ? ' (limite de 500 — refine os filtros para ver mais)' : '';
+        const limite = logAtual.length === 2000 ? ' (limite de 2000 — refine os filtros para ver mais)' : '';
         info.innerText = logAtual.length + ' registro' + (logAtual.length > 1 ? 's' : '') + limite;
 
         body.innerHTML = logAtual.map(r =>
