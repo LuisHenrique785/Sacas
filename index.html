@@ -16,6 +16,7 @@
     .btn-orange { width: 100%; padding: 10px; background: #ff9500; color: white; border: none; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-size: 15px; font-weight: bold; }
     #status { margin-top: 10px; font-size: 14px; text-align: center; padding: 10px; border-radius: 8px; display: none; }
     .modal-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
+    #modalEditor { z-index: 20; }
     .m-cont { background: white; margin: 8% auto; padding: 20px; width: 88%; max-width: 380px; border-radius: 15px; max-height: 80vh; overflow-y: auto; }
     .ranking-item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .barra-fundo  { background: #e5e5ea; border-radius: 4px; height: 8px; flex: 1; }
@@ -531,6 +532,17 @@
     }
 
     function abrirImpressaoLivre() {
+      if (sessionStorage.getItem('livreAuth') === '1') {
+        document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
+        document.getElementById('labelSize').value = '80x40';
+        document.getElementById('customSizeRow').style.display = 'none';
+        document.getElementById('livreChip').innerText = '80 × 40 mm';
+        document.getElementById('zplContent').value = '';
+        document.getElementById('livreStatus').innerText = '';
+        document.getElementById('btnAjustarDim').style.display = 'none';
+        document.getElementById('modalLivre').style.display = 'block';
+        return;
+      }
       document.getElementById('inputSenhaLivre').value = '';
       document.getElementById('erroSenhaLivre').style.display = 'none';
       document.getElementById('modalSenhaLivre').style.display = 'block';
@@ -539,6 +551,7 @@
 
     function verificarSenhaLivre() {
       if (document.getElementById('inputSenhaLivre').value === LIVRE_SENHA) {
+        sessionStorage.setItem('livreAuth', '1');
         fecharModal('modalSenhaLivre');
         // Pre-preenche IP do localStorage
         document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
@@ -743,6 +756,7 @@
         }
         document.getElementById('zplContent').value = zpl;
         fecharModal('modalEditor');
+        document.getElementById('modalLivre').style.display = 'block';
         const st = document.getElementById('livreStatus');
         st.style.color = '#1a1f63';
         st.innerText = '✅ ZPL atualizado. Clique em Visualizar para conferir e ajustar.';
@@ -825,26 +839,35 @@
     let errosAtual = [];
 
     function abrirLog() {
+      if (sessionStorage.getItem('logAuth') === '1') {
+        _abrirModalLog();
+        return;
+      }
       document.getElementById('inputSenha').value = '';
       document.getElementById('erroSenha').style.display = 'none';
       document.getElementById('modalSenha').style.display = 'block';
       setTimeout(() => document.getElementById('inputSenha').focus(), 100);
     }
 
+    function _abrirModalLog() {
+      ['filtroDataDe','filtroDataAte','filtroResp','filtroRota','filtroAudit','filtroSaca',
+       'erroDataDe','erroDataAte','erroResp','erroSaca'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('erroMotivo').value = '';
+      document.getElementById('logInfo').innerText  = '';
+      document.getElementById('erroInfo').innerText = '';
+      const vazio = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>';
+      document.getElementById('logBody').innerHTML  = vazio;
+      document.getElementById('erroBody').innerHTML = vazio;
+      logAtual = []; errosAtual = [];
+      trocarTab('log');
+      document.getElementById('modalLog').style.display = 'block';
+    }
+
     function verificarSenha() {
       if (document.getElementById('inputSenha').value === LOG_SENHA) {
+        sessionStorage.setItem('logAuth', '1');
         fecharModal('modalSenha');
-        ['filtroDataDe','filtroDataAte','filtroResp','filtroRota','filtroAudit','filtroSaca',
-         'erroDataDe','erroDataAte','erroResp','erroSaca'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('erroMotivo').value = '';
-        document.getElementById('logInfo').innerText  = '';
-        document.getElementById('erroInfo').innerText = '';
-        const vazio = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>';
-        document.getElementById('logBody').innerHTML  = vazio;
-        document.getElementById('erroBody').innerHTML = vazio;
-        logAtual = []; errosAtual = [];
-        trocarTab('log');
-        document.getElementById('modalLog').style.display = 'block';
+        _abrirModalLog();
       } else {
         document.getElementById('erroSenha').style.display = 'block';
         document.getElementById('inputSenha').value = '';
