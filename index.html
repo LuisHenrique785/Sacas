@@ -55,6 +55,25 @@
     .motivo-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
     .motivo-badge.nf  { background: #ffdce0; color: #c0392b; }
     .motivo-badge.imp { background: #fff3cd; color: #856404; }
+
+    /* Impressão Livre */
+    .btn-navy   { width: 100%; padding: 10px; background: #1a1f63; color: #FFE600; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: bold; letter-spacing: .3px; }
+    .m-cont-livre { background: white; margin: 3% auto; padding: 22px; width: 95%; max-width: 600px; border-radius: 15px; max-height: 94vh; overflow-y: auto; }
+    .libre-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .libre-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .lbl { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #888; display: block; margin-bottom: 4px; }
+    .lbl-input { width: 100%; padding: 9px 11px; border: 1.5px solid #d1d1d6; border-radius: 8px; font-size: 14px; }
+    .lbl-input:focus { outline: none; border-color: #1a1f63; }
+    .lbl-select { width: 100%; padding: 9px 11px; border: 1.5px solid #d1d1d6; border-radius: 8px; font-size: 14px; background: white; }
+    .zpl-area { width: 100%; height: 260px; font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; padding: 12px; border: 1.5px solid #d1d1d6; border-radius: 8px; resize: vertical; line-height: 1.5; color: #1a1a1a; background: #fafafa; }
+    .zpl-area:focus { outline: none; border-color: #1a1f63; background: white; }
+    .libre-actions { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .btn-action { padding: 8px 14px; border: 1.5px solid #d1d1d6; border-radius: 8px; background: white; font-size: 13px; font-weight: 600; cursor: pointer; color: #333; display: flex; align-items: center; gap: 6px; }
+    .btn-action:hover { background: #f2f2f7; }
+    .btn-action.file-btn { position: relative; overflow: hidden; }
+    .btn-action.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .libre-status { font-size: 13px; text-align: center; min-height: 20px; margin: 8px 0; font-weight: 600; }
+    .size-chip { display: inline-block; background: #e8eaf6; color: #1a1f63; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
   </style>
 </head>
 <body>
@@ -67,6 +86,7 @@
 
   <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
   <button class="btn-purple" onclick="abrirLog()">&#128203; CONSULTAR LOG</button>
+  <button class="btn-navy"   onclick="abrirImpressaoLivre()">&#128438; IMPRESSAO LIVRE</button>
   <button class="btn-orange" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
 
   <div class="card">
@@ -79,6 +99,98 @@
     <input type="number" id="qtd"  placeholder="Quantidade" min="1">
     <button id="btPrint" class="btn-green" onclick="processar()">IMPRIMIR</button>
     <div id="status"></div>
+  </div>
+
+  <!-- Modal: Senha Impressao Livre -->
+  <div id="modalSenhaLivre" class="modal-bg">
+    <div class="m-cont" style="max-width:320px">
+      <h3 style="margin-top:0">&#128274; Impressao Livre — Acesso Restrito</h3>
+      <p style="font-size:13px;color:#555;margin-bottom:14px">Funcao reservada para uso autorizado.</p>
+      <input type="password" id="inputSenhaLivre" placeholder="Senha de acesso"
+             style="width:100%;padding:12px;margin:4px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px;"
+             onkeydown="if(event.key==='Enter')verificarSenhaLivre()">
+      <div id="erroSenhaLivre" style="color:#ff3b30;font-size:13px;text-align:center;margin-bottom:8px;display:none">&#10060; Senha incorreta.</div>
+      <button class="btn-navy" onclick="verificarSenhaLivre()" style="margin-bottom:8px">ACESSAR</button>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalSenhaLivre')">CANCELAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Impressao Livre -->
+  <div id="modalLivre" class="modal-bg">
+    <div class="m-cont-livre">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0">&#128438; Impressao Livre</h3>
+        <span id="livreChip" class="size-chip">80 × 40 mm</span>
+      </div>
+
+      <!-- IP + Tamanho -->
+      <div class="libre-row">
+        <div>
+          <span class="lbl">IP da Impressora</span>
+          <input class="lbl-input" id="livreIP" type="text" placeholder="10.29.180.108">
+        </div>
+        <div>
+          <span class="lbl">Tamanho da Etiqueta</span>
+          <select class="lbl-select" id="labelSize" onchange="onSizeChange()">
+            <option value="80x40">80 × 40 mm</option>
+            <option value="105x150">105 × 150 mm</option>
+            <option value="custom">Personalizado...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tamanho personalizado -->
+      <div class="libre-row" id="customSizeRow" style="display:none">
+        <div>
+          <span class="lbl">Largura (mm)</span>
+          <input class="lbl-input" id="customW" type="number" value="80" min="10" max="400" oninput="onSizeChange()">
+        </div>
+        <div>
+          <span class="lbl">Altura (mm)</span>
+          <input class="lbl-input" id="customH" type="number" value="40" min="10" max="1200" oninput="onSizeChange()">
+        </div>
+      </div>
+
+      <!-- Botoes de acao -->
+      <div class="libre-actions">
+        <label class="btn-action file-btn">
+          &#128193; Abrir arquivo
+          <input type="file" accept=".txt,.zpl,.label,.prn" onchange="carregarArquivoLivre(this)">
+        </label>
+        <button class="btn-action" onclick="gerarTemplateLivre()">&#128203; Gerar template</button>
+        <button class="btn-action" onclick="document.getElementById('zplContent').value=''">&#128465; Limpar</button>
+        <button class="btn-action" id="btnAjustarDim" onclick="ajustarDimensoesManual()" style="display:none;color:#1a1f63;border-color:#1a1f63">&#9881;&#65039; Ajustar dimensoes</button>
+      </div>
+
+      <!-- Dica de referencia rapida -->
+      <details style="margin-bottom:10px;font-size:12px;color:#555">
+        <summary style="cursor:pointer;font-weight:700;color:#1a1f63;padding:4px 0">&#128218; Referencia rapida ZPL</summary>
+        <div style="background:#f8f9fa;border-radius:8px;padding:10px;margin-top:6px;font-family:monospace;line-height:1.8;font-size:11px">
+          <b style="font-family:sans-serif;color:#333">Estrutura basica:</b><br>
+          ^XA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ inicio do label<br>
+          ^CI28 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ encoding UTF-8<br>
+          ^PW<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ largura em dots (mm × 8)<br>
+          ^LL<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ altura em dots (mm × 8)<br>
+          ^FO<i>x</i>,<i>y</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ posicao do campo<br>
+          ^A0N,<i>h</i>,<i>w</i> &nbsp;&nbsp;&nbsp;→ fonte (h=altura, w=largura)<br>
+          ^FB<i>w</i>,1,0,C &nbsp;&nbsp;→ texto centralizado (largura w)<br>
+          ^FD<i>texto</i>^FS &nbsp;→ conteudo do campo<br>
+          ^BQN,2,<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;→ QR Code (n=tamanho 1-10)<br>
+          ^FDQA,<i>dado</i>^FS → dado do QR Code<br>
+          ^XZ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ fim do label
+        </div>
+      </details>
+
+      <!-- Area ZPL -->
+      <span class="lbl">Conteudo ZPL</span>
+      <textarea class="zpl-area" id="zplContent"
+        placeholder="^XA&#10;^CI28&#10;^PW640&#10;^LL320&#10;^FO20,20^A0N,40,40^FDSeu texto^FS&#10;^XZ"></textarea>
+
+      <div class="libre-status" id="livreStatus"></div>
+      <button id="btnImprimirLivre" class="btn-green" style="margin-bottom:8px" onclick="imprimirLivre()">&#128438; IMPRIMIR</button>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalLivre')">FECHAR</button>
+    </div>
   </div>
 
   <!-- Modal: Senha Log -->
@@ -245,6 +357,134 @@
     const getV = id => document.getElementById(id).value.trim();
     const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
     const fecharModal = id => document.getElementById(id).style.display = 'none';
+
+    // ================================================================
+    // IMPRESSAO LIVRE
+    // ================================================================
+    const LIVRE_SENHA = '97268054@';
+
+    const TAMANHOS = {
+      '80x40':   { pw: 640,  ll: 320  },
+      '105x150': { pw: 840,  ll: 1200 }
+    };
+
+    function mmToDots(mm) { return Math.round(mm * 203 / 25.4); }
+
+    function getDims() {
+      const sel = document.getElementById('labelSize').value;
+      if (sel === 'custom') {
+        const w = parseFloat(document.getElementById('customW').value) || 80;
+        const h = parseFloat(document.getElementById('customH').value) || 40;
+        return { pw: mmToDots(w), ll: mmToDots(h), label: w + ' × ' + h + ' mm' };
+      }
+      const d = TAMANHOS[sel];
+      return { ...d, label: sel.replace('x', ' × ') + ' mm' };
+    }
+
+    function onSizeChange() {
+      const sel = document.getElementById('labelSize').value;
+      document.getElementById('customSizeRow').style.display = sel === 'custom' ? 'grid' : 'none';
+      const { label } = getDims();
+      document.getElementById('livreChip').innerText = label;
+      // Se ja tem conteudo, mostra botao de ajustar
+      const tem = document.getElementById('zplContent').value.trim();
+      document.getElementById('btnAjustarDim').style.display = tem ? 'inline-flex' : 'none';
+    }
+
+    function ajustarZPL(zpl, pw, ll) {
+      let r = zpl;
+      r = /\^PW\d+/i.test(r) ? r.replace(/\^PW\d+/ig, '^PW' + pw) : r.replace(/\^XA/i, '^XA^PW' + pw);
+      r = /\^LL\d+/i.test(r) ? r.replace(/\^LL\d+/ig, '^LL' + ll) : r.replace(/\^PW\d+/i, '^PW' + pw + '^LL' + ll);
+      return r;
+    }
+
+    function ajustarDimensoesManual() {
+      const { pw, ll, label } = getDims();
+      const atual = document.getElementById('zplContent').value;
+      if (!atual.trim()) return;
+      document.getElementById('zplContent').value = ajustarZPL(atual, pw, ll);
+      document.getElementById('livreStatus').style.color = '#1a1f63';
+      document.getElementById('livreStatus').innerText = '✔ Dimensoes ajustadas para ' + label;
+    }
+
+    function gerarTemplateLivre() {
+      const { pw, ll, label } = getDims();
+      document.getElementById('zplContent').value =
+        '^XA\n' +
+        '^CI28\n' +
+        '^PW' + pw + '\n' +
+        '^LL' + ll + '\n' +
+        '^MD25\n' +
+        '\n' +
+        '// Texto centralizado\n' +
+        '^FO0,30^A0N,60,60^FB' + pw + ',1,0,C^FDSeu texto aqui^FS\n' +
+        '\n' +
+        '// QR Code (substitua DADO pelo valor desejado)\n' +
+        '^FO' + Math.round(pw/2 - 80) + ',120^BQN,2,5^FDQA,DADO^FS\n' +
+        '\n' +
+        '^XZ';
+      document.getElementById('livreStatus').style.color = '#1a1f63';
+      document.getElementById('livreStatus').innerText = 'Template gerado para ' + label + ' (' + pw + ' × ' + ll + ' dots)';
+      document.getElementById('btnAjustarDim').style.display = 'none';
+    }
+
+    function carregarArquivoLivre(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const { pw, ll, label } = getDims();
+        const ajustado = ajustarZPL(e.target.result, pw, ll);
+        document.getElementById('zplContent').value = ajustado;
+        document.getElementById('livreStatus').style.color = '#1a1f63';
+        document.getElementById('livreStatus').innerText =
+          '✔ Arquivo carregado e dimensoes ajustadas para ' + label + '. Verifique e edite se necessario.';
+        document.getElementById('btnAjustarDim').style.display = 'none';
+      };
+      reader.readAsText(file, 'UTF-8');
+      input.value = '';
+    }
+
+    function abrirImpressaoLivre() {
+      document.getElementById('inputSenhaLivre').value = '';
+      document.getElementById('erroSenhaLivre').style.display = 'none';
+      document.getElementById('modalSenhaLivre').style.display = 'block';
+      setTimeout(() => document.getElementById('inputSenhaLivre').focus(), 100);
+    }
+
+    function verificarSenhaLivre() {
+      if (document.getElementById('inputSenhaLivre').value === LIVRE_SENHA) {
+        fecharModal('modalSenhaLivre');
+        // Pre-preenche IP do localStorage
+        document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
+        document.getElementById('labelSize').value = '80x40';
+        document.getElementById('customSizeRow').style.display = 'none';
+        document.getElementById('livreChip').innerText = '80 × 40 mm';
+        document.getElementById('zplContent').value = '';
+        document.getElementById('livreStatus').innerText = '';
+        document.getElementById('btnAjustarDim').style.display = 'none';
+        document.getElementById('modalLivre').style.display = 'block';
+      } else {
+        document.getElementById('erroSenhaLivre').style.display = 'block';
+        document.getElementById('inputSenhaLivre').value = '';
+        document.getElementById('inputSenhaLivre').focus();
+      }
+    }
+
+    async function imprimirLivre() {
+      const ip  = document.getElementById('livreIP').value.trim();
+      const zpl = document.getElementById('zplContent').value.trim();
+      const st  = document.getElementById('livreStatus');
+      const btn = document.getElementById('btnImprimirLivre');
+      if (!ip)  { st.style.color = '#c0392b'; st.innerText = '⚠️ Informe o IP da impressora.'; return; }
+      if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL esta vazio.'; return; }
+      btn.disabled = true;
+      st.style.color = '#666'; st.innerText = '⏳ Enviando...';
+      fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+        .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; })
+        .catch(() => { st.style.color = '#c0392b'; st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.'; })
+        .finally(() => { btn.disabled = false; });
+    }
 
     // ---- Abas do modal de consulta ----
     let abaAtiva = 'log';
