@@ -74,6 +74,15 @@
     .btn-action.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     .libre-status { font-size: 13px; text-align: center; min-height: 20px; margin: 8px 0; font-weight: 600; }
     .size-chip { display: inline-block; background: #e8eaf6; color: #1a1f63; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+
+    /* Editor visual */
+    .m-cont-editor { background: white; margin: 2% auto; padding: 20px; width: 95%; max-width: 580px; border-radius: 15px; max-height: 96vh; overflow-y: auto; }
+    #edCanvas { display: block; margin: 0 auto; cursor: grab; touch-action: none; border: 2px solid white; box-shadow: 0 4px 20px rgba(0,0,0,.4); max-width: 100%; }
+    #edCanvas:active { cursor: grabbing; }
+    .rot-btn { flex: 1; padding: 8px 6px; border: 1.5px solid #d1d1d6; border-radius: 8px; background: white; font-size: 13px; cursor: pointer; font-weight: 700; transition: all .15s; }
+    .rot-btn.rot-active { background: #1a1f63; color: #FFE600; border-color: #1a1f63; }
+    .ed-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .ed-grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -99,6 +108,63 @@
     <input type="number" id="qtd"  placeholder="Quantidade" min="1">
     <button id="btPrint" class="btn-green" onclick="processar()">IMPRIMIR</button>
     <div id="status"></div>
+  </div>
+
+  <!-- Modal: Editor Visual de Etiqueta -->
+  <div id="modalEditor" class="modal-bg">
+    <div class="m-cont-editor">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+        <h3 style="margin:0">&#127912; Editor Visual</h3>
+        <span id="edInfo" style="font-size:11px;color:#888;text-align:right"></span>
+      </div>
+
+      <!-- Canvas -->
+      <div style="background:#555;background-image:repeating-conic-gradient(#666 0% 25%,#444 0% 50%);background-size:14px 14px;padding:10px;border-radius:10px;margin-bottom:14px;overflow:hidden">
+        <canvas id="edCanvas"
+          onmousedown="edDown(event)" onmousemove="edMove(event)" onmouseup="edUp()" onmouseleave="edUp()"
+          ontouchstart="edDown(event)" ontouchmove="edMove(event)" ontouchend="edUp()">
+        </canvas>
+      </div>
+
+      <!-- Rotacao -->
+      <div style="margin-bottom:12px">
+        <span class="lbl">Rotacao</span>
+        <div style="display:flex;gap:6px;margin-top:5px">
+          <button id="rotBtn0"   class="rot-btn rot-active" onclick="setRot(0)">&#8635; 0°</button>
+          <button id="rotBtn90"  class="rot-btn"            onclick="setRot(90)">&#8635; 90°</button>
+          <button id="rotBtn180" class="rot-btn"            onclick="setRot(180)">&#8635; 180°</button>
+          <button id="rotBtn270" class="rot-btn"            onclick="setRot(270)">&#8635; 270°</button>
+        </div>
+      </div>
+
+      <!-- Tamanho + Posicao -->
+      <div class="ed-grid2">
+        <div>
+          <span class="lbl">Tamanho — <span id="edSizeLbl">100%</span></span>
+          <input type="range" id="edSlider" min="5" max="300" value="100"
+                 style="width:100%;margin-top:6px;accent-color:#1a1f63" oninput="onEdSlider(this.value)">
+        </div>
+        <div class="ed-grid2" style="margin-bottom:0">
+          <div>
+            <span class="lbl">X (dots)</span>
+            <input type="number" id="edX" class="lbl-input" value="0" min="0" oninput="onEdPos()">
+          </div>
+          <div>
+            <span class="lbl">Y (dots)</span>
+            <input type="number" id="edY" class="lbl-input" value="0" min="0" oninput="onEdPos()">
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size:12px;color:#888;margin-bottom:14px;text-align:center">
+        &#128072; Arraste a imagem no canvas para posicionar &nbsp;|&nbsp; Ajuste rotacao e tamanho com os controles acima
+      </p>
+
+      <div class="ed-grid2" style="margin-bottom:0">
+        <button style="padding:13px;background:#f2f2f7;border:none;border-radius:10px;font-size:14px;cursor:pointer" onclick="fecharModal('modalEditor')">CANCELAR</button>
+        <button style="padding:13px;background:#1a1f63;color:#FFE600;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer" onclick="aplicarEditor()">&#10003; APLICAR NO ZPL</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal: Senha Impressao Livre -->
@@ -490,79 +556,198 @@
       }
     }
 
-    // ---- Inserir imagem como ^GFA no ZPL ----
+    // ---- Inserir imagem — abre editor visual ----
     function inserirImagem(input) {
       const file = input.files[0];
       if (!file) return;
       const st = document.getElementById('livreStatus');
-      st.style.color = '#666'; st.innerText = '⏳ Convertendo imagem...';
-
-      // Usa FileReader (data URL) para evitar contaminação de canvas por CORS
+      st.style.color = '#666'; st.innerText = '⏳ Carregando imagem...';
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const maxW = 600;
-          const scale = img.width > maxW ? maxW / img.width : 1;
-          const W = Math.round(img.width  * scale);
-          const H = Math.round(img.height * scale);
-
-          const canvas = document.createElement('canvas');
-          canvas.width = W; canvas.height = H;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, W, H);
-          ctx.drawImage(img, 0, 0, W, H);
-          const data = ctx.getImageData(0, 0, W, H).data;
-
-          // Calcula threshold adaptativo: média dos valores de cinza
-          let soma = 0;
-          for (let i = 0; i < W * H; i++) {
-            soma += 0.299 * data[i*4] + 0.587 * data[i*4+1] + 0.114 * data[i*4+2];
-          }
-          // Threshold = media ponderada entre 128 e a media real (favorece captura de detalhes)
-          const threshold = Math.min(220, Math.max(100, (soma / (W * H)) * 0.85));
-
-          const bytesPerRow = Math.ceil(W / 8);
-          const totalBytes  = bytesPerRow * H;
-          let hex = '';
-          for (let row = 0; row < H; row++) {
-            for (let byteIdx = 0; byteIdx < bytesPerRow; byteIdx++) {
-              let byte = 0;
-              for (let bit = 0; bit < 8; bit++) {
-                const px = row * W + byteIdx * 8 + bit;
-                if (px < W * H) {
-                  const i = px * 4;
-                  const gray = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-                  if (gray < threshold) byte |= (0x80 >> bit);
-                }
-              }
-              hex += byte.toString(16).padStart(2, '0').toUpperCase();
-            }
-          }
-
-          const { pw } = getDims();
-          const xPos = Math.max(0, Math.round((pw - W) / 2));
-          const gf    = '^GFA,' + totalBytes + ',' + totalBytes + ',' + bytesPerRow + ',' + hex;
-          const campo = '^FO' + xPos + ',10' + gf + '^FS';
-
-          let atual = document.getElementById('zplContent').value.trim();
-          if (atual.includes('^XZ')) {
-            document.getElementById('zplContent').value = atual.replace(/\^XZ/i, campo + '\n^XZ');
-          } else {
-            const { ll } = getDims();
-            document.getElementById('zplContent').value =
-              '^XA\n^CI28\n^PW' + pw + '\n^LL' + ll + '\n' + campo + '\n^XZ';
-          }
-
-          st.style.color = '#00a650';
-          st.innerText = '✅ Imagem inserida (' + W + '×' + H + 'px, threshold=' + Math.round(threshold) + '). Clique em Visualizar.';
+          st.innerText = '';
           input.value = '';
+          abrirEditorVisual(e.target.result, img.naturalWidth, img.naturalHeight);
         };
         img.onerror = () => { st.style.color = '#c0392b'; st.innerText = '❌ Nao foi possivel ler a imagem.'; };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
+    }
+
+    // ════════════════════════════════════════════════
+    // EDITOR VISUAL
+    // ════════════════════════════════════════════════
+    const edSt = { dataUrl: null, rot: 0, xDots: 0, yDots: 0, pct: 100, origW: 0, origH: 0 };
+    let edScale = 1, edDrag = null, edImgEl = null;
+
+    function abrirEditorVisual(dataUrl, origW, origH) {
+      const { pw, ll } = getDims();
+      // Escala inicial: encaixa a imagem na etiqueta
+      const fitPct = Math.round(Math.min(1, pw / origW, ll / origH) * 100);
+      Object.assign(edSt, { dataUrl, rot: 0, xDots: 0, yDots: 0, pct: fitPct, origW, origH });
+
+      document.getElementById('edSlider').value = fitPct;
+      document.getElementById('edSizeLbl').innerText = fitPct + '%';
+      syncRotBtns();
+
+      edImgEl = new Image();
+      edImgEl.onload = () => { renderEdCanvas(); syncEdXY(); };
+      edImgEl.src = dataUrl;
+
+      document.getElementById('modalEditor').style.display = 'block';
+    }
+
+    function edDispDims() {
+      const s = edSt.pct / 100;
+      const bW = edSt.origW * s, bH = edSt.origH * s;
+      const r = edSt.rot;
+      return { bW, bH,
+               dW: (r === 90 || r === 270) ? bH : bW,
+               dH: (r === 90 || r === 270) ? bW : bH };
+    }
+
+    function renderEdCanvas() {
+      const canvas = document.getElementById('edCanvas');
+      const { pw, ll } = getDims();
+      const maxPx = Math.min(460, (window.innerWidth || 500) - 80);
+      edScale = maxPx / pw;
+
+      canvas.width  = Math.round(pw * edScale);
+      canvas.height = Math.round(ll * edScale);
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Grade auxiliar
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+      for (let x = 100; x < pw; x += 100) { ctx.beginPath(); ctx.moveTo(x*edScale,0); ctx.lineTo(x*edScale,canvas.height); ctx.stroke(); }
+      for (let y = 100; y < ll; y += 100) { ctx.beginPath(); ctx.moveTo(0,y*edScale); ctx.lineTo(canvas.width,y*edScale); ctx.stroke(); }
+
+      if (!edImgEl) return;
+
+      const { bW, bH, dW, dH } = edDispDims();
+      const cx = (edSt.xDots + dW/2) * edScale;
+      const cy = (edSt.yDots + dH/2) * edScale;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(edSt.rot * Math.PI / 180);
+      ctx.drawImage(edImgEl, -bW*edScale/2, -bH*edScale/2, bW*edScale, bH*edScale);
+      ctx.restore();
+
+      // Borda de selecao
+      ctx.strokeStyle = '#007aff'; ctx.lineWidth = 2; ctx.setLineDash([5,4]);
+      ctx.strokeRect(edSt.xDots*edScale, edSt.yDots*edScale, dW*edScale, dH*edScale);
+      ctx.setLineDash([]);
+
+      const { dW: dWr, dH: dHr } = edDispDims();
+      document.getElementById('edInfo').innerText =
+        getDims().label + ' | imagem: ' + Math.round(dWr) + '×' + Math.round(dHr) + ' dots';
+    }
+
+    function syncEdXY() {
+      document.getElementById('edX').value = Math.round(edSt.xDots);
+      document.getElementById('edY').value = Math.round(edSt.yDots);
+    }
+    function syncRotBtns() {
+      [0,90,180,270].forEach(d => {
+        const b = document.getElementById('rotBtn'+d);
+        if (b) b.classList.toggle('rot-active', edSt.rot === d);
+      });
+    }
+    function setRot(deg) { edSt.rot = deg; syncRotBtns(); renderEdCanvas(); }
+    function onEdSlider(v) { edSt.pct = +v; document.getElementById('edSizeLbl').innerText = v+'%'; renderEdCanvas(); }
+    function onEdPos() {
+      edSt.xDots = +document.getElementById('edX').value || 0;
+      edSt.yDots = +document.getElementById('edY').value || 0;
+      renderEdCanvas();
+    }
+
+    function edEvtPos(e) {
+      const rect = document.getElementById('edCanvas').getBoundingClientRect();
+      const src  = e.touches ? e.touches[0] : e;
+      return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+    }
+    function edDown(e) {
+      const p = edEvtPos(e);
+      edDrag = { sx: p.x, sy: p.y, ox: edSt.xDots, oy: edSt.yDots };
+      e.preventDefault();
+    }
+    function edMove(e) {
+      if (!edDrag) return;
+      const p = edEvtPos(e);
+      edSt.xDots = Math.max(0, edDrag.ox + (p.x - edDrag.sx) / edScale);
+      edSt.yDots = Math.max(0, edDrag.oy + (p.y - edDrag.sy) / edScale);
+      renderEdCanvas(); syncEdXY();
+      e.preventDefault();
+    }
+    function edUp() { edDrag = null; }
+
+    function imgToGFA(ctx, W, H) {
+      const data = ctx.getImageData(0, 0, W, H).data;
+      let soma = 0;
+      for (let i = 0; i < W*H; i++) soma += 0.299*data[i*4] + 0.587*data[i*4+1] + 0.114*data[i*4+2];
+      const thr = Math.min(220, Math.max(80, (soma/(W*H)) * 0.85));
+      const bpr = Math.ceil(W/8), total = bpr*H;
+      let hex = '';
+      for (let row = 0; row < H; row++) {
+        for (let b = 0; b < bpr; b++) {
+          let byte = 0;
+          for (let bit = 0; bit < 8; bit++) {
+            const px = row*W + b*8 + bit;
+            if (px < W*H) {
+              const i = px*4;
+              if (0.299*data[i]+0.587*data[i+1]+0.114*data[i+2] < thr) byte |= (0x80>>bit);
+            }
+          }
+          hex += byte.toString(16).padStart(2,'0').toUpperCase();
+        }
+      }
+      return '^GFA,' + total + ',' + total + ',' + bpr + ',' + hex;
+    }
+
+    function aplicarEditor() {
+      if (!edSt.dataUrl) return;
+      const { bW, bH, dW, dH } = edDispDims();
+      const W = Math.round(dW), H = Math.round(dH);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white'; ctx.fillRect(0,0,W,H);
+
+      const img = new Image();
+      img.onload = () => {
+        ctx.save();
+        ctx.translate(W/2, H/2);
+        ctx.rotate(edSt.rot * Math.PI/180);
+        ctx.drawImage(img, -bW/2, -bH/2, bW, bH);
+        ctx.restore();
+
+        const x = Math.round(edSt.xDots), y = Math.round(edSt.yDots);
+        const { pw, ll } = getDims();
+        const gf    = imgToGFA(ctx, W, H);
+        const campo = '^FO' + x + ',' + y + gf + '^FS';
+
+        // Substitui GFA existente ou cria ZPL novo
+        let zpl = document.getElementById('zplContent').value.trim();
+        if (zpl.includes('^GFA')) {
+          zpl = zpl.replace(/\^FO\d+,\d+\^GFA,\d+,\d+,\d+,[0-9A-Fa-f\n\r]+\^FS/g, campo);
+        } else if (zpl.includes('^XA')) {
+          zpl = zpl.replace(/(\^XZ)/i, campo + '\n$1');
+        } else {
+          zpl = '^XA\n^CI28\n^PW'+pw+'\n^LL'+ll+'\n'+campo+'\n^XZ';
+        }
+        document.getElementById('zplContent').value = zpl;
+        fecharModal('modalEditor');
+        const st = document.getElementById('livreStatus');
+        st.style.color = '#1a1f63';
+        st.innerText = '✅ ZPL atualizado. Clique em Visualizar para conferir e ajustar.';
+      };
+      img.src = edSt.dataUrl;
     }
 
     let previewBlobUrl = null;
