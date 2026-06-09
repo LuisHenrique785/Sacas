@@ -4,37 +4,101 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema Auditoria - Oficial</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
-    body { font-family: sans-serif; background: #f2f2f7; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+    * { box-sizing: border-box; }
+    body { font-family: sans-serif; background: #f2f2f7; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
     .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 340px; }
-    input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-    .btn-print  { width: 100%; padding: 15px; background: #34c759; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
-    .btn-print:disabled { background: #a0a0a0; cursor: not-allowed; }
-    .btn-status { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-size: 15px; }
-    .btn-login  { width: 100%; padding: 12px; background: #ff3b30; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+    input[type=text], input[type=number] { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+    .btn-green  { width: 100%; padding: 15px; background: #34c759; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+    .btn-green:disabled { background: #a0a0a0; cursor: not-allowed; }
+    .btn-blue   { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; }
+    .btn-orange { width: 100%; padding: 10px; background: #ff9500; color: white; border: none; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-size: 15px; font-weight: bold; }
     #status { margin-top: 10px; font-size: 14px; text-align: center; padding: 10px; border-radius: 8px; display: none; }
-    #modal  { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
-    .m-cont { background: white; margin: 10% auto; padding: 20px; width: 85%; max-width: 380px; border-radius: 15px; max-height: 75vh; overflow-y: auto; }
+    .modal-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
+    .m-cont { background: white; margin: 8% auto; padding: 20px; width: 88%; max-width: 380px; border-radius: 15px; max-height: 80vh; overflow-y: auto; }
     .ranking-item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .barra-fundo  { background: #e5e5ea; border-radius: 4px; height: 8px; flex: 1; }
     .barra-fill   { height: 8px; border-radius: 4px; }
-    #acessoBanner { display: none; background: #fff3cd; border: 1px solid #ffc107; padding: 14px; border-radius: 10px; margin-bottom: 10px; text-align: center; width: 100%; max-width: 340px; box-sizing: border-box; }
+
+    /* Upload section */
+    .upload-box { border: 2px dashed #ccc; border-radius: 10px; padding: 14px; margin: 8px 0; text-align: center; cursor: pointer; position: relative; transition: border-color .2s; }
+    .upload-box:hover, .upload-box.has-file { border-color: #007aff; background: #f0f6ff; }
+    .upload-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-label { font-size: 13px; color: #555; pointer-events: none; }
+    .upload-preview { font-size: 12px; color: #34c759; margin-top: 4px; font-weight: bold; pointer-events: none; }
+    .progress-bar { height: 6px; background: #e5e5ea; border-radius: 3px; margin: 8px 0; overflow: hidden; }
+    .progress-fill { height: 6px; background: #007aff; border-radius: 3px; transition: width .3s; }
+    #setupBanner { background: #fff3cd; border: 1px solid #ffc107; padding: 14px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; width: 100%; max-width: 340px; line-height: 1.6; display: none; }
+    .btn-purple { width: 100%; padding: 10px; background: #6c3dd3; color: white; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: bold; }
+
+    /* Log modal */
+    .m-cont-log { background: white; margin: 4% auto; padding: 20px; width: 95%; max-width: 720px; border-radius: 15px; max-height: 90vh; overflow-y: auto; }
+    .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
+    .filter-grid label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #888; display: block; margin-bottom: 3px; }
+    .filter-grid input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; }
+    .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .log-table th { background: #1a1f63; color: #FFE600; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 700; white-space: nowrap; position: sticky; top: 0; }
+    .log-table td { padding: 7px 10px; border-bottom: 1px solid #eee; white-space: nowrap; color: #333; }
+    .log-table tr:nth-child(even) td { background: #fafafa; }
+    .log-table tr:hover td { background: #f0f2ff; }
+    .log-table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; margin-top: 10px; }
+    .log-info { font-size: 12px; color: #666; margin: 6px 0; min-height: 16px; }
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .btn-export { padding: 8px 14px; background: #00a650; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-buscar { width: 100%; padding: 11px; background: #6c3dd3; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 6px; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #e0e0e0; padding-bottom: 0; }
+    .tab-btn { flex: 1; padding: 10px 8px; border: none; background: #f2f2f7; color: #666; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 13px; font-weight: 700; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab-btn.tab-active { background: white; color: #6c3dd3; border-bottom-color: #6c3dd3; }
+    .tab-sec { display: none; }
+    .tab-sec.tab-vis { display: block; }
+    .motivo-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .motivo-badge.nf  { background: #ffdce0; color: #c0392b; }
+    .motivo-badge.imp { background: #fff3cd; color: #856404; }
+
+    /* Impressão Livre */
+    .btn-navy   { width: 100%; padding: 10px; background: #1a1f63; color: #FFE600; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: bold; letter-spacing: .3px; }
+    .m-cont-livre { background: white; margin: 3% auto; padding: 22px; width: 95%; max-width: 600px; border-radius: 15px; max-height: 94vh; overflow-y: auto; }
+    .libre-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .libre-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .lbl { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #888; display: block; margin-bottom: 4px; }
+    .lbl-input { width: 100%; padding: 9px 11px; border: 1.5px solid #d1d1d6; border-radius: 8px; font-size: 14px; }
+    .lbl-input:focus { outline: none; border-color: #1a1f63; }
+    .lbl-select { width: 100%; padding: 9px 11px; border: 1.5px solid #d1d1d6; border-radius: 8px; font-size: 14px; background: white; }
+    .zpl-area { width: 100%; height: 260px; font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; padding: 12px; border: 1.5px solid #d1d1d6; border-radius: 8px; resize: vertical; line-height: 1.5; color: #1a1a1a; background: #fafafa; }
+    .zpl-area:focus { outline: none; border-color: #1a1f63; background: white; }
+    .libre-actions { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .btn-action { padding: 8px 14px; border: 1.5px solid #d1d1d6; border-radius: 8px; background: white; font-size: 13px; font-weight: 600; cursor: pointer; color: #333; display: flex; align-items: center; gap: 6px; }
+    .btn-action:hover { background: #f2f2f7; }
+    .btn-action.file-btn { position: relative; overflow: hidden; }
+    .btn-action.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .libre-status { font-size: 13px; text-align: center; min-height: 20px; margin: 8px 0; font-weight: 600; }
+    .size-chip { display: inline-block; background: #e8eaf6; color: #1a1f63; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+
+    /* Editor visual */
+    .m-cont-editor { background: white; margin: 2% auto; padding: 20px; width: 95%; max-width: 580px; border-radius: 15px; max-height: 96vh; overflow-y: auto; }
+    #edCanvas { display: block; margin: 0 auto; cursor: grab; touch-action: none; border: 2px solid white; box-shadow: 0 4px 20px rgba(0,0,0,.4); max-width: 100%; }
+    #edCanvas:active { cursor: grabbing; }
+    .rot-btn { flex: 1; padding: 8px 6px; border: 1.5px solid #d1d1d6; border-radius: 8px; background: white; font-size: 13px; cursor: pointer; font-weight: 700; transition: all .15s; }
+    .rot-btn.rot-active { background: #1a1f63; color: #FFE600; border-color: #1a1f63; }
+    .ed-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .ed-grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
   </style>
 </head>
 <body>
 
-  <!-- Banner aparece se o usuario nao estiver logado no Google -->
-  <div id="acessoBanner">
-    <div style="font-size:24px">&#128274;</div>
-    <b>Login necessario</b><br>
-    <span style="font-size:13px">Faca login com sua conta Google <b>@meli</b> e recarregue a pagina.</span><br><br>
-    <button class="btn-login" onclick="abrirLogin()">Fazer login no Google</button>
-    <button style="width:100%;padding:8px;border-radius:8px;border:none;background:#e0e0e0;cursor:pointer" onclick="verificarAcesso()">Ja fiz login — verificar novamente</button>
+  <div id="setupBanner">
+    <b>&#9888;&#65039; Supabase nao configurado</b><br>
+    Preencha <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code> no HTML.<br>
+    Consulte o arquivo <b>SETUP.md</b> do repositorio.
   </div>
 
-  <button class="btn-status" id="btnStatus" onclick="verStatus()" style="display:none">&#128202; VER STATUS ROTAS</button>
+  <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
+  <button class="btn-purple" onclick="abrirLog()">&#128203; CONSULTAR LOG</button>
+  <button class="btn-navy"   onclick="abrirImpressaoLivre()">&#128438; IMPRESSAO LIVRE</button>
+  <button class="btn-orange" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
 
-  <div class="card" id="mainCard" style="display:none">
+  <div class="card">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
       <input type="text" id="ip"   placeholder="IP Impressora" onchange="sv()">
       <input type="text" id="resp" placeholder="Seu Nome"      onchange="sv()">
@@ -42,178 +106,1093 @@
     <input type="text"   id="log"  placeholder="Descricao Log">
     <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
     <input type="number" id="qtd"  placeholder="Quantidade" min="1">
-    <button id="btPrint" class="btn-print" onclick="processar()">IMPRIMIR</button>
+    <button id="btPrint" class="btn-green" onclick="processar()">IMPRIMIR</button>
     <div id="status"></div>
   </div>
 
-  <div id="modal">
+  <!-- Modal: Editor Visual de Etiqueta -->
+  <div id="modalEditor" class="modal-bg">
+    <div class="m-cont-editor">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+        <h3 style="margin:0">&#127912; Editor Visual</h3>
+        <span id="edInfo" style="font-size:11px;color:#888;text-align:right"></span>
+      </div>
+
+      <!-- Canvas -->
+      <div style="background:#555;background-image:repeating-conic-gradient(#666 0% 25%,#444 0% 50%);background-size:14px 14px;padding:10px;border-radius:10px;margin-bottom:14px;overflow:hidden">
+        <canvas id="edCanvas"
+          onmousedown="edDown(event)" onmousemove="edMove(event)" onmouseup="edUp()" onmouseleave="edUp()"
+          ontouchstart="edDown(event)" ontouchmove="edMove(event)" ontouchend="edUp()">
+        </canvas>
+      </div>
+
+      <!-- Rotacao -->
+      <div style="margin-bottom:12px">
+        <span class="lbl">Rotacao</span>
+        <div style="display:flex;gap:6px;margin-top:5px">
+          <button id="rotBtn0"   class="rot-btn rot-active" onclick="setRot(0)">&#8635; 0°</button>
+          <button id="rotBtn90"  class="rot-btn"            onclick="setRot(90)">&#8635; 90°</button>
+          <button id="rotBtn180" class="rot-btn"            onclick="setRot(180)">&#8635; 180°</button>
+          <button id="rotBtn270" class="rot-btn"            onclick="setRot(270)">&#8635; 270°</button>
+        </div>
+      </div>
+
+      <!-- Tamanho + Posicao -->
+      <div class="ed-grid2">
+        <div>
+          <span class="lbl">Tamanho — <span id="edSizeLbl">100%</span></span>
+          <input type="range" id="edSlider" min="5" max="300" value="100"
+                 style="width:100%;margin-top:6px;accent-color:#1a1f63" oninput="onEdSlider(this.value)">
+        </div>
+        <div class="ed-grid2" style="margin-bottom:0">
+          <div>
+            <span class="lbl">X (dots)</span>
+            <input type="number" id="edX" class="lbl-input" value="0" min="0" oninput="onEdPos()">
+          </div>
+          <div>
+            <span class="lbl">Y (dots)</span>
+            <input type="number" id="edY" class="lbl-input" value="0" min="0" oninput="onEdPos()">
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size:12px;color:#888;margin-bottom:14px;text-align:center">
+        &#128072; Arraste a imagem no canvas para posicionar &nbsp;|&nbsp; Ajuste rotacao e tamanho com os controles acima
+      </p>
+
+      <div class="ed-grid2" style="margin-bottom:0">
+        <button style="padding:13px;background:#f2f2f7;border:none;border-radius:10px;font-size:14px;cursor:pointer" onclick="fecharModal('modalEditor')">CANCELAR</button>
+        <button style="padding:13px;background:#1a1f63;color:#FFE600;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer" onclick="aplicarEditor()">&#10003; APLICAR NO ZPL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Senha Impressao Livre -->
+  <div id="modalSenhaLivre" class="modal-bg">
+    <div class="m-cont" style="max-width:320px">
+      <h3 style="margin-top:0">&#128274; Impressao Livre — Acesso Restrito</h3>
+      <p style="font-size:13px;color:#555;margin-bottom:14px">Funcao reservada para uso autorizado.</p>
+      <input type="password" id="inputSenhaLivre" placeholder="Senha de acesso"
+             style="width:100%;padding:12px;margin:4px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px;"
+             onkeydown="if(event.key==='Enter')verificarSenhaLivre()">
+      <div id="erroSenhaLivre" style="color:#ff3b30;font-size:13px;text-align:center;margin-bottom:8px;display:none">&#10060; Senha incorreta.</div>
+      <button class="btn-navy" onclick="verificarSenhaLivre()" style="margin-bottom:8px">ACESSAR</button>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalSenhaLivre')">CANCELAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Impressao Livre -->
+  <div id="modalLivre" class="modal-bg">
+    <div class="m-cont-livre">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0">&#128438; Impressao Livre</h3>
+        <span id="livreChip" class="size-chip">80 × 40 mm</span>
+      </div>
+
+      <!-- IP + Tamanho -->
+      <div class="libre-row">
+        <div>
+          <span class="lbl">IP da Impressora</span>
+          <input class="lbl-input" id="livreIP" type="text" placeholder="10.29.180.108">
+        </div>
+        <div>
+          <span class="lbl">Tamanho da Etiqueta</span>
+          <select class="lbl-select" id="labelSize" onchange="onSizeChange()">
+            <option value="80x40">80 × 40 mm</option>
+            <option value="105x150">105 × 150 mm</option>
+            <option value="custom">Personalizado...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tamanho personalizado -->
+      <div class="libre-row" id="customSizeRow" style="display:none">
+        <div>
+          <span class="lbl">Largura (mm)</span>
+          <input class="lbl-input" id="customW" type="number" value="80" min="10" max="400" oninput="onSizeChange()">
+        </div>
+        <div>
+          <span class="lbl">Altura (mm)</span>
+          <input class="lbl-input" id="customH" type="number" value="40" min="10" max="1200" oninput="onSizeChange()">
+        </div>
+      </div>
+
+      <!-- Botoes de acao -->
+      <div class="libre-actions">
+        <label class="btn-action file-btn" title="Carregar arquivo ZPL ou texto">
+          &#128196; Abrir ZPL
+          <input type="file" accept=".txt,.zpl,.label,.prn" onchange="carregarArquivoLivre(this)">
+        </label>
+        <label class="btn-action file-btn" title="Inserir imagem na etiqueta (PNG, JPG, BMP)" style="color:#8b5cf6;border-color:#8b5cf6">
+          &#128247; Inserir imagem
+          <input type="file" accept="image/png,image/jpeg,image/bmp,image/gif" onchange="inserirImagem(this)">
+        </label>
+        <button class="btn-action" onclick="gerarTemplateLivre()">&#128203; Gerar template</button>
+        <button class="btn-action" onclick="document.getElementById('zplContent').value=''">&#128465; Limpar</button>
+        <button class="btn-action" id="btnAjustarDim" onclick="ajustarDimensoesManual()" style="display:none;color:#1a1f63;border-color:#1a1f63">&#9881;&#65039; Ajustar dimensoes</button>
+      </div>
+
+      <!-- Dica de referencia rapida -->
+      <details style="margin-bottom:10px;font-size:12px;color:#555">
+        <summary style="cursor:pointer;font-weight:700;color:#1a1f63;padding:4px 0">&#128218; Referencia rapida ZPL</summary>
+        <div style="background:#f8f9fa;border-radius:8px;padding:10px;margin-top:6px;font-family:monospace;line-height:1.8;font-size:11px">
+          <b style="font-family:sans-serif;color:#333">Estrutura basica:</b><br>
+          ^XA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ inicio do label<br>
+          ^CI28 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ encoding UTF-8<br>
+          ^PW<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ largura em dots (mm × 8)<br>
+          ^LL<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ altura em dots (mm × 8)<br>
+          ^FO<i>x</i>,<i>y</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ posicao do campo<br>
+          ^A0N,<i>h</i>,<i>w</i> &nbsp;&nbsp;&nbsp;→ fonte (h=altura, w=largura)<br>
+          ^FB<i>w</i>,1,0,C &nbsp;&nbsp;→ texto centralizado (largura w)<br>
+          ^FD<i>texto</i>^FS &nbsp;→ conteudo do campo<br>
+          ^BQN,2,<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;→ QR Code (n=tamanho 1-10)<br>
+          ^FDQA,<i>dado</i>^FS → dado do QR Code<br>
+          ^XZ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ fim do label
+        </div>
+      </details>
+
+      <!-- Area ZPL -->
+      <span class="lbl">Conteudo ZPL</span>
+      <textarea class="zpl-area" id="zplContent"
+        placeholder="^XA&#10;^CI28&#10;^PW640&#10;^LL320&#10;^FO20,20^A0N,40,40^FDSeu texto^FS&#10;^XZ"></textarea>
+
+      <!-- Preview da etiqueta -->
+      <div id="zplPreview" style="display:none;margin:12px 0;border-radius:10px;overflow:hidden;border:1px solid #d1d1d6">
+        <div style="background:#1a1f63;color:#FFE600;padding:8px 14px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:800;letter-spacing:.5px">&#128065; PREVIEW DA ETIQUETA</span>
+          <button onclick="fecharPreview()" style="background:none;border:none;color:#FFE600;cursor:pointer;font-size:18px;line-height:1;padding:0 2px">&times;</button>
+        </div>
+        <div style="padding:16px;text-align:center;background:#666;background-image:repeating-conic-gradient(#777 0% 25%,#555 0% 50%);background-size:16px 16px">
+          <img id="previewImg" alt="preview" style="max-width:100%;display:block;margin:0 auto;border:2px solid white;box-shadow:0 4px 20px rgba(0,0,0,.4)">
+        </div>
+        <div id="previewInfo" style="background:#f8f9fa;padding:6px 14px;font-size:11px;color:#666;text-align:center"></div>
+      </div>
+
+      <div class="libre-status" id="livreStatus"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <button onclick="previewZPL()" style="padding:14px;background:#007aff;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#128065; VISUALIZAR</button>
+        <button id="btnImprimirLivre" class="btn-green" onclick="imprimirLivre()">&#128438; IMPRIMIR</button>
+      </div>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalLivre')">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Senha Log -->
+  <div id="modalSenha" class="modal-bg">
+    <div class="m-cont" style="max-width:320px">
+      <h3 style="margin-top:0">&#128274; Acesso Restrito</h3>
+      <p style="font-size:13px;color:#555;margin-bottom:14px">Esta area e restrita. Informe a senha para consultar o log.</p>
+      <input type="password" id="inputSenha" placeholder="Senha de acesso"
+             style="width:100%;padding:12px;margin:4px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px;"
+             onkeydown="if(event.key==='Enter')verificarSenha()">
+      <div id="erroSenha" style="color:#ff3b30;font-size:13px;text-align:center;margin-bottom:8px;display:none">&#10060; Senha incorreta. Tente novamente.</div>
+      <button class="btn-purple" onclick="verificarSenha()" style="margin-bottom:8px">ACESSAR</button>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalSenha')">CANCELAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Consultar Log -->
+  <div id="modalLog" class="modal-bg">
+    <div class="m-cont-log">
+      <div class="log-header">
+        <h3 style="margin:0">&#128203; Consultas</h3>
+        <button class="btn-export" id="btnExport" onclick="exportarAtivo()">&#11015;&#65039; Exportar CSV</button>
+      </div>
+
+      <!-- Abas -->
+      <div class="tabs">
+        <button id="tabBtnLog"   class="tab-btn tab-active" onclick="trocarTab('log')">&#128203; Log de Auditoria</button>
+        <button id="tabBtnErros" class="tab-btn"            onclick="trocarTab('erros')">&#128534; Erros de Impressao</button>
+      </div>
+
+      <!-- ── ABA: LOG ── -->
+      <div id="secLog" class="tab-sec tab-vis">
+        <div class="filter-grid">
+          <div><label>Periodo — De</label><input type="date" id="filtroDataDe"></div>
+          <div><label>Periodo — Ate</label><input type="date" id="filtroDataAte"></div>
+          <div><label>Responsavel</label><input type="text" id="filtroResp" placeholder="Todos"></div>
+          <div><label>Rota</label><input type="text" id="filtroRota" placeholder="Todas"></div>
+          <div><label>Auditoria</label><input type="text" id="filtroAudit" placeholder="Todas"></div>
+          <div><label>Saca ID</label><input type="text" id="filtroSaca" placeholder="Todas"></div>
+        </div>
+        <button class="btn-buscar" onclick="buscarLog()">&#128269; BUSCAR</button>
+        <div class="log-info" id="logInfo"></div>
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th><th>Responsavel</th><th>Auditoria</th>
+                <th>Saca ID</th><th style="text-align:center">Qtd</th><th>QR Mae</th><th>Rota</th>
+              </tr>
+            </thead>
+            <tbody id="logBody">
+              <tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── ABA: ERROS ── -->
+      <div id="secErros" class="tab-sec">
+        <div class="filter-grid">
+          <div><label>Periodo — De</label><input type="date" id="erroDataDe"></div>
+          <div><label>Periodo — Ate</label><input type="date" id="erroDataAte"></div>
+          <div><label>Responsavel</label><input type="text" id="erroResp" placeholder="Todos"></div>
+          <div><label>Saca ID</label><input type="text" id="erroSaca" placeholder="Todas"></div>
+          <div><label>Motivo</label>
+            <select id="erroMotivo" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;background:white">
+              <option value="">Todos</option>
+              <option value="nao encontrada">Saca nao encontrada</option>
+              <option value="impressora">Falha na impressora</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-buscar" style="background:#c0392b" onclick="buscarErros()">&#128269; BUSCAR ERROS</button>
+        <div class="log-info" id="erroInfo"></div>
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th><th>Responsavel</th><th>Saca ID</th>
+                <th style="text-align:center">Qtd</th><th>IP</th><th>Motivo</th><th>Auditoria</th>
+              </tr>
+            </thead>
+            <tbody id="erroBody">
+              <tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharModal('modalLog')">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Ranking Rotas -->
+  <div id="modalRanking" class="modal-bg">
     <div class="m-cont">
       <h3 style="margin-top:0">Ranking Rotas</h3>
       <div id="lista"></div>
-      <button style="width:100%;margin-top:15px;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:15px;cursor:pointer;" onclick="document.getElementById('modal').style.display='none'">FECHAR</button>
+      <button style="width:100%;margin-top:15px;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:15px;cursor:pointer" onclick="fecharModal('modalRanking')">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Atualizar Base / Rota -->
+  <div id="modalAtualizar" class="modal-bg">
+    <div class="m-cont">
+      <h3 style="margin-top:0">&#11014;&#65039; Atualizar Base / Rota</h3>
+
+      <p style="font-size:13px;color:#555;margin:0 0 12px">
+        No Google Sheets, abra cada aba e faca:<br>
+        <b>Arquivo &#8594; Fazer download &#8594; .csv</b><br>
+        Depois selecione os arquivos abaixo:
+      </p>
+
+      <!-- Upload Base -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:13px;font-weight:bold;margin-bottom:4px">Aba: Base &nbsp;<span style="font-weight:normal;color:#888">(QR Mae | Saca ID | Rota)</span></div>
+        <div class="upload-box" id="boxBase">
+          <input type="file" accept=".csv,.CSV" onchange="carregarCSV(this,'base')">
+          <div class="upload-label" id="labelBase">&#128193; Selecionar arquivo Base.csv</div>
+          <div class="upload-preview" id="previewBase"></div>
+        </div>
+      </div>
+
+      <!-- Upload Rota -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:bold;margin-bottom:4px">Aba: Rota &nbsp;<span style="font-weight:normal;color:#888">(Saca ID | Rota)</span></div>
+        <div class="upload-box" id="boxRota">
+          <input type="file" accept=".csv,.CSV" onchange="carregarCSV(this,'rota')">
+          <div class="upload-label" id="labelRota">&#128193; Selecionar arquivo Rota.csv</div>
+          <div class="upload-preview" id="previewRota"></div>
+        </div>
+      </div>
+
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div id="importStatus" style="font-size:13px;text-align:center;min-height:18px;margin-bottom:10px"></div>
+
+      <button id="btnImportar" class="btn-green" onclick="importar()" disabled style="margin-bottom:8px">IMPORTAR PARA O BANCO</button>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalAtualizar')">FECHAR</button>
     </div>
   </div>
 
   <script>
-    // ===================== CONFIGURAÇÕES =====================
-    const SHEET_ID = '1EZ9fXbCu8hr8nS1jLJWAPTwefXo2EFQbmrMLodbN6LE';
+    // ================================================================
+    // CONFIGURAÇÃO SUPABASE
+    // Crie o projeto gratis em: https://supabase.com
+    // Settings → API → copie Project URL e chave "anon public"
+    // ================================================================
+    const SUPABASE_URL = 'https://hfswxhaaglubdmksrucz.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable__xuRv5UbSaorSGkxW-zmJg_HF_vS6uL';
+    // ================================================================
 
-    const URL_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSdgSXDTEh6bS_8TLS0o5qjJS-mHVZafm_XJb9Ofyxobp7Mpnw/formResponse';
-
-    const FIELDS = {
-      data:  'entry.1911248389',
-      resp:  'entry.1107274403',
-      audit: 'entry.1214123688',
-      saca:  'entry.1271577756',
-      qtd:   'entry.90002713',
-      qr:    'entry.965325040',
-      rota:  'entry.1257884009'
-    };
-    // =========================================================
-
-    const getV = id => document.getElementById(id).value.trim();
-
-    // Carrega aba via gviz JSONP — usa a sessao Google ja ativa no navegador
-    // Nao precisa publicar a planilha: basta estar logado e ter acesso pelo dominio
-    function carregarAba(sheetParam) {
-      return new Promise((resolve, reject) => {
-        const cb = '_gviz' + Date.now() + Math.random().toString(36).slice(2);
-        const s  = document.createElement('script');
-
-        const t = setTimeout(() => { cleanup(); reject(new Error('Timeout ao carregar dados')); }, 12000);
-
-        function cleanup() {
-          clearTimeout(t);
-          delete window[cb];
-          if (s.parentNode) s.remove();
-        }
-
-        window[cb] = (data) => {
-          cleanup();
-          if (!data || data.status === 'error') {
-            const msg = data && data.errors ? data.errors[0].message : 'sem detalhes';
-            reject(new Error('Sem acesso (' + sheetParam + '): ' + msg));
-            return;
-          }
-          const numCols = (data.table.cols || []).length;
-          const rows = (data.table.rows || []).map(row =>
-            Array.from({ length: numCols }, (_, i) => {
-              const cell = row.c ? row.c[i] : null;
-              if (!cell || cell.v === null || cell.v === undefined) return '';
-              const v = cell.v;
-              if (typeof v === 'string' && v.startsWith('Date(')) {
-                const n = v.slice(5, -1).split(',').map(Number);
-                const d = new Date(n[0], n[1], n[2] || 1, n[3] || 0, n[4] || 0);
-                const ds = d.toLocaleDateString('pt-BR');
-                return n.length > 3
-                  ? ds + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
-                  : ds;
-              }
-              return cell.f !== undefined ? String(cell.f) : String(v);
-            })
-          );
-          resolve(rows);
-        };
-
-        s.onerror = () => { cleanup(); reject(new Error('Erro de rede')); };
-        s.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
-                '/gviz/tq?tqx=out:json&' + sheetParam +
-                '&callback=' + cb + '&_=' + Date.now();
-        document.head.appendChild(s);
-      });
-    }
-
-    // Verifica se o usuario tem acesso a planilha e mostra a UI correta
-    async function verificarAcesso() {
-      document.getElementById('acessoBanner').style.display = 'none';
-      document.getElementById('btnStatus').style.display = 'none';
-      document.getElementById('mainCard').style.display  = 'none';
-      document.getElementById('acessoBanner').innerHTML =
-        '<div style="padding:10px;text-align:center">Verificando acesso...</div>';
-      document.getElementById('acessoBanner').style.display = 'block';
-
-      try {
-        await carregarAba('sheet=Base');
-        // Acesso OK
-        document.getElementById('acessoBanner').style.display = 'none';
-        document.getElementById('btnStatus').style.display = 'block';
-        document.getElementById('mainCard').style.display  = 'block';
-      } catch (e) {
-        // Sem acesso — mostra banner de login
-        document.getElementById('acessoBanner').innerHTML =
-          '<div style="font-size:24px">&#128274;</div>' +
-          '<b>Login necessario</b><br>' +
-          '<span style="font-size:13px">Faca login com sua conta Google <b>@meli</b> e recarregue a pagina.</span><br><br>' +
-          '<button class="btn-login" onclick="abrirLogin()">Fazer login no Google</button>' +
-          '<button style="width:100%;padding:8px;border-radius:8px;border:none;background:#e0e0e0;cursor:pointer;margin-top:6px" onclick="verificarAcesso()">Ja fiz login — verificar novamente</button>' +
-          '<div style="font-size:11px;color:#888;margin-top:8px">Detalhe: ' + e.message + '</div>';
-        document.getElementById('acessoBanner').style.display = 'block';
-      }
-    }
-
-    function abrirLogin() {
-      window.open('https://accounts.google.com/ServiceLogin?continue=https://docs.google.com/spreadsheets/d/' + SHEET_ID, '_blank');
-    }
+    let dadosBase = null;  // rows parsed do CSV Base
+    let dadosRota = null;  // rows parsed do CSV Rota
 
     window.onload = () => {
       document.getElementById('ip').value   = localStorage.getItem('ip') || '';
       document.getElementById('resp').value = localStorage.getItem('rp') || '';
-      verificarAcesso();
+      if (!SUPABASE_URL || !SUPABASE_KEY) {
+        document.getElementById('setupBanner').style.display = 'block';
+        document.getElementById('btPrint').disabled = true;
+      }
     };
 
-    const sv = () => {
-      localStorage.setItem('ip', getV('ip'));
-      localStorage.setItem('rp', getV('resp'));
+    const getV = id => document.getElementById(id).value.trim();
+    const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
+    const fecharModal = id => document.getElementById(id).style.display = 'none';
+
+    // ================================================================
+    // IMPRESSAO LIVRE
+    // ================================================================
+    const LIVRE_SENHA = '97268054@';
+
+    const TAMANHOS = {
+      '80x40':   { pw: 640,  ll: 320  },
+      '105x150': { pw: 840,  ll: 1200 }
     };
 
+    function mmToDots(mm) { return Math.round(mm * 203 / 25.4); }
+
+    function getDims() {
+      const sel = document.getElementById('labelSize').value;
+      if (sel === 'custom') {
+        const w = parseFloat(document.getElementById('customW').value) || 80;
+        const h = parseFloat(document.getElementById('customH').value) || 40;
+        return { pw: mmToDots(w), ll: mmToDots(h), label: w + ' × ' + h + ' mm' };
+      }
+      const d = TAMANHOS[sel];
+      return { ...d, label: sel.replace('x', ' × ') + ' mm' };
+    }
+
+    function onSizeChange() {
+      const sel = document.getElementById('labelSize').value;
+      document.getElementById('customSizeRow').style.display = sel === 'custom' ? 'grid' : 'none';
+      const { label } = getDims();
+      document.getElementById('livreChip').innerText = label;
+      // Se ja tem conteudo, mostra botao de ajustar
+      const tem = document.getElementById('zplContent').value.trim();
+      document.getElementById('btnAjustarDim').style.display = tem ? 'inline-flex' : 'none';
+    }
+
+    function ajustarZPL(zpl, pw, ll) {
+      let r = zpl;
+      r = /\^PW\d+/i.test(r) ? r.replace(/\^PW\d+/ig, '^PW' + pw) : r.replace(/\^XA/i, '^XA^PW' + pw);
+      r = /\^LL\d+/i.test(r) ? r.replace(/\^LL\d+/ig, '^LL' + ll) : r.replace(/\^PW\d+/i, '^PW' + pw + '^LL' + ll);
+      return r;
+    }
+
+    function ajustarDimensoesManual() {
+      const { pw, ll, label } = getDims();
+      const atual = document.getElementById('zplContent').value;
+      if (!atual.trim()) return;
+      document.getElementById('zplContent').value = ajustarZPL(atual, pw, ll);
+      document.getElementById('livreStatus').style.color = '#1a1f63';
+      document.getElementById('livreStatus').innerText = '✔ Dimensoes ajustadas para ' + label;
+    }
+
+    function gerarTemplateLivre() {
+      const { pw, ll, label } = getDims();
+      document.getElementById('zplContent').value =
+        '^XA\n' +
+        '^CI28\n' +
+        '^PW' + pw + '\n' +
+        '^LL' + ll + '\n' +
+        '^MD25\n' +
+        '\n' +
+        '// Texto centralizado\n' +
+        '^FO0,30^A0N,60,60^FB' + pw + ',1,0,C^FDSeu texto aqui^FS\n' +
+        '\n' +
+        '// QR Code (substitua DADO pelo valor desejado)\n' +
+        '^FO' + Math.round(pw/2 - 80) + ',120^BQN,2,5^FDQA,DADO^FS\n' +
+        '\n' +
+        '^XZ';
+      document.getElementById('livreStatus').style.color = '#1a1f63';
+      document.getElementById('livreStatus').innerText = 'Template gerado para ' + label + ' (' + pw + ' × ' + ll + ' dots)';
+      document.getElementById('btnAjustarDim').style.display = 'none';
+    }
+
+    function carregarArquivoLivre(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const { pw, ll, label } = getDims();
+        const ajustado = ajustarZPL(e.target.result, pw, ll);
+        document.getElementById('zplContent').value = ajustado;
+        document.getElementById('livreStatus').style.color = '#1a1f63';
+        document.getElementById('livreStatus').innerText =
+          '✔ Arquivo carregado e dimensoes ajustadas para ' + label + '. Verifique e edite se necessario.';
+        document.getElementById('btnAjustarDim').style.display = 'none';
+      };
+      reader.readAsText(file, 'UTF-8');
+      input.value = '';
+    }
+
+    function abrirImpressaoLivre() {
+      document.getElementById('inputSenhaLivre').value = '';
+      document.getElementById('erroSenhaLivre').style.display = 'none';
+      document.getElementById('modalSenhaLivre').style.display = 'block';
+      setTimeout(() => document.getElementById('inputSenhaLivre').focus(), 100);
+    }
+
+    function verificarSenhaLivre() {
+      if (document.getElementById('inputSenhaLivre').value === LIVRE_SENHA) {
+        fecharModal('modalSenhaLivre');
+        // Pre-preenche IP do localStorage
+        document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
+        document.getElementById('labelSize').value = '80x40';
+        document.getElementById('customSizeRow').style.display = 'none';
+        document.getElementById('livreChip').innerText = '80 × 40 mm';
+        document.getElementById('zplContent').value = '';
+        document.getElementById('livreStatus').innerText = '';
+        document.getElementById('btnAjustarDim').style.display = 'none';
+        document.getElementById('modalLivre').style.display = 'block';
+      } else {
+        document.getElementById('erroSenhaLivre').style.display = 'block';
+        document.getElementById('inputSenhaLivre').value = '';
+        document.getElementById('inputSenhaLivre').focus();
+      }
+    }
+
+    // ---- Inserir imagem — abre editor visual ----
+    function inserirImagem(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const st = document.getElementById('livreStatus');
+      st.style.color = '#666'; st.innerText = '⏳ Carregando imagem...';
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          st.innerText = '';
+          input.value = '';
+          abrirEditorVisual(e.target.result, img.naturalWidth, img.naturalHeight);
+        };
+        img.onerror = () => { st.style.color = '#c0392b'; st.innerText = '❌ Nao foi possivel ler a imagem.'; };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ════════════════════════════════════════════════
+    // EDITOR VISUAL
+    // ════════════════════════════════════════════════
+    const edSt = { dataUrl: null, rot: 0, xDots: 0, yDots: 0, pct: 100, origW: 0, origH: 0 };
+    let edScale = 1, edDrag = null, edImgEl = null;
+
+    function abrirEditorVisual(dataUrl, origW, origH) {
+      const { pw, ll } = getDims();
+      // Escala inicial: encaixa a imagem na etiqueta
+      const fitPct = Math.round(Math.min(1, pw / origW, ll / origH) * 100);
+      Object.assign(edSt, { dataUrl, rot: 0, xDots: 0, yDots: 0, pct: fitPct, origW, origH });
+
+      document.getElementById('edSlider').value = fitPct;
+      document.getElementById('edSizeLbl').innerText = fitPct + '%';
+      syncRotBtns();
+
+      edImgEl = new Image();
+      edImgEl.onload = () => { renderEdCanvas(); syncEdXY(); };
+      edImgEl.src = dataUrl;
+
+      document.getElementById('modalEditor').style.display = 'block';
+    }
+
+    function edDispDims() {
+      const s = edSt.pct / 100;
+      const bW = edSt.origW * s, bH = edSt.origH * s;
+      const r = edSt.rot;
+      return { bW, bH,
+               dW: (r === 90 || r === 270) ? bH : bW,
+               dH: (r === 90 || r === 270) ? bW : bH };
+    }
+
+    function renderEdCanvas() {
+      const canvas = document.getElementById('edCanvas');
+      const { pw, ll } = getDims();
+      const maxPx = Math.min(460, (window.innerWidth || 500) - 80);
+      edScale = maxPx / pw;
+
+      canvas.width  = Math.round(pw * edScale);
+      canvas.height = Math.round(ll * edScale);
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Grade auxiliar
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+      for (let x = 100; x < pw; x += 100) { ctx.beginPath(); ctx.moveTo(x*edScale,0); ctx.lineTo(x*edScale,canvas.height); ctx.stroke(); }
+      for (let y = 100; y < ll; y += 100) { ctx.beginPath(); ctx.moveTo(0,y*edScale); ctx.lineTo(canvas.width,y*edScale); ctx.stroke(); }
+
+      if (!edImgEl) return;
+
+      const { bW, bH, dW, dH } = edDispDims();
+      const cx = (edSt.xDots + dW/2) * edScale;
+      const cy = (edSt.yDots + dH/2) * edScale;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(edSt.rot * Math.PI / 180);
+      ctx.drawImage(edImgEl, -bW*edScale/2, -bH*edScale/2, bW*edScale, bH*edScale);
+      ctx.restore();
+
+      // Borda de selecao
+      ctx.strokeStyle = '#007aff'; ctx.lineWidth = 2; ctx.setLineDash([5,4]);
+      ctx.strokeRect(edSt.xDots*edScale, edSt.yDots*edScale, dW*edScale, dH*edScale);
+      ctx.setLineDash([]);
+
+      const { dW: dWr, dH: dHr } = edDispDims();
+      document.getElementById('edInfo').innerText =
+        getDims().label + ' | imagem: ' + Math.round(dWr) + '×' + Math.round(dHr) + ' dots';
+    }
+
+    function syncEdXY() {
+      document.getElementById('edX').value = Math.round(edSt.xDots);
+      document.getElementById('edY').value = Math.round(edSt.yDots);
+    }
+    function syncRotBtns() {
+      [0,90,180,270].forEach(d => {
+        const b = document.getElementById('rotBtn'+d);
+        if (b) b.classList.toggle('rot-active', edSt.rot === d);
+      });
+    }
+    function setRot(deg) { edSt.rot = deg; syncRotBtns(); renderEdCanvas(); }
+    function onEdSlider(v) { edSt.pct = +v; document.getElementById('edSizeLbl').innerText = v+'%'; renderEdCanvas(); }
+    function onEdPos() {
+      edSt.xDots = +document.getElementById('edX').value || 0;
+      edSt.yDots = +document.getElementById('edY').value || 0;
+      renderEdCanvas();
+    }
+
+    function edEvtPos(e) {
+      const rect = document.getElementById('edCanvas').getBoundingClientRect();
+      const src  = e.touches ? e.touches[0] : e;
+      return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+    }
+    function edDown(e) {
+      const p = edEvtPos(e);
+      edDrag = { sx: p.x, sy: p.y, ox: edSt.xDots, oy: edSt.yDots };
+      e.preventDefault();
+    }
+    function edMove(e) {
+      if (!edDrag) return;
+      const p = edEvtPos(e);
+      edSt.xDots = Math.max(0, edDrag.ox + (p.x - edDrag.sx) / edScale);
+      edSt.yDots = Math.max(0, edDrag.oy + (p.y - edDrag.sy) / edScale);
+      renderEdCanvas(); syncEdXY();
+      e.preventDefault();
+    }
+    function edUp() { edDrag = null; }
+
+    function imgToGFA(ctx, W, H) {
+      const data = ctx.getImageData(0, 0, W, H).data;
+      let soma = 0;
+      for (let i = 0; i < W*H; i++) soma += 0.299*data[i*4] + 0.587*data[i*4+1] + 0.114*data[i*4+2];
+      const thr = Math.min(220, Math.max(80, (soma/(W*H)) * 0.85));
+      const bpr = Math.ceil(W/8), total = bpr*H;
+      let hex = '';
+      for (let row = 0; row < H; row++) {
+        for (let b = 0; b < bpr; b++) {
+          let byte = 0;
+          for (let bit = 0; bit < 8; bit++) {
+            const px = row*W + b*8 + bit;
+            if (px < W*H) {
+              const i = px*4;
+              if (0.299*data[i]+0.587*data[i+1]+0.114*data[i+2] < thr) byte |= (0x80>>bit);
+            }
+          }
+          hex += byte.toString(16).padStart(2,'0').toUpperCase();
+        }
+      }
+      return '^GFA,' + total + ',' + total + ',' + bpr + ',' + hex;
+    }
+
+    function aplicarEditor() {
+      if (!edSt.dataUrl) return;
+      const { bW, bH, dW, dH } = edDispDims();
+      const W = Math.round(dW), H = Math.round(dH);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white'; ctx.fillRect(0,0,W,H);
+
+      const img = new Image();
+      img.onload = () => {
+        ctx.save();
+        ctx.translate(W/2, H/2);
+        ctx.rotate(edSt.rot * Math.PI/180);
+        ctx.drawImage(img, -bW/2, -bH/2, bW, bH);
+        ctx.restore();
+
+        const x = Math.round(edSt.xDots), y = Math.round(edSt.yDots);
+        const { pw, ll } = getDims();
+        const gf    = imgToGFA(ctx, W, H);
+        const campo = '^FO' + x + ',' + y + gf + '^FS';
+
+        // Substitui GFA existente ou cria ZPL novo
+        let zpl = document.getElementById('zplContent').value.trim();
+        if (zpl.includes('^GFA')) {
+          zpl = zpl.replace(/\^FO\d+,\d+\^GFA,\d+,\d+,\d+,[0-9A-Fa-f\n\r]+\^FS/g, campo);
+        } else if (zpl.includes('^XA')) {
+          zpl = zpl.replace(/(\^XZ)/i, campo + '\n$1');
+        } else {
+          zpl = '^XA\n^CI28\n^PW'+pw+'\n^LL'+ll+'\n'+campo+'\n^XZ';
+        }
+        document.getElementById('zplContent').value = zpl;
+        fecharModal('modalEditor');
+        const st = document.getElementById('livreStatus');
+        st.style.color = '#1a1f63';
+        st.innerText = '✅ ZPL atualizado. Clique em Visualizar para conferir e ajustar.';
+      };
+      img.src = edSt.dataUrl;
+    }
+
+    let previewBlobUrl = null;
+
+    async function previewZPL() {
+      const zpl = document.getElementById('zplContent').value.trim();
+      const st  = document.getElementById('livreStatus');
+      if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL vazio.'; return; }
+
+      const { pw, ll, label } = getDims();
+      // Labelary: dimensoes em polegadas (8 dots/mm = 203 dpi)
+      const wIn = (pw / 8 / 25.4).toFixed(3);
+      const hIn = (ll / 8 / 25.4).toFixed(3);
+
+      st.style.color = '#666'; st.innerText = '⏳ Gerando preview...';
+      document.getElementById('zplPreview').style.display = 'none';
+
+      try {
+        // Labelary exige multipart/form-data (como curl -F)
+        const form = new FormData();
+        form.append('file', new Blob([zpl], { type: 'text/plain' }), 'label.zpl');
+        const resp = await fetch(
+          'https://api.labelary.com/v1/printers/8dpmm/labels/' + wIn + 'x' + hIn + '/0/',
+          { method: 'POST', headers: { 'Accept': 'image/png' }, body: form }
+        );
+        if (!resp.ok) throw new Error('Status ' + resp.status + ' — verifique o ZPL');
+        const blob = await resp.blob();
+        if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+        previewBlobUrl = URL.createObjectURL(blob);
+        document.getElementById('previewImg').src = previewBlobUrl;
+        document.getElementById('previewInfo').innerText = label + ' (' + pw + ' × ' + ll + ' dots  |  ' + wIn + '" × ' + hIn + '")';
+        document.getElementById('zplPreview').style.display = 'block';
+        document.getElementById('zplPreview').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        st.innerText = '';
+      } catch (e) {
+        st.style.color = '#c0392b';
+        st.innerText = '❌ Erro no preview: ' + e.message;
+      }
+    }
+
+    function fecharPreview() {
+      document.getElementById('zplPreview').style.display = 'none';
+      if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); previewBlobUrl = null; }
+    }
+
+    async function imprimirLivre() {
+      const ip  = document.getElementById('livreIP').value.trim();
+      const zpl = document.getElementById('zplContent').value.trim();
+      const st  = document.getElementById('livreStatus');
+      const btn = document.getElementById('btnImprimirLivre');
+      if (!ip)  { st.style.color = '#c0392b'; st.innerText = '⚠️ Informe o IP da impressora.'; return; }
+      if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL esta vazio.'; return; }
+      btn.disabled = true;
+      st.style.color = '#666'; st.innerText = '⏳ Enviando...';
+      fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+        .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; })
+        .catch(() => { st.style.color = '#c0392b'; st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.'; })
+        .finally(() => { btn.disabled = false; });
+    }
+
+    // ---- Abas do modal de consulta ----
+    let abaAtiva = 'log';
+    function trocarTab(aba) {
+      abaAtiva = aba;
+      document.getElementById('secLog').classList.toggle('tab-vis',   aba === 'log');
+      document.getElementById('secErros').classList.toggle('tab-vis', aba === 'erros');
+      document.getElementById('tabBtnLog').classList.toggle('tab-active',   aba === 'log');
+      document.getElementById('tabBtnErros').classList.toggle('tab-active', aba === 'erros');
+    }
+    function exportarAtivo() { abaAtiva === 'log' ? exportarLog() : exportarErros(); }
+
+    // ---- Consulta de Log ----
+    const LOG_SENHA = '99581202@';
+    let logAtual = [];
+    let errosAtual = [];
+
+    function abrirLog() {
+      document.getElementById('inputSenha').value = '';
+      document.getElementById('erroSenha').style.display = 'none';
+      document.getElementById('modalSenha').style.display = 'block';
+      setTimeout(() => document.getElementById('inputSenha').focus(), 100);
+    }
+
+    function verificarSenha() {
+      if (document.getElementById('inputSenha').value === LOG_SENHA) {
+        fecharModal('modalSenha');
+        ['filtroDataDe','filtroDataAte','filtroResp','filtroRota','filtroAudit','filtroSaca',
+         'erroDataDe','erroDataAte','erroResp','erroSaca'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('erroMotivo').value = '';
+        document.getElementById('logInfo').innerText  = '';
+        document.getElementById('erroInfo').innerText = '';
+        const vazio = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>';
+        document.getElementById('logBody').innerHTML  = vazio;
+        document.getElementById('erroBody').innerHTML = vazio;
+        logAtual = []; errosAtual = [];
+        trocarTab('log');
+        document.getElementById('modalLog').style.display = 'block';
+      } else {
+        document.getElementById('erroSenha').style.display = 'block';
+        document.getElementById('inputSenha').value = '';
+        document.getElementById('inputSenha').focus();
+      }
+    }
+
+    function parseDateBR(str) {
+      const m = (str || '').match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
+    }
+
+    async function buscarLog() {
+      const body = document.getElementById('logBody');
+      const info = document.getElementById('logInfo');
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Buscando...</td></tr>';
+      info.innerText = '';
+      try {
+        const de    = document.getElementById('filtroDataDe').value;
+        const ate   = document.getElementById('filtroDataAte').value;
+        const resp  = document.getElementById('filtroResp').value.trim();
+        const rota  = document.getElementById('filtroRota').value.trim();
+        const audit = document.getElementById('filtroAudit').value.trim();
+        const saca  = document.getElementById('filtroSaca').value.trim();
+
+        let q = db.from('log').select('*').order('id', { ascending: false }).limit(2000);
+        if (resp)  q = q.ilike('responsavel', '%' + resp  + '%');
+        if (rota)  q = q.ilike('rota',        '%' + rota  + '%');
+        if (audit) q = q.ilike('auditoria',   '%' + audit + '%');
+        if (saca)  q = q.ilike('saca_id',     '%' + saca  + '%');
+
+        let rows = await sbCheck(await q) || [];
+
+        // Filtra por período no cliente (datas salvas como DD/MM/YYYY HH:MM)
+        if (de || ate) {
+          const deDt  = de  ? new Date(de)  : null;
+          const ateDt = ate ? new Date(ate + 'T23:59:59') : null;
+          rows = rows.filter(r => {
+            const d = parseDateBR(r.data);
+            if (!d) return true;
+            if (deDt  && d < deDt)  return false;
+            if (ateDt && d > ateDt) return false;
+            return true;
+          });
+        }
+
+        logAtual = rows;
+
+        if (!logAtual.length) {
+          body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Nenhum registro encontrado</td></tr>';
+          info.innerText = '0 registros';
+          return;
+        }
+
+        const limite = logAtual.length === 2000 ? ' (limite de 2000 — refine os filtros para ver mais)' : '';
+        info.innerText = logAtual.length + ' registro' + (logAtual.length > 1 ? 's' : '') + limite;
+
+        body.innerHTML = logAtual.map(r =>
+          '<tr>' +
+          '<td>' + (r.data || '') + '</td>' +
+          '<td>' + (r.responsavel || '') + '</td>' +
+          '<td>' + (r.auditoria || '') + '</td>' +
+          '<td><b>' + (r.saca_id || '') + '</b></td>' +
+          '<td style="text-align:center">' + (r.qtd ?? '') + '</td>' +
+          '<td>' + (r.qr_mae || '') + '</td>' +
+          '<td>' + (r.rota || '') + '</td>' +
+          '</tr>'
+        ).join('');
+      } catch (e) {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b;padding:24px">Erro: ' + e.message + '</td></tr>';
+      }
+    }
+
+    function exportarLog() {
+      if (!logAtual.length) { alert('Faca uma busca primeiro.'); return; }
+      const cab = 'data,responsavel,auditoria,saca_id,qtd,qr_mae,rota';
+      const linhas = logAtual.map(r =>
+        ['data','responsavel','auditoria','saca_id','qtd','qr_mae','rota']
+        .map(k => '"' + String(r[k] ?? '').replace(/"/g, '""') + '"').join(',')
+      );
+      baixarCSV(cab + '\n' + linhas.join('\n'), 'log-auditoria-' + new Date().toISOString().slice(0,10) + '.csv');
+    }
+
+    async function buscarErros() {
+      const body = document.getElementById('erroBody');
+      const info = document.getElementById('erroInfo');
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Buscando...</td></tr>';
+      info.innerText = '';
+      try {
+        const de     = document.getElementById('erroDataDe').value;
+        const ate    = document.getElementById('erroDataAte').value;
+        const resp   = document.getElementById('erroResp').value.trim();
+        const saca   = document.getElementById('erroSaca').value.trim();
+        const motivo = document.getElementById('erroMotivo').value;
+
+        let q = db.from('erros').select('*').order('id', { ascending: false }).limit(2000);
+        if (resp)   q = q.ilike('responsavel', '%' + resp   + '%');
+        if (saca)   q = q.ilike('saca_id',     '%' + saca   + '%');
+        if (motivo) q = q.ilike('motivo',       '%' + motivo + '%');
+
+        let rows = await sbCheck(await q) || [];
+
+        if (de || ate) {
+          const deDt  = de  ? new Date(de)  : null;
+          const ateDt = ate ? new Date(ate + 'T23:59:59') : null;
+          rows = rows.filter(r => {
+            const d = parseDateBR(r.data);
+            if (!d) return true;
+            if (deDt  && d < deDt)  return false;
+            if (ateDt && d > ateDt) return false;
+            return true;
+          });
+        }
+
+        errosAtual = rows;
+        if (!errosAtual.length) {
+          body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Nenhum erro encontrado</td></tr>';
+          info.innerText = '0 registros';
+          return;
+        }
+        info.innerText = errosAtual.length + ' registro' + (errosAtual.length > 1 ? 's' : '');
+        body.innerHTML = errosAtual.map(r => {
+          const isNF  = (r.motivo || '').toLowerCase().includes('encontrada');
+          const badge = '<span class="motivo-badge ' + (isNF ? 'nf' : 'imp') + '">' + (r.motivo || '') + '</span>';
+          return '<tr>' +
+            '<td>' + (r.data || '') + '</td>' +
+            '<td>' + (r.responsavel || '') + '</td>' +
+            '<td><b>' + (r.saca_id || '') + '</b></td>' +
+            '<td style="text-align:center">' + (r.qtd ?? '') + '</td>' +
+            '<td>' + (r.ip || '') + '</td>' +
+            '<td>' + badge + '</td>' +
+            '<td>' + (r.auditoria || '') + '</td>' +
+            '</tr>';
+        }).join('');
+      } catch (e) {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b;padding:24px">Erro: ' + e.message + '</td></tr>';
+      }
+    }
+
+    function exportarErros() {
+      if (!errosAtual.length) { alert('Faca uma busca primeiro.'); return; }
+      const cab = 'data,responsavel,saca_id,qtd,ip,motivo,auditoria';
+      const linhas = errosAtual.map(r =>
+        ['data','responsavel','saca_id','qtd','ip','motivo','auditoria']
+        .map(k => '"' + String(r[k] ?? '').replace(/"/g, '""') + '"').join(',')
+      );
+      baixarCSV(cab + '\n' + linhas.join('\n'), 'erros-impressao-' + new Date().toISOString().slice(0,10) + '.csv');
+    }
+
+    function baixarCSV(csv, nome) {
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = nome; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function gravarErro(saca_id, qtd, ip, auditoria, motivo) {
+      try {
+        await db.from('erros').insert({
+          data:        dataHoraAtual(),
+          responsavel: getV('resp'),
+          auditoria,
+          saca_id,
+          qtd,
+          ip,
+          motivo
+        });
+      } catch (_) { /* silencioso — nao bloqueia o fluxo */ }
+    }
+
+    // ---- Cliente Supabase oficial ----
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function sbCheck(result) {
+      if (result.error) throw new Error(result.error.message || JSON.stringify(result.error));
+      return result.data;
+    }
+
+    // ---- CSV Parser RFC 4180 ----
+    function parseCSV(text) {
+      if (!text) return [];
+      const rows = [];
+      let row = [], cell = '', inQ = false;
+      const s = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (inQ) {
+          if (c === '"' && s[i+1] === '"') { cell += '"'; i++; }
+          else if (c === '"') inQ = false;
+          else cell += c;
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { row.push(cell.trim()); cell = ''; }
+          else if (c === '\n') { row.push(cell.trim()); rows.push(row); row = []; cell = ''; }
+          else cell += c;
+        }
+      }
+      row.push(cell.trim());
+      if (row.some(v => v !== '')) rows.push(row);
+      return rows.filter(r => r.join('').trim() !== '');
+    }
+
+    // ---- Leitura do CSV selecionado ----
+    function carregarCSV(input, tipo) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rows = parseCSV(e.target.result);
+        const dados = rows.slice(1); // pula cabeçalho
+
+        if (tipo === 'base') {
+          dadosBase = dados
+            .map(r => ({ qr_mae: r[0]||'', saca_id: (r[1]||'').trim(), rota: r[2]||'' }))
+            .filter(r => r.saca_id);
+          document.getElementById('labelBase').innerText   = '✓ ' + file.name;
+          document.getElementById('previewBase').innerText = dadosBase.length + ' sacas carregadas';
+          document.getElementById('boxBase').classList.add('has-file');
+        } else {
+          dadosRota = dados
+            .map(r => ({ saca_id: (r[0]||'').trim(), rota: r[1]||'' }))
+            .filter(r => r.saca_id);
+          document.getElementById('labelRota').innerText   = '✓ ' + file.name;
+          document.getElementById('previewRota').innerText = dadosRota.length + ' sacas carregadas';
+          document.getElementById('boxRota').classList.add('has-file');
+        }
+
+        document.getElementById('btnImportar').disabled = !dadosBase && !dadosRota;
+        document.getElementById('importStatus').innerText = '';
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    // ---- Importa para Supabase ----
+    async function importar() {
+      const btn = document.getElementById('btnImportar');
+      const st  = document.getElementById('importStatus');
+      const bar = document.getElementById('progressFill');
+      btn.disabled = true;
+      st.style.color = '#333';
+
+      const tarefas = [];
+      if (dadosBase) tarefas.push({ tabela: 'base', dados: dadosBase });
+      if (dadosRota) tarefas.push({ tabela: 'rota', dados: dadosRota });
+
+      let progTotal = 0;
+      // Calcula total de operações: 1 delete + N batches de insert por tabela
+      const batchSize = 500;
+      for (const t of tarefas) progTotal += 1 + Math.ceil(t.dados.length / batchSize);
+      let progFeito = 0;
+
+      function atualizarBarra() {
+        progFeito++;
+        bar.style.width = Math.round((progFeito / progTotal) * 100) + '%';
+      }
+
+      try {
+        for (const { tabela, dados } of tarefas) {
+          // Apaga todos os dados antigos
+          st.innerText = 'Limpando tabela ' + tabela + '...';
+          await sbCheck(await db.from(tabela).delete().gte('id', 0));
+          atualizarBarra();
+
+          // Insere em lotes
+          const total = dados.length;
+          for (let i = 0; i < total; i += batchSize) {
+            const lote = dados.slice(i, i + batchSize);
+            st.innerText = 'Gravando ' + tabela + ': ' + Math.min(i + batchSize, total) + '/' + total;
+            await sbCheck(await db.from(tabela).insert(lote));
+            atualizarBarra();
+          }
+        }
+
+        bar.style.width = '100%';
+        bar.style.background = '#34c759';
+        st.style.color = '#34c759';
+        st.innerText = '✅ Importacao concluida! Base: ' +
+          (dadosBase ? dadosBase.length + ' sacas' : 'nao alterada') + ' | Rota: ' +
+          (dadosRota ? dadosRota.length + ' sacas' : 'nao alterada');
+
+        dadosBase = dadosRota = null;
+
+      } catch (e) {
+        st.style.color = '#ff3b30';
+        st.innerText = 'Erro: ' + e.message;
+        bar.style.background = '#ff3b30';
+      }
+      btn.disabled = false;
+    }
+
+    function abrirAtualizar() {
+      // Reset estado
+      dadosBase = dadosRota = null;
+      document.getElementById('labelBase').innerText   = '📁 Selecionar arquivo Base.csv';
+      document.getElementById('labelRota').innerText   = '📁 Selecionar arquivo Rota.csv';
+      document.getElementById('previewBase').innerText = '';
+      document.getElementById('previewRota').innerText = '';
+      document.getElementById('importStatus').innerText = '';
+      document.getElementById('progressFill').style.width      = '0%';
+      document.getElementById('progressFill').style.background = '#007aff';
+      document.getElementById('btnImportar').disabled = true;
+      document.getElementById('boxBase').classList.remove('has-file');
+      document.getElementById('boxRota').classList.remove('has-file');
+      document.getElementById('modalAtualizar').style.display = 'block';
+    }
+
+    // ---- Datas ----
     function dataHoje() {
       return new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }).format(new Date());
     }
-
     function dataHoraAtual() {
       return new Intl.DateTimeFormat('pt-BR', {
         day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
       }).format(new Date());
     }
-
     function setStatus(msg, cor) {
       const el = document.getElementById('status');
-      el.style.display  = 'block';
+      el.style.display   = 'block';
       el.style.background = cor || '#e6ffed';
       el.innerText = msg;
     }
 
     // -------- STATUS DAS ROTAS --------
     async function verStatus() {
-      document.getElementById('modal').style.display = 'block';
+      document.getElementById('modalRanking').style.display = 'block';
       document.getElementById('lista').innerHTML = 'Carregando...';
-
       try {
-        const [dadosRota, dadosLog] = await Promise.all([
-          carregarAba('sheet=Rota'),
-          carregarAba('gid=0')
+        const hoje = dataHoje();
+        const [rotaRows, logRows] = await Promise.all([
+          sbCheck(await db.from('rota').select('saca_id,rota')),
+          sbCheck(await db.from('log').select('saca_id').like('data', hoje + '%'))
         ]);
 
-        const hoje = dataHoje();
         let totalPorRota = {};
-        for (const row of dadosRota) {
-          const r = row[1];
-          if (r) totalPorRota[r] = (totalPorRota[r] || 0) + 1;
+        for (const r of rotaRows) {
+          if (r.rota) totalPorRota[r.rota] = (totalPorRota[r.rota] || 0) + 1;
         }
 
-        const sacasHoje = new Set();
-        for (const row of dadosLog) {
-          if (row[0] && row[0].startsWith(hoje) && row[3])
-            sacasHoje.add(row[3].toString().trim());
-        }
+        const sacasHoje = new Set(logRows.map(r => (r.saca_id || '').trim()));
 
         let progresso = {};
-        for (const row of dadosRota) {
-          const saca = (row[0] || '').toString().trim();
-          const rota = row[1];
-          if (!saca || !rota) continue;
-          if (!progresso[rota]) progresso[rota] = 0;
-          if (sacasHoje.has(saca)) progresso[rota]++;
+        for (const r of rotaRows) {
+          const s = (r.saca_id || '').trim(), rt = r.rota;
+          if (!s || !rt) continue;
+          if (!progresso[rt]) progresso[rt] = 0;
+          if (sacasHoje.has(s)) progresso[rt]++;
         }
 
         const ranking = [];
@@ -223,7 +1202,7 @@
         }
         ranking.sort((a, b) => b.porc - a.porc);
 
-        if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados na aba Rota.'; return; }
+        if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados.'; return; }
 
         let h = '';
         for (const d of ranking) {
@@ -236,10 +1215,8 @@
                '</div>';
         }
         document.getElementById('lista').innerHTML = h;
-
       } catch (e) {
-        document.getElementById('lista').innerHTML =
-          '<span style="color:#c0392b">Erro: ' + e.message + '</span>';
+        document.getElementById('lista').innerHTML = '<span style="color:#c0392b">Erro: ' + e.message + '</span>';
       }
     }
 
@@ -259,37 +1236,26 @@
       setStatus('Buscando saca na Base...', '#fff3cd');
 
       try {
-        const dadosBase = await carregarAba('sheet=Base');
+        const baseRows = await sbCheck(
+          await db.from('base').select('qr_mae,rota').eq('saca_id', sacaId).limit(1)
+        );
 
-        let qrMae = '', rotaSaca = '';
-        for (const row of dadosBase) {
-          if ((row[1] || '').toString().trim() === sacaId) {
-            qrMae    = row[0] || '';
-            rotaSaca = row[2] || '';
-            break;
-          }
-        }
-
-        if (!qrMae) {
+        if (!baseRows || !baseRows.length || !baseRows[0].qr_mae) {
           setStatus('Saca nao encontrada na Base!', '#ffdce0');
+          gravarErro(sacaId, qtdVal, ip, getV('log'), 'Saca nao encontrada na base');
           btn.disabled = false;
           return;
         }
+        const qrMae    = baseRows[0].qr_mae;
+        const rotaSaca = baseRows[0].rota || '';
 
         setStatus('Verificando historico...', '#fff3cd');
-        const dadosLog = await carregarAba('gid=0');
-
         const hoje = dataHoje();
-        let jaExiste = false;
-        for (let j = dadosLog.length - 1; j >= 0; j--) {
-          if (dadosLog[j][0] && dadosLog[j][0].startsWith(hoje) &&
-              (dadosLog[j][3] || '').toString().trim() === sacaId) {
-            jaExiste = true;
-            break;
-          }
-        }
+        const logHoje = await sbCheck(
+          await db.from('log').select('id').eq('saca_id', sacaId).like('data', hoje + '%').limit(1)
+        );
 
-        if (jaExiste) {
+        if (logHoje && logHoje.length > 0) {
           btn.disabled = false;
           if (!confirm('Saca ja lancada hoje.\nRegistrar nova impressao mesmo assim?')) {
             setStatus('Cancelado.', '#f2f2f7');
@@ -298,22 +1264,17 @@
           btn.disabled = true;
         }
 
-        setStatus('Registrando no sistema...', '#fff3cd');
+        setStatus('Registrando...', '#fff3cd');
         const dataStr = dataHoraAtual();
-        const form = new URLSearchParams();
-        form.append(FIELDS.data,  dataStr);
-        form.append(FIELDS.resp,  getV('resp'));
-        form.append(FIELDS.audit, getV('log'));
-        form.append(FIELDS.saca,  sacaId);
-        form.append(FIELDS.qtd,   qtdVal);
-        form.append(FIELDS.qr,    qrMae);
-        form.append(FIELDS.rota,  rotaSaca);
-
-        await fetch(URL_FORM, {
-          method: 'POST', mode: 'no-cors',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: form
-        });
+        await sbCheck(await db.from('log').insert({
+          data:        dataStr,
+          responsavel: getV('resp'),
+          auditoria:   getV('log'),
+          saca_id:     sacaId,
+          qtd:         qtdVal,
+          qr_mae:      qrMae,
+          rota:        rotaSaca
+        }));
 
         setStatus('Enviando para impressora...', '#fff3cd');
         let zpl = '';
@@ -329,11 +1290,14 @@
 
         fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
           .then(() => {
-            setStatus('Sucesso!', '#e6ffed');
+            setStatus('✅ Sucesso!', '#e6ffed');
             document.getElementById('saca').value = '';
             document.getElementById('qtd').value  = '';
           })
-          .catch(() => setStatus('Registro salvo. Erro na impressora - verifique o IP.', '#ffdce0'))
+          .catch(() => {
+            setStatus('Registro salvo. Erro na impressora — verifique o IP.', '#ffdce0');
+            gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
+          })
           .finally(() => { btn.disabled = false; });
 
       } catch (e) {
