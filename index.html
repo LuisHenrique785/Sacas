@@ -31,11 +31,6 @@
     .progress-bar { height: 6px; background: #e5e5ea; border-radius: 3px; margin: 8px 0; overflow: hidden; }
     .progress-fill { height: 6px; background: #007aff; border-radius: 3px; transition: width .3s; }
     #setupBanner { background: #fff3cd; border: 1px solid #ffc107; padding: 14px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; width: 100%; max-width: 340px; line-height: 1.6; display: none; }
-    #httpsBanner { background: #fff8e1; border: 1.5px solid #f59e0b; padding: 13px 14px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; width: 100%; max-width: 340px; line-height: 1.7; display: none; }
-    #httpsBanner b { color: #92400e; }
-    #httpsBanner ol { margin: 6px 0 4px 18px; padding: 0; }
-    #httpsBanner li { margin-bottom: 2px; }
-    #httpsBanner .dismiss-btn { background: none; border: none; font-size: 18px; cursor: pointer; float: right; line-height: 1; color: #92400e; margin: -4px -4px 0 6px; }
     .btn-purple { width: 100%; padding: 10px; background: #6c3dd3; color: white; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: bold; }
 
     /* Log modal */
@@ -97,17 +92,6 @@
     <b>&#9888;&#65039; Supabase nao configurado</b><br>
     Preencha <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code> no HTML.<br>
     Consulte o arquivo <b>SETUP.md</b> do repositorio.
-  </div>
-
-  <div id="httpsBanner">
-    <button class="dismiss-btn" onclick="dismissHttpsBanner()" title="Fechar">&#10005;</button>
-    <b>&#128247; Impressora bloqueada pelo Chrome (HTTPS x HTTP)</b><br>
-    O Chrome impede que este site (HTTPS) fale com a impressora (HTTP).<br><br>
-    <b>Solucao sem instalar nada — Script .bat:</b><br>
-    Ao imprimir, um arquivo <b>.bat</b> sera baixado automaticamente.<br>
-    Abra-o com <b>duplo clique</b> — ele envia direto para a impressora via Windows, sem passar pelo Chrome.<br><br>
-    <b>Solucao definitiva — Zebra Browser Print:</b><br>
-    Instale em <b>zebra.com/browserprint</b> (gratis). O app detecta automaticamente e imprime sem baixar arquivos.
   </div>
 
   <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
@@ -291,7 +275,6 @@
         <button onclick="previewZPL()" style="padding:14px;background:#007aff;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#128065; VISUALIZAR</button>
         <button id="btnImprimirLivre" class="btn-green" onclick="imprimirLivre()">&#128438; IMPRIMIR</button>
       </div>
-      <button onclick="baixarScriptLivre()" style="width:100%;padding:10px;background:#5856d6;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:4px">&#128190; BAIXAR SCRIPT .BAT (alternativa sem instalacao)</button>
       <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalLivre')">FECHAR</button>
     </div>
   </div>
@@ -455,15 +438,7 @@
         document.getElementById('setupBanner').style.display = 'block';
         document.getElementById('btPrint').disabled = true;
       }
-      if (window.location.protocol === 'https:' && !localStorage.getItem('httpsBannerDismissed')) {
-        document.getElementById('httpsBanner').style.display = 'block';
-      }
     };
-
-    function dismissHttpsBanner() {
-      document.getElementById('httpsBanner').style.display = 'none';
-      localStorage.setItem('httpsBannerDismissed', '1');
-    }
 
     const getV = id => document.getElementById(id).value.trim();
     const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
@@ -832,84 +807,6 @@
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); previewBlobUrl = null; }
     }
 
-    // ── Gera script .bat que envia ZPL via TCP porta 9100 (sem navegador) ──
-    function gerarScriptBat(ip, zpl) {
-      // Codifica ZPL em Base64 (evita problemas com ^ e caracteres especiais no batch)
-      const bytes = new TextEncoder().encode(zpl);
-      let bin = '';
-      bytes.forEach(b => bin += String.fromCharCode(b));
-      const b64 = btoa(bin);
-      const ps = [
-        '$z=[System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(\'' + b64 + '\'))',
-        '$c=New-Object Net.Sockets.TcpClient(\'' + ip + '\',9100)',
-        '$s=$c.GetStream()',
-        '$b=[System.Text.Encoding]::UTF8.GetBytes($z)',
-        '$s.Write($b,0,$b.Length)',
-        '$s.Flush()',
-        '$c.Close()',
-        'Write-Host "Enviado para ' + ip + '!"'
-      ].join(';');
-      const bat = '@echo off\r\npowershell -NoProfile -NonInteractive -Command "' + ps + '"\r\npause\r\n';
-      const blob = new Blob([bat], { type: 'application/octet-stream' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'imprimir_' + ip.replace(/\./g,'_') + '.bat';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    }
-
-    function baixarScriptLivre() {
-      const ip  = document.getElementById('livreIP').value.trim();
-      const zpl = document.getElementById('zplContent').value.trim();
-      const st  = document.getElementById('livreStatus');
-      if (!ip)  { st.style.color = '#c0392b'; st.innerText = '⚠️ Informe o IP da impressora.'; return; }
-      if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL esta vazio.'; return; }
-      gerarScriptBat(ip, zpl);
-      st.style.color = '#5856d6';
-      st.innerText = '📥 Script baixado! Abra o arquivo .bat com duplo clique para imprimir.';
-    }
-
-    // ── Envio centralizado: tenta Browser Print primeiro, depois direto ──
-    async function enviarZPL(ip, zpl) {
-      // 1. Zebra Browser Print (HTTPS→HTTPS, sem bloqueio do Chrome)
-      try {
-        const ctrl = new AbortController();
-        const tid  = setTimeout(() => ctrl.abort(), 2000);
-        const bpResp = await fetch('https://localhost:9101/available', { signal: ctrl.signal });
-        clearTimeout(tid);
-        if (bpResp.ok) {
-          const devs = await bpResp.json();
-          const printers = devs.printer || [];
-          if (printers.length === 0)
-            return { ok: false, via: 'bp', msg: 'Browser Print instalado mas nenhuma impressora encontrada.' };
-          // Tenta casar pelo IP, senão usa a primeira
-          const target = printers.find(p => (p.uid||'').includes(ip) || (p.name||'').includes(ip)) || printers[0];
-          const wr = await fetch('https://localhost:9101/write', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ device: target, data: zpl })
-          });
-          return { ok: true, via: 'bp', msg: '✅ Enviado via Zebra Browser Print (' + target.name + ')' };
-        }
-      } catch (_) { /* Browser Print nao instalado ou sem resposta */ }
-
-      // 2. Direto HTTP (funciona se mixed-content estiver liberado ou em HTTP)
-      try {
-        await fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' });
-        return { ok: true, via: 'direto', msg: '✅ Enviado para a impressora!' };
-      } catch (e) {
-        const bloqueio = window.location.protocol === 'https:';
-        return {
-          ok: false, via: 'direto', bloqueioHttps: bloqueio,
-          msg: bloqueio
-            ? '❌ Chrome bloqueou HTTPS→HTTP. Use o botao "Baixar Script .bat" abaixo.'
-            : '❌ Impressora nao respondeu — verifique o IP.'
-        };
-      }
-    }
-
     async function imprimirLivre() {
       const ip  = document.getElementById('livreIP').value.trim();
       const zpl = document.getElementById('zplContent').value.trim();
@@ -919,10 +816,10 @@
       if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL esta vazio.'; return; }
       btn.disabled = true;
       st.style.color = '#666'; st.innerText = '⏳ Enviando...';
-      const res = await enviarZPL(ip, zpl);
-      st.style.color = res.ok ? '#00a650' : '#c0392b';
-      st.innerText = res.msg;
-      btn.disabled = false;
+      fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+        .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; })
+        .catch(() => { st.style.color = '#c0392b'; st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.'; })
+        .finally(() => { btn.disabled = false; });
     }
 
     // ---- Abas do modal de consulta ----
@@ -1414,22 +1311,17 @@
                  '^FO0,660^A0N,25,25^FB800,1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
         }
 
-        const res = await enviarZPL(ip, zpl);
-        if (res.ok) {
-          setStatus('✅ Sucesso!', '#e6ffed');
-          document.getElementById('saca').value = '';
-          document.getElementById('qtd').value  = '';
-        } else {
-          gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
-          if (res.bloqueioHttps) {
-            // Tenta baixar script .bat automaticamente
-            gerarScriptBat(ip, zpl);
-            setStatus('Registro salvo. ❌ HTTPS bloqueou a impressora — script .bat baixado automaticamente. Abra-o com duplo clique para imprimir.', '#ffdce0');
-          } else {
-            setStatus('Registro salvo. ' + res.msg, '#ffdce0');
-          }
-        }
-        btn.disabled = false;
+        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+          .then(() => {
+            setStatus('✅ Sucesso!', '#e6ffed');
+            document.getElementById('saca').value = '';
+            document.getElementById('qtd').value  = '';
+          })
+          .catch(() => {
+            setStatus('Registro salvo. Erro na impressora — verifique o IP.', '#ffdce0');
+            gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
+          })
+          .finally(() => { btn.disabled = false; });
 
       } catch (e) {
         setStatus('Erro: ' + e.message, '#ffdce0');
