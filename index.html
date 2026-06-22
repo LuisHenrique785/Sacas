@@ -109,6 +109,10 @@
         <option value="800x1200">Etiqueta 100 × 150 mm</option>
         <option value="1200x800">Etiqueta 150 × 100 mm</option>
       </select>
+      <button id="btnOrient" onclick="toggleOrient()"
+        style="width:100%;margin-top:7px;padding:8px;border:1.5px solid #ccc;border-radius:8px;background:white;font-size:13px;font-weight:700;cursor:pointer;color:#555">
+        &#11014; Orientacao: Normal
+      </button>
     </div>
     <input type="text"   id="log"  placeholder="Descricao Log">
     <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
@@ -443,6 +447,7 @@
       document.getElementById('resp').value = localStorage.getItem('rp') || '';
       const savedSize = savedIp ? (localStorage.getItem('lsz_' + savedIp) || '800x800') : '800x800';
       document.getElementById('labelSizeMain').value = savedSize;
+      atualizarBotaoOrient();
       if (!SUPABASE_URL || !SUPABASE_KEY) {
         document.getElementById('setupBanner').style.display = 'block';
         document.getElementById('btPrint').disabled = true;
@@ -456,14 +461,37 @@
       if (ip) localStorage.setItem('lsz_' + ip, size);
     };
 
+    function isInvertido() {
+      const ip = document.getElementById('ip').value.trim();
+      return ip ? localStorage.getItem('ori_' + ip) === 'I' : false;
+    }
+
+    function toggleOrient() {
+      const ip = document.getElementById('ip').value.trim();
+      if (!ip) return;
+      const inv = !isInvertido();
+      localStorage.setItem('ori_' + ip, inv ? 'I' : 'N');
+      atualizarBotaoOrient();
+    }
+
+    function atualizarBotaoOrient() {
+      const btn = document.getElementById('btnOrient');
+      if (!btn) return;
+      const inv = isInvertido();
+      btn.innerText = inv ? '⬇ Orientacao: Invertida (portatil)' : '⬆ Orientacao: Normal';
+      btn.style.background  = inv ? '#1a1f63' : 'white';
+      btn.style.color       = inv ? '#FFE600' : '#555';
+      btn.style.borderColor = inv ? '#1a1f63' : '#ccc';
+    }
+
     const getV = id => document.getElementById(id).value.trim();
     const sv = () => {
       const ip = getV('ip');
       localStorage.setItem('ip', ip);
       localStorage.setItem('rp', getV('resp'));
-      // Ao trocar IP, carrega o tamanho salvo para aquela impressora
       const savedSize = localStorage.getItem('lsz_' + ip) || '800x800';
       document.getElementById('labelSizeMain').value = savedSize;
+      atualizarBotaoOrient();
     };
     const fecharModal = id => document.getElementById(id).style.display = 'none';
 
@@ -1336,15 +1364,25 @@
         const fA  = Math.round(70  * sy);
         const fB  = Math.round(60  * sy);
         const fC  = Math.round(25  * sy);
+        const inv   = isInvertido();
+        const qrSz  = 7 * 29; // tamanho aproximado do QR em dots (modulo 7)
+        // Posicoes normais e invertidas (espelha verticalmente para impressoras portateis)
+        const _qrY  = inv ? ll - qrY - qrSz : qrY;
+        const _y1   = inv ? ll - y1  - fA   : y1;
+        const _y2   = inv ? ll - y2  - fB   : y2;
+        const _y3   = inv ? ll - y3  - fC   : y3;
+        const _y4   = inv ? ll - y4  - fC   : y4;
+        // Rotacao dos campos: Normal para ZT industrial, Invertida (180°) para portatil
+        const rot   = inv ? 'I' : 'N';
         let zpl = '';
         for (let k = 1; k <= qtdVal; k++) {
           const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
-          zpl += '^XA^CI28^PON^PW' + pw + '^LL' + ll + '^MD25' +
-                 '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
-                 '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
-                 '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                 '^FO0,' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('resp') + '^FS' +
-                 '^FO0,' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+          zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
+                 '^FO' + qrX + ',' + _qrY + '^BQ' + rot + ',2,7^FDQA,' + qr + '^FS' +
+                 '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                 '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                 '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('resp') + '^FS' +
+                 '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
         }
 
         fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
