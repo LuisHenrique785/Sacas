@@ -103,6 +103,12 @@
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
       <input type="text" id="ip"   placeholder="IP Impressora" onchange="sv()">
       <input type="text" id="resp" placeholder="Seu Nome"      onchange="sv()">
+      <select id="labelSizeMain" onchange="svSize()"
+        style="width:100%;padding:10px;margin:8px 0 0;border:1px solid #ccc;border-radius:8px;font-size:15px;background:white">
+        <option value="800x800">Etiqueta 100 × 100 mm</option>
+        <option value="800x1200">Etiqueta 100 × 150 mm</option>
+        <option value="1200x800">Etiqueta 150 × 100 mm</option>
+      </select>
     </div>
     <input type="text"   id="log"  placeholder="Descricao Log">
     <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
@@ -434,11 +440,15 @@
     window.onload = () => {
       document.getElementById('ip').value   = localStorage.getItem('ip') || '';
       document.getElementById('resp').value = localStorage.getItem('rp') || '';
+      const savedSize = localStorage.getItem('labelSize');
+      if (savedSize) document.getElementById('labelSizeMain').value = savedSize;
       if (!SUPABASE_URL || !SUPABASE_KEY) {
         document.getElementById('setupBanner').style.display = 'block';
         document.getElementById('btPrint').disabled = true;
       }
     };
+
+    const svSize = () => localStorage.setItem('labelSize', document.getElementById('labelSizeMain').value);
 
     const getV = id => document.getElementById(id).value.trim();
     const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
@@ -1300,15 +1310,27 @@
         }));
 
         setStatus('Enviando para impressora...', '#fff3cd');
+        const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
+        const qrMag   = Math.max(5, Math.min(10, Math.floor(pw / 100)));
+        const qrDots  = qrMag * 29;
+        const qrX     = Math.round((pw - qrDots) / 2);
+        const qrY     = Math.round(ll * 0.04);
+        const y1      = Math.round(ll * 0.45);
+        const y2      = Math.round(ll * 0.60);
+        const y3      = Math.round(ll * 0.77);
+        const y4      = Math.round(ll * 0.83);
+        const fA      = Math.min(80, Math.round(ll * 0.09));
+        const fB      = Math.min(70, Math.round(ll * 0.075));
+        const fC      = Math.min(30, Math.round(ll * 0.035));
         let zpl = '';
         for (let k = 1; k <= qtdVal; k++) {
           const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
-          zpl += '^XA^CI28^PW800^LL800^MD25' +
-                 '^FO250,30^BQN,2,7^FDQA,' + qr + '^FS' +
-                 '^FO0,360^A0N,70,70^FB800,1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
-                 '^FO0,480^A0N,60,60^FB800,1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                 '^FO0,620^A0N,25,25^FB800,1,0,C^FD' + dataStr + ' | ' + getV('resp') + '^FS' +
-                 '^FO0,660^A0N,25,25^FB800,1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+          zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
+                 '^FO' + qrX + ',' + qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
+                 '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                 '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                 '^FO0,' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('resp') + '^FS' +
+                 '^FO0,' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
         }
 
         fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
