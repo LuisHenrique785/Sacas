@@ -438,20 +438,33 @@
     let dadosRota = null;  // rows parsed do CSV Rota
 
     window.onload = () => {
-      document.getElementById('ip').value   = localStorage.getItem('ip') || '';
+      const savedIp = localStorage.getItem('ip') || '';
+      document.getElementById('ip').value   = savedIp;
       document.getElementById('resp').value = localStorage.getItem('rp') || '';
-      const savedSize = localStorage.getItem('labelSize');
-      if (savedSize) document.getElementById('labelSizeMain').value = savedSize;
+      const savedSize = savedIp ? (localStorage.getItem('lsz_' + savedIp) || '800x800') : '800x800';
+      document.getElementById('labelSizeMain').value = savedSize;
       if (!SUPABASE_URL || !SUPABASE_KEY) {
         document.getElementById('setupBanner').style.display = 'block';
         document.getElementById('btPrint').disabled = true;
       }
     };
 
-    const svSize = () => localStorage.setItem('labelSize', document.getElementById('labelSizeMain').value);
+    // Salva tamanho vinculado ao IP da impressora
+    const svSize = () => {
+      const ip   = document.getElementById('ip').value.trim();
+      const size = document.getElementById('labelSizeMain').value;
+      if (ip) localStorage.setItem('lsz_' + ip, size);
+    };
 
     const getV = id => document.getElementById(id).value.trim();
-    const sv = () => { localStorage.setItem('ip', getV('ip')); localStorage.setItem('rp', getV('resp')); };
+    const sv = () => {
+      const ip = getV('ip');
+      localStorage.setItem('ip', ip);
+      localStorage.setItem('rp', getV('resp'));
+      // Ao trocar IP, carrega o tamanho salvo para aquela impressora
+      const savedSize = localStorage.getItem('lsz_' + ip) || '800x800';
+      document.getElementById('labelSizeMain').value = savedSize;
+    };
     const fecharModal = id => document.getElementById(id).style.display = 'none';
 
     // ================================================================
