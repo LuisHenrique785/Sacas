@@ -1311,22 +1311,23 @@
 
         setStatus('Enviando para impressora...', '#fff3cd');
         const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
-        const qrMag   = Math.max(5, Math.min(10, Math.floor(pw / 100)));
-        const qrDots  = qrMag * 29;
-        const qrX     = Math.round((pw - qrDots) / 2);
-        const qrY     = Math.round(ll * 0.04);
-        const y1      = Math.round(ll * 0.45);
-        const y2      = Math.round(ll * 0.60);
-        const y3      = Math.round(ll * 0.77);
-        const y4      = Math.round(ll * 0.83);
-        const fA      = Math.min(80, Math.round(ll * 0.09));
-        const fB      = Math.min(70, Math.round(ll * 0.075));
-        const fC      = Math.min(30, Math.round(ll * 0.035));
+        // Escala a partir do layout original (800×800 / 100×100mm)
+        const sx = pw / 800;
+        const sy = ll / 800;
+        const qrX = Math.round(250 * sx);
+        const qrY = Math.round(30  * sy);
+        const y1  = Math.round(360 * sy);
+        const y2  = Math.round(480 * sy);
+        const y3  = Math.round(620 * sy);
+        const y4  = Math.round(660 * sy);
+        const fA  = Math.round(70  * sy);
+        const fB  = Math.round(60  * sy);
+        const fC  = Math.round(25  * sy);
         let zpl = '';
         for (let k = 1; k <= qtdVal; k++) {
           const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
           zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
-                 '^FO' + qrX + ',' + qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
+                 '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                  '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                  '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
                  '^FO0,' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('resp') + '^FS' +
