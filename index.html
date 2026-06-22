@@ -101,16 +101,13 @@
 
   <div id="httpsBanner">
     <button class="dismiss-btn" onclick="dismissHttpsBanner()" title="Fechar">&#10005;</button>
-    <b>&#128247; Instale o Zebra Browser Print para imprimir</b><br>
-    O app usa HTTPS e a impressora usa HTTP — o Chrome bloqueia isso.<br>
-    O <b>Zebra Browser Print</b> resolve: e um servico gratuito da Zebra que roda em segundo plano e faz a ponte.<br><br>
-    <b>Como instalar (1 vez por computador):</b>
-    <ol>
-      <li>Baixe em: <b>zebra.com/browserprint</b></li>
-      <li>Instale e deixe rodando (aparece na bandeja do Windows)</li>
-      <li>Recarregue esta pagina (F5) — o app detecta automaticamente</li>
-    </ol>
-    Apos instalar, o app usa Browser Print automaticamente e a impressora funciona normalmente.
+    <b>&#128247; Impressora bloqueada pelo Chrome (HTTPS x HTTP)</b><br>
+    O Chrome impede que este site (HTTPS) fale com a impressora (HTTP).<br><br>
+    <b>Solucao sem instalar nada — Script .bat:</b><br>
+    Ao imprimir, um arquivo <b>.bat</b> sera baixado automaticamente.<br>
+    Abra-o com <b>duplo clique</b> — ele envia direto para a impressora via Windows, sem passar pelo Chrome.<br><br>
+    <b>Solucao definitiva — Zebra Browser Print:</b><br>
+    Instale em <b>zebra.com/browserprint</b> (gratis). O app detecta automaticamente e imprime sem baixar arquivos.
   </div>
 
   <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
@@ -294,6 +291,7 @@
         <button onclick="previewZPL()" style="padding:14px;background:#007aff;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#128065; VISUALIZAR</button>
         <button id="btnImprimirLivre" class="btn-green" onclick="imprimirLivre()">&#128438; IMPRIMIR</button>
       </div>
+      <button onclick="baixarScriptLivre()" style="width:100%;padding:10px;background:#5856d6;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:4px">&#128190; BAIXAR SCRIPT .BAT (alternativa sem instalacao)</button>
       <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalLivre')">FECHAR</button>
     </div>
   </div>
@@ -834,6 +832,45 @@
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); previewBlobUrl = null; }
     }
 
+    // ── Gera script .bat que envia ZPL via TCP porta 9100 (sem navegador) ──
+    function gerarScriptBat(ip, zpl) {
+      // Codifica ZPL em Base64 (evita problemas com ^ e caracteres especiais no batch)
+      const bytes = new TextEncoder().encode(zpl);
+      let bin = '';
+      bytes.forEach(b => bin += String.fromCharCode(b));
+      const b64 = btoa(bin);
+      const ps = [
+        '$z=[System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(\'' + b64 + '\'))',
+        '$c=New-Object Net.Sockets.TcpClient(\'' + ip + '\',9100)',
+        '$s=$c.GetStream()',
+        '$b=[System.Text.Encoding]::UTF8.GetBytes($z)',
+        '$s.Write($b,0,$b.Length)',
+        '$s.Flush()',
+        '$c.Close()',
+        'Write-Host "Enviado para ' + ip + '!"'
+      ].join(';');
+      const bat = '@echo off\r\npowershell -NoProfile -NonInteractive -Command "' + ps + '"\r\npause\r\n';
+      const blob = new Blob([bat], { type: 'application/octet-stream' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'imprimir_' + ip.replace(/\./g,'_') + '.bat';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }
+
+    function baixarScriptLivre() {
+      const ip  = document.getElementById('livreIP').value.trim();
+      const zpl = document.getElementById('zplContent').value.trim();
+      const st  = document.getElementById('livreStatus');
+      if (!ip)  { st.style.color = '#c0392b'; st.innerText = '⚠️ Informe o IP da impressora.'; return; }
+      if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL esta vazio.'; return; }
+      gerarScriptBat(ip, zpl);
+      st.style.color = '#5856d6';
+      st.innerText = '📥 Script baixado! Abra o arquivo .bat com duplo clique para imprimir.';
+    }
+
     // ── Envio centralizado: tenta Browser Print primeiro, depois direto ──
     async function enviarZPL(ip, zpl) {
       // 1. Zebra Browser Print (HTTPS→HTTPS, sem bloqueio do Chrome)
@@ -865,9 +902,9 @@
       } catch (e) {
         const bloqueio = window.location.protocol === 'https:';
         return {
-          ok: false, via: 'direto',
+          ok: false, via: 'direto', bloqueioHttps: bloqueio,
           msg: bloqueio
-            ? '❌ Chrome bloqueou HTTPS→HTTP. Instale o Zebra Browser Print (veja aviso amarelo).'
+            ? '❌ Chrome bloqueou HTTPS→HTTP. Use o botao "Baixar Script .bat" abaixo.'
             : '❌ Impressora nao respondeu — verifique o IP.'
         };
       }
@@ -1383,8 +1420,14 @@
           document.getElementById('saca').value = '';
           document.getElementById('qtd').value  = '';
         } else {
-          setStatus('Registro salvo. ' + res.msg, '#ffdce0');
           gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
+          if (res.bloqueioHttps) {
+            // Tenta baixar script .bat automaticamente
+            gerarScriptBat(ip, zpl);
+            setStatus('Registro salvo. ❌ HTTPS bloqueou a impressora — script .bat baixado automaticamente. Abra-o com duplo clique para imprimir.', '#ffdce0');
+          } else {
+            setStatus('Registro salvo. ' + res.msg, '#ffdce0');
+          }
         }
         btn.disabled = false;
 
