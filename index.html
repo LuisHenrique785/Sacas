@@ -101,16 +101,16 @@
 
   <div id="httpsBanner">
     <button class="dismiss-btn" onclick="dismissHttpsBanner()" title="Fechar">&#10005;</button>
-    <b>&#128247; Impressora local bloqueada pelo Chrome</b><br>
-    O app usa HTTPS, mas a impressora responde em HTTP. O Chrome bloqueia isso por padrao.<br>
-    <b>Como liberar (1 vez por computador):</b>
+    <b>&#128247; Instale o Zebra Browser Print para imprimir</b><br>
+    O app usa HTTPS e a impressora usa HTTP — o Chrome bloqueia isso.<br>
+    O <b>Zebra Browser Print</b> resolve: e um servico gratuito da Zebra que roda em segundo plano e faz a ponte.<br><br>
+    <b>Como instalar (1 vez por computador):</b>
     <ol>
-      <li>Clique no <b>&#128274;</b> na barra de endereco do Chrome</li>
-      <li>Clique em <b>Configuracoes do site</b></li>
-      <li>Role ate <b>Conteudo misto</b> &rarr; mude para <b>Permitir</b></li>
-      <li><b>Recarregue</b> a pagina (F5)</li>
+      <li>Baixe em: <b>zebra.com/browserprint</b></li>
+      <li>Instale e deixe rodando (aparece na bandeja do Windows)</li>
+      <li>Recarregue esta pagina (F5) — o app detecta automaticamente</li>
     </ol>
-    Feito isso, as impressoras locais vao funcionar normalmente.
+    Apos instalar, o app usa Browser Print automaticamente e a impressora funciona normalmente.
   </div>
 
   <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
@@ -834,6 +834,45 @@
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); previewBlobUrl = null; }
     }
 
+    // ── Envio centralizado: tenta Browser Print primeiro, depois direto ──
+    async function enviarZPL(ip, zpl) {
+      // 1. Zebra Browser Print (HTTPS→HTTPS, sem bloqueio do Chrome)
+      try {
+        const ctrl = new AbortController();
+        const tid  = setTimeout(() => ctrl.abort(), 2000);
+        const bpResp = await fetch('https://localhost:9101/available', { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (bpResp.ok) {
+          const devs = await bpResp.json();
+          const printers = devs.printer || [];
+          if (printers.length === 0)
+            return { ok: false, via: 'bp', msg: 'Browser Print instalado mas nenhuma impressora encontrada.' };
+          // Tenta casar pelo IP, senão usa a primeira
+          const target = printers.find(p => (p.uid||'').includes(ip) || (p.name||'').includes(ip)) || printers[0];
+          const wr = await fetch('https://localhost:9101/write', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device: target, data: zpl })
+          });
+          return { ok: true, via: 'bp', msg: '✅ Enviado via Zebra Browser Print (' + target.name + ')' };
+        }
+      } catch (_) { /* Browser Print nao instalado ou sem resposta */ }
+
+      // 2. Direto HTTP (funciona se mixed-content estiver liberado ou em HTTP)
+      try {
+        await fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' });
+        return { ok: true, via: 'direto', msg: '✅ Enviado para a impressora!' };
+      } catch (e) {
+        const bloqueio = window.location.protocol === 'https:';
+        return {
+          ok: false, via: 'direto',
+          msg: bloqueio
+            ? '❌ Chrome bloqueou HTTPS→HTTP. Instale o Zebra Browser Print (veja aviso amarelo).'
+            : '❌ Impressora nao respondeu — verifique o IP.'
+        };
+      }
+    }
+
     async function imprimirLivre() {
       const ip  = document.getElementById('livreIP').value.trim();
       const zpl = document.getElementById('zplContent').value.trim();
@@ -843,16 +882,10 @@
       if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL esta vazio.'; return; }
       btn.disabled = true;
       st.style.color = '#666'; st.innerText = '⏳ Enviando...';
-      fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-        .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; })
-        .catch(() => {
-          const httpsMsg = window.location.protocol === 'https:'
-            ? ' (HTTPS bloqueou HTTP — veja o aviso amarelo na tela principal)'
-            : '';
-          st.style.color = '#c0392b';
-          st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.' + httpsMsg;
-        })
-        .finally(() => { btn.disabled = false; });
+      const res = await enviarZPL(ip, zpl);
+      st.style.color = res.ok ? '#00a650' : '#c0392b';
+      st.innerText = res.msg;
+      btn.disabled = false;
     }
 
     // ---- Abas do modal de consulta ----
@@ -1344,19 +1377,16 @@
                  '^FO0,660^A0N,25,25^FB800,1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
         }
 
-        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-          .then(() => {
-            setStatus('✅ Sucesso!', '#e6ffed');
-            document.getElementById('saca').value = '';
-            document.getElementById('qtd').value  = '';
-          })
-          .catch(() => {
-            const httpsMsg = window.location.protocol === 'https:'
-              ? ' — HTTPS pode estar bloqueando HTTP (veja aviso amarelo)' : '';
-            setStatus('Registro salvo. Impressora nao respondeu' + httpsMsg + '.', '#ffdce0');
-            gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
-          })
-          .finally(() => { btn.disabled = false; });
+        const res = await enviarZPL(ip, zpl);
+        if (res.ok) {
+          setStatus('✅ Sucesso!', '#e6ffed');
+          document.getElementById('saca').value = '';
+          document.getElementById('qtd').value  = '';
+        } else {
+          setStatus('Registro salvo. ' + res.msg, '#ffdce0');
+          gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
+        }
+        btn.disabled = false;
 
       } catch (e) {
         setStatus('Erro: ' + e.message, '#ffdce0');
