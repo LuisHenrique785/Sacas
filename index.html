@@ -1339,7 +1339,7 @@
         let zpl = '';
         for (let k = 1; k <= qtdVal; k++) {
           const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
-          zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
+          zpl += '^XA^CI28^PON^PW' + pw + '^LL' + ll + '^MD25' +
                  '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                  '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                  '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
