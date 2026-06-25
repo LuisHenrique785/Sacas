@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema Auditoria - Oficial</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { font-family: sans-serif; background: #f2f2f7; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
@@ -235,9 +236,9 @@
           &#128196; Abrir ZPL
           <input type="file" accept=".txt,.zpl,.label,.prn" onchange="carregarArquivoLivre(this)">
         </label>
-        <label class="btn-action file-btn" title="Inserir imagem na etiqueta (PNG, JPG, BMP)" style="color:#8b5cf6;border-color:#8b5cf6">
-          &#128247; Inserir imagem
-          <input type="file" accept="image/png,image/jpeg,image/bmp,image/gif" onchange="inserirImagem(this)">
+        <label class="btn-action file-btn" title="Inserir imagem ou PDF na etiqueta (PNG, JPG, BMP, PDF)" style="color:#8b5cf6;border-color:#8b5cf6">
+          &#128247; Inserir imagem / PDF
+          <input type="file" accept="image/png,image/jpeg,image/bmp,image/gif,application/pdf" onchange="inserirImagem(this)">
         </label>
         <button class="btn-action" onclick="gerarTemplateLivre()">&#128203; Gerar template</button>
         <button class="btn-action" onclick="document.getElementById('zplContent').value=''">&#128465; Limpar</button>
@@ -625,6 +626,11 @@
       const file = input.files[0];
       if (!file) return;
       const st = document.getElementById('livreStatus');
+      if (file.type === 'application/pdf') {
+        st.style.color = '#666'; st.innerText = '⏳ Carregando PDF...';
+        carregarPDF(file, st, input);
+        return;
+      }
       st.style.color = '#666'; st.innerText = '⏳ Carregando imagem...';
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -638,6 +644,36 @@
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
+    }
+
+    async function carregarPDF(file, st, input) {
+      try {
+        if (typeof pdfjsLib === 'undefined') {
+          st.style.color = '#c0392b'; st.innerText = '❌ PDF.js nao carregou. Verifique sua conexao.';
+          return;
+        }
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let pageNum = 1;
+        if (pdf.numPages > 1) {
+          const resp = prompt('PDF tem ' + pdf.numPages + ' paginas. Qual pagina deseja usar? (1-' + pdf.numPages + ')', '1');
+          const parsed = parseInt(resp);
+          if (!isNaN(parsed) && parsed >= 1 && parsed <= pdf.numPages) pageNum = parsed;
+        }
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 3 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        const dataUrl = canvas.toDataURL('image/png');
+        st.innerText = '';
+        input.value = '';
+        abrirEditorVisual(dataUrl, canvas.width, canvas.height);
+      } catch (err) {
+        st.style.color = '#c0392b'; st.innerText = '❌ Erro ao ler PDF: ' + err.message;
+      }
     }
 
     // ════════════════════════════════════════════════
