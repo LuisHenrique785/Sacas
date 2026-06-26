@@ -1064,6 +1064,7 @@
         const saca  = document.getElementById('filtroSaca').value.trim();
 
         let q = db.from('log').select('*').order('id', { ascending: false }).limit(2000);
+        if (getV('svc')) q = q.eq('svc', getV('svc'));
         if (resp)  q = q.ilike('responsavel', '%' + resp  + '%');
         if (rota)  q = q.ilike('rota',        '%' + rota  + '%');
         if (audit) q = q.ilike('auditoria',   '%' + audit + '%');
@@ -1134,6 +1135,7 @@
         const motivo = document.getElementById('erroMotivo').value;
 
         let q = db.from('erros').select('*').order('id', { ascending: false }).limit(2000);
+        if (getV('svc')) q = q.eq('svc', getV('svc'));
         if (resp)   q = q.ilike('responsavel', '%' + resp   + '%');
         if (saca)   q = q.ilike('saca_id',     '%' + saca   + '%');
         if (motivo) q = q.ilike('motivo',       '%' + motivo + '%');
@@ -1199,6 +1201,7 @@
       try {
         await db.from('erros').insert({
           data:        dataHoraAtual(),
+          svc:         getV('svc'),
           responsavel: (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp'),
           auditoria,
           saca_id,
@@ -1426,6 +1429,11 @@
       const sacaId = getV('saca');
       const qtdVal = parseInt(getV('qtd'));
 
+      if (!getV('svc')) {
+        alert('Selecione o SVC antes de imprimir.');
+        document.getElementById('svc').focus();
+        return;
+      }
       if (!ip || !sacaId || !qtdVal || qtdVal < 1) {
         alert('Preencha IP da impressora, Nº Saca e Quantidade.');
         return;
@@ -1467,6 +1475,7 @@
         const dataStr = dataHoraAtual();
         await sbCheck(await db.from('log').insert({
           data:        dataStr,
+          svc:         getV('svc'),
           responsavel: (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp'),
           auditoria:   getV('log'),
           saca_id:     sacaId,
