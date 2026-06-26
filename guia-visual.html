@@ -950,11 +950,15 @@ body {
           <div class="app-m-title">📦 Auditoria de Sacas</div>
           <div class="app-m-field">
             <div class="app-m-label">IP da Impressora Zebra</div>
-            <div class="app-m-input">10.29.180.108</div>
+            <div class="app-m-input filled">10.29.180.108</div>
+          </div>
+          <div class="app-m-field">
+            <div class="app-m-label">SVC</div>
+            <div class="app-m-input filled" style="border-color:#1a1f63;color:#1a1f63;font-weight:700">SMG3</div>
           </div>
           <div class="app-m-field">
             <div class="app-m-label">Responsável</div>
-            <div class="app-m-input">Seu nome</div>
+            <div class="app-m-input filled">Luis Henrique</div>
           </div>
           <div class="app-m-field">
             <div class="app-m-label">Tipo de Auditoria</div>
@@ -1001,7 +1005,11 @@ body {
           <div class="app-m-title">📦 Auditoria de Sacas</div>
           <div class="app-m-field">
             <div class="app-m-label">IP da Impressora Zebra</div>
-            <div class="app-m-input">10.29.180.108</div>
+            <div class="app-m-input filled">10.29.180.108</div>
+          </div>
+          <div class="app-m-field">
+            <div class="app-m-label">SVC</div>
+            <div class="app-m-input filled" style="border-color:#1a1f63;color:#1a1f63;font-weight:700">SMG3</div>
           </div>
           <div class="btn-print" style="opacity:.4">IMPRIMIR</div>
           <div class="btn-status" style="opacity:.4">📊 VER STATUS ROTAS</div>
@@ -1030,7 +1038,8 @@ body {
   </div>
   <div class="step-body">
     <ol>
-      <li>Na janela que abriu, clique na área <b>"📁 Selecionar arquivo Base.csv"</b></li>
+      <li>Na janela que abriu, selecione o <b>SVC de destino</b> no campo do topo (ex: SMG3)</li>
+      <li>Clique na área <b>"📁 Selecionar arquivo Base.csv"</b></li>
       <li>A janela de arquivos do computador vai abrir — navegue até <b>Downloads</b></li>
       <li>Selecione <b>Base.csv</b> e clique em <b>Abrir</b></li>
       <li>Embaixo da área vai aparecer em <b>verde</b>: "XXXX sacas carregadas"</li>
@@ -1051,6 +1060,11 @@ body {
           <div class="modal-box">
             <div class="modal-title">⬆️ Atualizar Base / Rota</div>
             <div class="modal-desc">Baixe as abas como CSV no Google Sheets e selecione os arquivos abaixo para atualizar o banco de dados.</div>
+            <div class="upload-section-label">SVC de destino</div>
+            <div style="border:2px solid #1a1f63;border-radius:8px;padding:8px 10px;background:#e8eaf6;margin-bottom:10px;font-size:13px;font-weight:700;color:#1a1f63;display:flex;align-items:center;gap:6px">
+              &#9660; SMG3
+              <span style="margin-left:auto;font-size:10px;font-weight:400;color:#666">← selecione antes de importar</span>
+            </div>
             <div class="upload-section-label">Base (qr_mae / saca_id / rota)</div>
             <div class="upload-drop hl-yellow" style="outline-color:#ff9500;cursor:pointer">
               <div class="uicon">📁</div>
@@ -1069,9 +1083,13 @@ body {
         </div>
       </div>
     </div>
+    <div class="callout warn">
+      <div class="callout-icon">⚠️</div>
+      <p><b>Selecione o SVC primeiro!</b> O botão IMPORTAR só fica ativo depois que o SVC estiver escolhido. Cada SVC tem sua base separada — nunca se misturam.</p>
+    </div>
     <div class="callout info">
       <div class="callout-icon">👆</div>
-      <p>Clique na área <b>Base</b> destacada. A janela de seleção de arquivo do seu computador vai abrir — vá em <b>Downloads</b> e selecione o <b>Base.csv</b>.</p>
+      <p>Após escolher o SVC, clique na área <b>Base</b> destacada. A janela de seleção de arquivo vai abrir — vá em <b>Downloads</b> e selecione o <b>Base.csv</b>.</p>
     </div>
     <div class="callout warn">
       <div class="callout-icon">⚠️</div>
@@ -1113,6 +1131,10 @@ body {
           <div class="modal-box">
             <div class="modal-title">⬆️ Atualizar Base / Rota</div>
             <div class="modal-desc">Arquivos carregados! Clique em Importar para enviar ao banco.</div>
+            <div class="upload-section-label">SVC de destino</div>
+            <div style="border:2px solid #1a1f63;border-radius:8px;padding:8px 10px;background:#e8eaf6;margin-bottom:10px;font-size:13px;font-weight:700;color:#1a1f63">
+              &#9660; SMG3
+            </div>
             <div class="upload-section-label">Base (qr_mae / saca_id / rota)</div>
             <div class="upload-drop done">
               <div class="uicon">✅</div>
@@ -1294,11 +1316,15 @@ body {
     </div>
     <div class="sum-row">
       <div class="sum-n">5</div>
-      <div class="sum-txt">Selecionar <b>Base.csv</b> → selecionar <b>Rota.csv</b></div>
+      <div class="sum-txt">Selecionar o <b>SVC de destino</b> (SMG3, SSP14, SSP11…)</div>
     </div>
     <div class="sum-row">
       <div class="sum-n">6</div>
-      <div class="sum-txt">Clicar <b>IMPORTAR PARA O BANCO</b> → aguardar → <b>OK</b> → <b>FECHAR</b></div>
+      <div class="sum-txt">Selecionar <b>Base.csv</b> → selecionar <b>Rota.csv</b></div>
+    </div>
+    <div class="sum-row">
+      <div class="sum-n">7</div>
+      <div class="sum-txt">Clicar <b>IMPORTAR PARA O BANCO</b> → aguardar → <b>FECHAR</b></div>
     </div>
   </div>
 </div>
@@ -1324,14 +1350,19 @@ body {
       </thead>
       <tbody>
         <tr>
+          <td>"Selecione o SVC antes de imprimir"</td>
+          <td>Campo SVC vazio na tela principal</td>
+          <td>Selecione o SVC no campo entre IP e Nome antes de imprimir</td>
+        </tr>
+        <tr>
           <td>"0 sacas carregadas"</td>
           <td>Arquivo CSV errado ou da aba errada</td>
           <td>Verifique se baixou a aba correta (Base ou Rota)</td>
         </tr>
         <tr>
           <td>Botão IMPORTAR continua cinza</td>
-          <td>Nenhum arquivo válido selecionado</td>
-          <td>Selecione pelo menos um dos dois arquivos</td>
+          <td>SVC não selecionado ou nenhum arquivo carregado</td>
+          <td>Escolha o SVC de destino e selecione pelo menos um arquivo CSV</td>
         </tr>
         <tr>
           <td>Barra trava no meio</td>
