@@ -127,6 +127,7 @@
         <option value="800x800">Etiqueta 100 × 100 mm</option>
         <option value="800x1200">Etiqueta 100 × 150 mm</option>
         <option value="1200x800">Etiqueta 150 × 100 mm</option>
+        <option value="640x320">Etiqueta 80 × 40 mm (horizontal)</option>
       </select>
       <button id="btnOrient" onclick="toggleOrient()"
         style="width:100%;margin-top:7px;padding:8px;border:1.5px solid #ccc;border-radius:8px;background:white;font-size:13px;font-weight:700;cursor:pointer;color:#555">
@@ -1486,37 +1487,59 @@
 
         setStatus('Enviando para impressora...', '#fff3cd');
         const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
-        // Escala a partir do layout original (800×800 / 100×100mm)
-        const sx = pw / 800;
-        const sy = ll / 800;
-        const qrX = Math.round(250 * sx);
-        const qrY = Math.round(30  * sy);
-        const y1  = Math.round(360 * sy);
-        const y2  = Math.round(480 * sy);
-        const y3  = Math.round(620 * sy);
-        const y4  = Math.round(660 * sy);
-        const fA  = Math.round(70  * sy);
-        const fB  = Math.round(60  * sy);
-        const fC  = Math.round(25  * sy);
-        const inv   = isInvertido();
-        const qrSz  = 7 * 29; // tamanho aproximado do QR em dots (modulo 7)
-        // Posicoes normais e invertidas (espelha verticalmente para impressoras portateis)
-        const _qrY  = inv ? ll - qrY - qrSz : qrY;
-        const _y1   = inv ? ll - y1  - fA   : y1;
-        const _y2   = inv ? ll - y2  - fB   : y2;
-        const _y3   = inv ? ll - y3  - fC   : y3;
-        const _y4   = inv ? ll - y4  - fC   : y4;
-        // Rotacao dos campos: Normal para ZT industrial, Invertida (180°) para portatil
-        const rot   = inv ? 'I' : 'N';
+        const inv = isInvertido();
+        const rot = inv ? 'I' : 'N';
+        const svcResp = (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp');
         let zpl = '';
-        for (let k = 1; k <= qtdVal; k++) {
-          const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
-          zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
-                 '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
-                 '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
-                 '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                 '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp') + '^FS' +
-                 '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+
+        if (pw === 640 && ll === 320) {
+          // Layout horizontal 80×40mm: QR à esquerda, texto empilhado à direita
+          const qrMag  = 4;
+          const qrDots = qrMag * 29; // ~116 dots
+          const tX     = 135;
+          const tW     = pw - tX - 5;
+          for (let k = 1; k <= qtdVal; k++) {
+            const qr   = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
+            const _qrY = inv ? ll - 10 - qrDots : 10;
+            const _y1  = inv ? ll - 12  - 50     : 12;
+            const _y2  = inv ? ll - 68  - 42     : 68;
+            const _y3  = inv ? ll - 116 - 24     : 116;
+            const _y4  = inv ? ll - 146 - 24     : 146;
+            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
+                   '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
+                   '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                   '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + svcResp + '^FS' +
+                   '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+          }
+        } else {
+          // Layout proporcional para 100×100, 100×150, 150×100
+          const sx = pw / 800;
+          const sy = ll / 800;
+          const qrX  = Math.round(250 * sx);
+          const qrY  = Math.round(30  * sy);
+          const y1   = Math.round(360 * sy);
+          const y2   = Math.round(480 * sy);
+          const y3   = Math.round(620 * sy);
+          const y4   = Math.round(660 * sy);
+          const fA   = Math.round(70  * sy);
+          const fB   = Math.round(60  * sy);
+          const fC   = Math.round(25  * sy);
+          const qrSz = 7 * 29;
+          const _qrY = inv ? ll - qrY - qrSz : qrY;
+          const _y1  = inv ? ll - y1  - fA   : y1;
+          const _y2  = inv ? ll - y2  - fB   : y2;
+          const _y3  = inv ? ll - y3  - fC   : y3;
+          const _y4  = inv ? ll - y4  - fC   : y4;
+          for (let k = 1; k <= qtdVal; k++) {
+            const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
+            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
+                   '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
+                   '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                   '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                   '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + svcResp + '^FS' +
+                   '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+          }
         }
 
         fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
