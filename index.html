@@ -103,6 +103,13 @@
   <div class="card">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
       <input type="text" id="ip"   placeholder="IP Impressora" onchange="sv()">
+      <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()"
+        style="width:100%;padding:10px;margin:8px 0 0;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box">
+      <datalist id="svcList">
+        <option value="SMG3">
+        <option value="SSP14">
+        <option value="SSP11">
+      </datalist>
       <input type="text" id="resp" placeholder="Seu Nome"      onchange="sv()">
       <select id="labelSizeMain" onchange="svSize()"
         style="width:100%;padding:10px;margin:8px 0 0;border:1px solid #ccc;border-radius:8px;font-size:15px;background:white">
@@ -445,6 +452,7 @@
     window.onload = () => {
       const savedIp = localStorage.getItem('ip') || '';
       document.getElementById('ip').value   = savedIp;
+      document.getElementById('svc').value  = localStorage.getItem('svc') || '';
       document.getElementById('resp').value = localStorage.getItem('rp') || '';
       const savedSize = savedIp ? (localStorage.getItem('lsz_' + savedIp) || '800x800') : '800x800';
       document.getElementById('labelSizeMain').value = savedSize;
@@ -489,6 +497,7 @@
     const sv = () => {
       const ip = getV('ip');
       localStorage.setItem('ip', ip);
+      localStorage.setItem('svc', getV('svc'));
       localStorage.setItem('rp', getV('resp'));
       const savedSize = localStorage.getItem('lsz_' + ip) || '800x800';
       document.getElementById('labelSizeMain').value = savedSize;
@@ -1116,7 +1125,7 @@
       try {
         await db.from('erros').insert({
           data:        dataHoraAtual(),
-          responsavel: getV('resp'),
+          responsavel: (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp'),
           auditoria,
           saca_id,
           qtd,
@@ -1378,7 +1387,7 @@
         const dataStr = dataHoraAtual();
         await sbCheck(await db.from('log').insert({
           data:        dataStr,
-          responsavel: getV('resp'),
+          responsavel: (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp'),
           auditoria:   getV('log'),
           saca_id:     sacaId,
           qtd:         qtdVal,
@@ -1417,7 +1426,7 @@
                  '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                  '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                  '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                 '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('resp') + '^FS' +
+                 '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp') + '^FS' +
                  '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
         }
 
