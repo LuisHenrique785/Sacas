@@ -103,13 +103,24 @@
   <div class="card">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
       <input type="text" id="ip"   placeholder="IP Impressora" onchange="sv()">
-      <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()"
-        style="width:100%;padding:10px;margin:8px 0 0;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box">
-      <datalist id="svcList">
-        <option value="SMG3">
-        <option value="SSP14">
-        <option value="SSP11">
-      </datalist>
+      <div style="display:flex;gap:6px;align-items:stretch;margin:8px 0 0">
+        <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()"
+          style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;min-width:0">
+        <button onclick="toggleManageSVC()" title="Gerenciar SVCs"
+          style="padding:10px 13px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer;font-size:16px;flex-shrink:0">&#9881;</button>
+      </div>
+      <datalist id="svcList"></datalist>
+      <div id="svcManagePanel" style="display:none;background:#f0f0f5;border-radius:8px;padding:10px;margin-top:4px">
+        <div style="font-size:11px;font-weight:800;color:#777;letter-spacing:.5px;margin-bottom:6px">GERENCIAR SVCs</div>
+        <div id="svcManageList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input id="svcNewInput" type="text" placeholder="Novo SVC (ex: SSP20)"
+            style="flex:1;padding:7px 10px;border:1px solid #ccc;border-radius:7px;font-size:13px;min-width:0"
+            onkeydown="if(event.key==='Enter')addSVC()">
+          <button onclick="addSVC()"
+            style="padding:7px 12px;border:none;border-radius:7px;background:#1a1f63;color:#FFE600;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">+ Adicionar</button>
+        </div>
+      </div>
       <input type="text" id="resp" placeholder="Seu Nome"      onchange="sv()">
       <select id="labelSizeMain" onchange="svSize()"
         style="width:100%;padding:10px;margin:8px 0 0;border:1px solid #ccc;border-radius:8px;font-size:15px;background:white">
@@ -408,6 +419,15 @@
         Depois selecione os arquivos abaixo:
       </p>
 
+      <!-- SVC de destino -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px;font-weight:bold;margin-bottom:4px">SVC de destino &nbsp;<span style="font-weight:normal;color:#888">(qual SVC esta base pertence)</span></div>
+        <select id="svcUpload" onchange="checkImportBtn()"
+          style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;background:white">
+          <option value="">-- Selecione o SVC --</option>
+        </select>
+      </div>
+
       <!-- Upload Base -->
       <div style="margin-bottom:12px">
         <div style="font-size:13px;font-weight:bold;margin-bottom:4px">Aba: Base &nbsp;<span style="font-weight:normal;color:#888">(QR Mae | Saca ID | Rota)</span></div>
@@ -449,6 +469,59 @@
     let dadosBase = null;  // rows parsed do CSV Base
     let dadosRota = null;  // rows parsed do CSV Rota
 
+    // ---- Gerenciamento de SVCs ----
+    function getSVCAll() {
+      try {
+        const stored = JSON.parse(localStorage.getItem('svcOptions') || 'null');
+        if (Array.isArray(stored) && stored.length) return stored;
+      } catch (_) {}
+      return ['SMG3', 'SSP14', 'SSP11'];
+    }
+    function saveSVCOptions(list) { localStorage.setItem('svcOptions', JSON.stringify(list)); }
+
+    function populateSvcDatalist() {
+      const list = getSVCAll();
+      document.getElementById('svcList').innerHTML = list.map(v => `<option value="${v}">`).join('');
+    }
+    function populateSvcUpload() {
+      const list = getSVCAll();
+      const sel = document.getElementById('svcUpload');
+      sel.innerHTML = '<option value="">-- Selecione o SVC --</option>' +
+        list.map(v => `<option value="${v}">${v}</option>`).join('');
+    }
+    function checkImportBtn() {
+      const svc = document.getElementById('svcUpload').value;
+      document.getElementById('btnImportar').disabled = !svc || (!dadosBase && !dadosRota);
+    }
+    function toggleManageSVC() {
+      const p = document.getElementById('svcManagePanel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+      if (p.style.display === 'block') renderManageSVC();
+    }
+    function renderManageSVC() {
+      const list = getSVCAll();
+      document.getElementById('svcManageList').innerHTML = list.map((v, i) =>
+        `<span style="display:inline-flex;align-items:center;gap:3px;background:#e8eaf6;border-radius:5px;padding:3px 8px;font-size:13px;font-weight:700;color:#1a1f63">${v}<button onclick="removeSVC(${i})" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:13px;font-weight:900;padding:0 0 0 3px;line-height:1">×</button></span>`
+      ).join('');
+    }
+    function addSVC() {
+      const inp = document.getElementById('svcNewInput');
+      const val = inp.value.trim().toUpperCase();
+      if (!val) return;
+      const list = getSVCAll();
+      if (!list.includes(val)) { list.push(val); saveSVCOptions(list); }
+      inp.value = '';
+      populateSvcDatalist();
+      renderManageSVC();
+    }
+    function removeSVC(idx) {
+      const list = getSVCAll();
+      list.splice(idx, 1);
+      saveSVCOptions(list);
+      populateSvcDatalist();
+      renderManageSVC();
+    }
+
     window.onload = () => {
       const savedIp = localStorage.getItem('ip') || '';
       document.getElementById('ip').value   = savedIp;
@@ -457,6 +530,7 @@
       const savedSize = savedIp ? (localStorage.getItem('lsz_' + savedIp) || '800x800') : '800x800';
       document.getElementById('labelSizeMain').value = savedSize;
       atualizarBotaoOrient();
+      populateSvcDatalist();
       if (!SUPABASE_URL || !SUPABASE_KEY) {
         document.getElementById('setupBanner').style.display = 'block';
         document.getElementById('btPrint').disabled = true;
@@ -1193,7 +1267,7 @@
           document.getElementById('boxRota').classList.add('has-file');
         }
 
-        document.getElementById('btnImportar').disabled = !dadosBase && !dadosRota;
+        checkImportBtn();
         document.getElementById('importStatus').innerText = '';
       };
       reader.readAsText(file, 'UTF-8');
@@ -1201,6 +1275,12 @@
 
     // ---- Importa para Supabase ----
     async function importar() {
+      const svcSel = document.getElementById('svcUpload').value;
+      if (!svcSel) {
+        document.getElementById('importStatus').style.color = '#c0392b';
+        document.getElementById('importStatus').innerText = '⚠️ Selecione o SVC antes de importar.';
+        return;
+      }
       const btn = document.getElementById('btnImportar');
       const st  = document.getElementById('importStatus');
       const bar = document.getElementById('progressFill');
@@ -1212,7 +1292,6 @@
       if (dadosRota) tarefas.push({ tabela: 'rota', dados: dadosRota });
 
       let progTotal = 0;
-      // Calcula total de operações: 1 delete + N batches de insert por tabela
       const batchSize = 500;
       for (const t of tarefas) progTotal += 1 + Math.ceil(t.dados.length / batchSize);
       let progFeito = 0;
@@ -1224,16 +1303,14 @@
 
       try {
         for (const { tabela, dados } of tarefas) {
-          // Apaga todos os dados antigos
-          st.innerText = 'Limpando tabela ' + tabela + '...';
-          await sbCheck(await db.from(tabela).delete().gte('id', 0));
+          st.innerText = 'Limpando ' + tabela + ' do SVC ' + svcSel + '...';
+          await sbCheck(await db.from(tabela).delete().eq('svc', svcSel));
           atualizarBarra();
 
-          // Insere em lotes
           const total = dados.length;
           for (let i = 0; i < total; i += batchSize) {
-            const lote = dados.slice(i, i + batchSize);
-            st.innerText = 'Gravando ' + tabela + ': ' + Math.min(i + batchSize, total) + '/' + total;
+            const lote = dados.slice(i, i + batchSize).map(r => ({ ...r, svc: svcSel }));
+            st.innerText = 'Gravando ' + tabela + ' [' + svcSel + ']: ' + Math.min(i + batchSize, total) + '/' + total;
             await sbCheck(await db.from(tabela).insert(lote));
             atualizarBarra();
           }
@@ -1242,7 +1319,7 @@
         bar.style.width = '100%';
         bar.style.background = '#34c759';
         st.style.color = '#34c759';
-        st.innerText = '✅ Importacao concluida! Base: ' +
+        st.innerText = '✅ Importacao concluida! [' + svcSel + '] Base: ' +
           (dadosBase ? dadosBase.length + ' sacas' : 'nao alterada') + ' | Rota: ' +
           (dadosRota ? dadosRota.length + ' sacas' : 'nao alterada');
 
@@ -1257,7 +1334,6 @@
     }
 
     function abrirAtualizar() {
-      // Reset estado
       dadosBase = dadosRota = null;
       document.getElementById('labelBase').innerText   = '📁 Selecionar arquivo Base.csv';
       document.getElementById('labelRota').innerText   = '📁 Selecionar arquivo Rota.csv';
@@ -1269,6 +1345,7 @@
       document.getElementById('btnImportar').disabled = true;
       document.getElementById('boxBase').classList.remove('has-file');
       document.getElementById('boxRota').classList.remove('has-file');
+      populateSvcUpload();
       document.getElementById('modalAtualizar').style.display = 'block';
     }
 
@@ -1294,8 +1371,11 @@
       document.getElementById('lista').innerHTML = 'Carregando...';
       try {
         const hoje = dataHoje();
+        const svcAtual = getV('svc');
+        let rotaQ = db.from('rota').select('saca_id,rota');
+        if (svcAtual) rotaQ = rotaQ.eq('svc', svcAtual);
         const [rotaRows, logRows] = await Promise.all([
-          sbCheck(await db.from('rota').select('saca_id,rota')),
+          sbCheck(await rotaQ),
           sbCheck(await db.from('log').select('saca_id').like('data', hoje + '%'))
         ]);
 
@@ -1355,9 +1435,9 @@
       setStatus('Buscando saca na Base...', '#fff3cd');
 
       try {
-        const baseRows = await sbCheck(
-          await db.from('base').select('qr_mae,rota').eq('saca_id', sacaId).limit(1)
-        );
+        let baseQ = db.from('base').select('qr_mae,rota').eq('saca_id', sacaId);
+        if (getV('svc')) baseQ = baseQ.eq('svc', getV('svc'));
+        const baseRows = await sbCheck(await baseQ.limit(1));
 
         if (!baseRows || !baseRows.length || !baseRows[0].qr_mae) {
           setStatus('Saca nao encontrada na Base!', '#ffdce0');

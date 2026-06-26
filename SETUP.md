@@ -61,6 +61,12 @@ create table erros (
   motivo text
 );
 
+-- Migracao: suporte a multiplos SVCs (execute se as tabelas ja existem)
+ALTER TABLE base ADD COLUMN IF NOT EXISTS svc text;
+ALTER TABLE rota ADD COLUMN IF NOT EXISTS svc text;
+CREATE INDEX IF NOT EXISTS idx_base_svc ON base(svc);
+CREATE INDEX IF NOT EXISTS idx_rota_svc ON rota(svc);
+
 -- Libera acesso publico via chave anon (necessario para o app funcionar)
 alter table base  enable row level security;
 alter table rota  enable row level security;
