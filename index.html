@@ -1494,17 +1494,18 @@
 
         if (pw === 640 && ll === 320) {
           // Layout horizontal 80×40mm: QR à esquerda, texto empilhado à direita
-          const qrMag  = 4;
-          const qrDots = qrMag * 29; // ~116 dots
-          const tX     = 135;
+          // Mag 3 garante que mesmo QR Mãe longo (até version 7 = 45×3=135 dots) não sobrepõe texto
+          const qrMag  = 3;
+          const qrDots = qrMag * 45; // margem segura para QR Mãe longo
+          const tX     = 150;
           const tW     = pw - tX - 5;
           for (let k = 1; k <= qtdVal; k++) {
             const qr   = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
             const _qrY = inv ? ll - 10 - qrDots : 10;
-            const _y1  = inv ? ll - 12  - 50     : 12;
-            const _y2  = inv ? ll - 68  - 42     : 68;
-            const _y3  = inv ? ll - 116 - 24     : 116;
-            const _y4  = inv ? ll - 146 - 24     : 146;
+            const _y1  = inv ? ll - 10  - 50     : 10;
+            const _y2  = inv ? ll - 65  - 42     : 65;
+            const _y3  = inv ? ll - 112 - 24     : 112;
+            const _y4  = inv ? ll - 142 - 24     : 142;
             zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
                    '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
