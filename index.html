@@ -1494,18 +1494,27 @@
 
         if (pw === 640 && ll === 320) {
           // Layout horizontal 80×40mm: QR à esquerda, texto empilhado à direita
-          // Mag 3 garante que mesmo QR Mãe longo (até version 7 = 45×3=135 dots) não sobrepõe texto
+          // Mag 3: QR Mae version 7 = 45×3 = 135 dots — cabe sem sobreposição
+          // ^A0I + ^FB estende o texto para a ESQUERDA do ponto de origem,
+          // então no modo invertido o tX vai para pw-5 (extrema direita)
           const qrMag  = 3;
-          const qrDots = qrMag * 45; // margem segura para QR Mãe longo
-          const tX     = 150;
-          const tW     = pw - tX - 5;
+          const qrDots = qrMag * 45; // 135 dots (margem segura)
+          const tW     = pw - 150 - 5; // 485 dots de largura de texto
+          const tX     = inv ? pw - 5 : 150;
+          // Centraliza verticalmente: conteúdo ocupa ~166 dots dos 320 disponíveis
+          const vOff   = Math.round((ll - 166) / 2); // ~77 dots de margem
+          const qrY0 = vOff + 10;
+          const ty1  = vOff + 10;
+          const ty2  = vOff + 65;
+          const ty3  = vOff + 112;
+          const ty4  = vOff + 142;
           for (let k = 1; k <= qtdVal; k++) {
             const qr   = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
-            const _qrY = inv ? ll - 10 - qrDots : 10;
-            const _y1  = inv ? ll - 10  - 50     : 10;
-            const _y2  = inv ? ll - 65  - 42     : 65;
-            const _y3  = inv ? ll - 112 - 24     : 112;
-            const _y4  = inv ? ll - 142 - 24     : 142;
+            const _qrY = inv ? ll - qrY0 - qrDots : qrY0;
+            const _y1  = inv ? ll - ty1 - 50       : ty1;
+            const _y2  = inv ? ll - ty2 - 42       : ty2;
+            const _y3  = inv ? ll - ty3 - 24       : ty3;
+            const _y4  = inv ? ll - ty4 - 24       : ty4;
             zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
                    '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
