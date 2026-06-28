@@ -182,7 +182,7 @@
   <div style="background:white;border-radius:14px;padding:14px 16px;margin-top:10px;box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #eee">
     <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:8px">&#128269; BUSCA RÁPIDA</div>
     <div style="display:flex;gap:8px">
-      <input type="text" id="buscaInput" placeholder="N° Saca para verificar" inputmode="numeric"
+      <input type="text" id="buscaInput" placeholder="N° Saca ou Nome da Rota"
         style="flex:1;padding:9px 12px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px"
         onkeydown="if(event.key==='Enter')buscarRapido()">
       <button onclick="buscarRapido()" style="padding:9px 16px;border:none;border-radius:8px;background:#1a1f63;color:#FFE600;font-size:13px;font-weight:700;cursor:pointer">Verificar</button>
@@ -253,20 +253,6 @@
         <button style="padding:13px;background:#f2f2f7;border:none;border-radius:10px;font-size:14px;cursor:pointer" onclick="fecharModal('modalEditor')">CANCELAR</button>
         <button style="padding:13px;background:#1a1f63;color:#FFE600;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer" onclick="aplicarEditor()">&#10003; APLICAR NO ZPL</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Modal: Senha Impressao Livre -->
-  <div id="modalSenhaLivre" class="modal-bg">
-    <div class="m-cont" style="max-width:320px">
-      <h3 style="margin-top:0">&#128274; Impressao Livre — Acesso Restrito</h3>
-      <p style="font-size:13px;color:#555;margin-bottom:14px">Funcao reservada para uso autorizado.</p>
-      <input type="password" id="inputSenhaLivre" placeholder="Senha de acesso"
-             style="width:100%;padding:12px;margin:4px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px;"
-             onkeydown="if(event.key==='Enter')verificarSenhaLivre()">
-      <div id="erroSenhaLivre" style="color:#ff3b30;font-size:13px;text-align:center;margin-bottom:8px;display:none">&#10060; Senha incorreta.</div>
-      <button class="btn-navy" onclick="verificarSenhaLivre()" style="margin-bottom:8px">ACESSAR</button>
-      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalSenhaLivre')">CANCELAR</button>
     </div>
   </div>
 
@@ -364,20 +350,6 @@
         <button id="btnImprimirLivre" class="btn-green" onclick="imprimirLivre()">&#128438; IMPRIMIR</button>
       </div>
       <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalLivre')">FECHAR</button>
-    </div>
-  </div>
-
-  <!-- Modal: Senha Log -->
-  <div id="modalSenha" class="modal-bg">
-    <div class="m-cont" style="max-width:320px">
-      <h3 style="margin-top:0">&#128274; Acesso Restrito</h3>
-      <p style="font-size:13px;color:#555;margin-bottom:14px">Esta area e restrita. Informe a senha para consultar o log.</p>
-      <input type="password" id="inputSenha" placeholder="Senha de acesso"
-             style="width:100%;padding:12px;margin:4px 0 10px;border:1px solid #ccc;border-radius:8px;font-size:16px;"
-             onkeydown="if(event.key==='Enter')verificarSenha()">
-      <div id="erroSenha" style="color:#ff3b30;font-size:13px;text-align:center;margin-bottom:8px;display:none">&#10060; Senha incorreta. Tente novamente.</div>
-      <button class="btn-purple" onclick="verificarSenha()" style="margin-bottom:8px">ACESSAR</button>
-      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalSenha')">CANCELAR</button>
     </div>
   </div>
 
@@ -728,8 +700,6 @@
     // ================================================================
     // IMPRESSAO LIVRE
     // ================================================================
-    const LIVRE_SENHA = '97268054@';
-
     const TAMANHOS = {
       '80x40':   { pw: 640,  ll: 320  },
       '105x150': { pw: 840,  ll: 1200 }
@@ -813,41 +783,14 @@
     }
 
     function abrirImpressaoLivre() {
-      if (sessionStorage.getItem('livreAuth') === '1') {
-        document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
-        document.getElementById('labelSize').value = '80x40';
-        document.getElementById('customSizeRow').style.display = 'none';
-        document.getElementById('livreChip').innerText = '80 × 40 mm';
-        document.getElementById('zplContent').value = '';
-        document.getElementById('livreStatus').innerText = '';
-        document.getElementById('btnAjustarDim').style.display = 'none';
-        document.getElementById('modalLivre').style.display = 'block';
-        return;
-      }
-      document.getElementById('inputSenhaLivre').value = '';
-      document.getElementById('erroSenhaLivre').style.display = 'none';
-      document.getElementById('modalSenhaLivre').style.display = 'block';
-      setTimeout(() => document.getElementById('inputSenhaLivre').focus(), 100);
-    }
-
-    function verificarSenhaLivre() {
-      if (document.getElementById('inputSenhaLivre').value === LIVRE_SENHA) {
-        sessionStorage.setItem('livreAuth', '1');
-        fecharModal('modalSenhaLivre');
-        // Pre-preenche IP do localStorage
-        document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
-        document.getElementById('labelSize').value = '80x40';
-        document.getElementById('customSizeRow').style.display = 'none';
-        document.getElementById('livreChip').innerText = '80 × 40 mm';
-        document.getElementById('zplContent').value = '';
-        document.getElementById('livreStatus').innerText = '';
-        document.getElementById('btnAjustarDim').style.display = 'none';
-        document.getElementById('modalLivre').style.display = 'block';
-      } else {
-        document.getElementById('erroSenhaLivre').style.display = 'block';
-        document.getElementById('inputSenhaLivre').value = '';
-        document.getElementById('inputSenhaLivre').focus();
-      }
+      document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
+      document.getElementById('labelSize').value = '80x40';
+      document.getElementById('customSizeRow').style.display = 'none';
+      document.getElementById('livreChip').innerText = '80 × 40 mm';
+      document.getElementById('zplContent').value = '';
+      document.getElementById('livreStatus').innerText = '';
+      document.getElementById('btnAjustarDim').style.display = 'none';
+      document.getElementById('modalLivre').style.display = 'block';
     }
 
     // ---- Inserir imagem — abre editor visual ----
@@ -1150,20 +1093,10 @@
     function exportarAtivo() { abaAtiva === 'log' ? exportarLog() : exportarErros(); }
 
     // ---- Consulta de Log ----
-    const LOG_SENHA = '99581202@';
     let logAtual = [];
     let errosAtual = [];
 
-    function abrirLog() {
-      if (sessionStorage.getItem('logAuth') === '1') {
-        _abrirModalLog();
-        return;
-      }
-      document.getElementById('inputSenha').value = '';
-      document.getElementById('erroSenha').style.display = 'none';
-      document.getElementById('modalSenha').style.display = 'block';
-      setTimeout(() => document.getElementById('inputSenha').focus(), 100);
-    }
+    function abrirLog() { _abrirModalLog(); }
 
     function _abrirModalLog() {
       ['filtroDataDe','filtroDataAte','filtroResp','filtroRota','filtroAudit','filtroSaca',
@@ -1177,18 +1110,6 @@
       logAtual = []; errosAtual = [];
       trocarTab('log');
       document.getElementById('modalLog').style.display = 'block';
-    }
-
-    function verificarSenha() {
-      if (document.getElementById('inputSenha').value === LOG_SENHA) {
-        sessionStorage.setItem('logAuth', '1');
-        fecharModal('modalSenha');
-        _abrirModalLog();
-      } else {
-        document.getElementById('erroSenha').style.display = 'block';
-        document.getElementById('inputSenha').value = '';
-        document.getElementById('inputSenha').focus();
-      }
     }
 
     function parseDateBR(str) {
@@ -1788,35 +1709,79 @@
       ).join('');
     }
 
-    // ---- Busca Rápida ----
+    // ---- Busca Rápida (Saca ID ou Rota) ----
     async function buscarRapido() {
-      const sacaId = document.getElementById('buscaInput').value.trim();
-      const res    = document.getElementById('buscaResult');
-      if (!sacaId) return;
-      res.style.color = '#888'; res.innerText = '⏳ Buscando...';
+      const input = document.getElementById('buscaInput').value.trim();
+      const res   = document.getElementById('buscaResult');
+      if (!input) return;
+      res.style.color = '#888'; res.innerHTML = '⏳ Buscando...';
       try {
         const svc = getV('svc');
-        let q = db.from('base').select('rota').eq('saca_id', sacaId);
+
+        // 1. Tenta como Saca ID exato
+        let q = db.from('base').select('rota').eq('saca_id', input);
         if (svc) q = q.eq('svc', svc);
-        const [baseRows, logRows] = await Promise.all([
-          sbCheck(await q.limit(1)),
-          sbCheck(await db.from('log').select('data,responsavel').eq('saca_id', sacaId).order('id', { ascending: false }).limit(1))
-        ]);
-        if (!baseRows || !baseRows.length) {
-          res.style.color = '#c0392b'; res.innerText = '❌ Saca não encontrada na base' + (svc ? ' do ' + svc : '') + '.';
+        const baseRows = await sbCheck(await q.limit(1));
+
+        if (baseRows && baseRows.length) {
+          const logRows = await sbCheck(
+            await db.from('log').select('data,responsavel').eq('saca_id', input).order('id', { ascending: false }).limit(1)
+          );
+          const rota = baseRows[0].rota || '—';
+          if (logRows && logRows.length) {
+            res.style.color = '#00a650';
+            res.innerHTML = `✅ <b>${input}</b> · ${rota} · Última impressão: ${logRows[0].data} por ${logRows[0].responsavel}`;
+          } else {
+            res.style.color = '#ff9500';
+            res.innerHTML = `⚠️ <b>${input}</b> · ${rota} · Ainda não impressa.`;
+          }
           return;
         }
-        const rota = baseRows[0].rota || '—';
-        if (logRows && logRows.length) {
-          const ultimo = logRows[0];
-          res.style.color = '#00a650';
-          res.innerText = '✅ ' + sacaId + ' · ' + rota + ' · Última impressão: ' + ultimo.data + ' por ' + ultimo.responsavel;
-        } else {
-          res.style.color = '#ff9500';
-          res.innerText = '⚠️ ' + sacaId + ' · ' + rota + ' · Ainda não impressa hoje.';
+
+        // 2. Tenta como Rota (busca parcial)
+        let rQ = db.from('base').select('saca_id').ilike('rota', '%' + input + '%');
+        if (svc) rQ = rQ.eq('svc', svc);
+        const sacasBase = await sbCheck(await rQ.limit(500));
+
+        if (!sacasBase || !sacasBase.length) {
+          res.style.color = '#c0392b';
+          res.innerHTML = `❌ Nada encontrado para "<b>${input}</b>"` + (svc ? ` no ${svc}` : '') + '.';
+          return;
         }
+
+        const sacaIds = sacasBase.map(r => r.saca_id);
+        let lQ = db.from('log').select('saca_id').ilike('rota', '%' + input + '%');
+        if (svc) lQ = lQ.eq('svc', svc);
+        const logRotaRows = await sbCheck(await lQ);
+
+        const impressasSet = new Set((logRotaRows || []).map(r => r.saca_id));
+        const impressas = sacaIds.filter(s => impressasSet.has(s));
+        const pendentes = sacaIds.filter(s => !impressasSet.has(s));
+        const pct = sacaIds.length ? Math.round(impressas.length / sacaIds.length * 100) : 0;
+        const cor = pct === 100 ? '#00a650' : pct >= 50 ? '#ff9500' : '#c0392b';
+
+        const tagPend = pendentes.map(s =>
+          `<span style="display:inline-block;background:#fff3cd;border-radius:4px;padding:1px 7px;margin:2px;font-size:11px;color:#856404;font-weight:700">${s}</span>`
+        ).join('');
+        const tagImp = impressas.map(s =>
+          `<span style="display:inline-block;background:#d4edda;border-radius:4px;padding:1px 7px;margin:2px;font-size:11px;color:#155724;font-weight:700">${s}</span>`
+        ).join('');
+
+        res.style.color = '#333';
+        res.innerHTML = `
+          <div style="font-weight:800;color:${cor};margin-bottom:8px;font-size:13px">
+            Rota: <b>${input.toUpperCase()}</b> &nbsp;·&nbsp; ${impressas.length}/${sacaIds.length} impressas (${pct}%)
+            <div style="background:#e5e5ea;border-radius:4px;height:6px;margin-top:5px;overflow:hidden">
+              <div style="background:${cor};height:6px;border-radius:4px;width:${pct}%"></div>
+            </div>
+          </div>
+          ${pendentes.length ? `<div style="font-size:11px;font-weight:800;color:#856404;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">⚠️ Pendentes (${pendentes.length})</div>
+          <div style="max-height:110px;overflow-y:auto;padding:2px 0;margin-bottom:8px">${tagPend}</div>` : ''}
+          ${impressas.length ? `<div style="font-size:11px;font-weight:800;color:#155724;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">✅ Impressas (${impressas.length})</div>
+          <div style="max-height:80px;overflow-y:auto;padding:2px 0">${tagImp}</div>` : ''}
+        `;
       } catch (e) {
-        res.style.color = '#c0392b'; res.innerText = 'Erro: ' + e.message;
+        res.style.color = '#c0392b'; res.innerHTML = 'Erro: ' + e.message;
       }
     }
 
