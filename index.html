@@ -285,6 +285,12 @@
         <button onclick="imprimirMeli()" style="flex:1;padding:11px;background:#FFE600;color:#1a1f63;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer">&#128438; IMPRIMIR</button>
         <button onclick="fecharModal('modalMeli')" style="flex:1;padding:11px;background:#f2f2f7;color:#333;border:none;border-radius:10px;font-size:14px;cursor:pointer">FECHAR</button>
       </div>
+
+      <!-- Histórico de impressões Meli -->
+      <div id="meliHistoricoSec" style="display:none;margin-top:14px">
+        <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:4px">ÚLTIMAS IMPRESSÕES</div>
+        <div id="meliHistoricoList"></div>
+      </div>
     </div>
   </div>
 
@@ -734,6 +740,7 @@
       setMeliTipo('R');
       setMeliTamanho('100x150');
       document.getElementById('meliPasteArea').style.display = 'none';
+      renderMeliHistory();
       document.getElementById('modalMeli').style.display = 'flex';
     }
 
@@ -933,19 +940,82 @@
       ].join('\n');
     }
 
-    async function imprimirMeli() {
-      const zpl = gerarZPLMeli();
-      if (!zpl) return;
+    // ---- Histórico Meli ----
+    function getMeliHistory() { try { return JSON.parse(localStorage.getItem('meliHistory') || '[]'); } catch (_) { return []; } }
+    function saveMeliHistory(h) { localStorage.setItem('meliHistory', JSON.stringify(h)); }
+
+    function salvarMeliNoHistorico(zpl) {
+      const hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const entry  = {
+        hora,
+        tamanho : _meliTamanho,
+        tipo    : _meliTipo,
+        id      : (document.getElementById('meliId').value || '').trim(),
+        nome    : (document.getElementById('meliNome').value || '').trim(),
+        endereco: (document.getElementById('meliEndereco').value || '').trim(),
+        cep     : (document.getElementById('meliCep').value || '').trim(),
+        cidade  : (document.getElementById('meliCidade').value || '').trim(),
+        comp    : (document.getElementById('meliComp').value || '').trim(),
+        zpl
+      };
+      const h = getMeliHistory();
+      h.unshift(entry);
+      if (h.length > 10) h.pop();
+      saveMeliHistory(h);
+      renderMeliHistory();
+    }
+
+    function renderMeliHistory() {
+      const h   = getMeliHistory();
+      const el  = document.getElementById('meliHistoricoList');
+      const sec = document.getElementById('meliHistoricoSec');
+      if (!el || !sec) return;
+      if (!h.length) { sec.style.display = 'none'; return; }
+      sec.style.display = 'block';
+      el.innerHTML = h.map((e, i) =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0">
+          <div style="font-size:12px;line-height:1.4">
+            <span style="font-weight:700;color:#1a1f63">${e.hora}</span>
+            <span style="color:#888;margin:0 4px">·</span>
+            <span style="font-weight:600">${e.id || '--'}</span><br>
+            <span style="color:#888;font-size:11px">${e.nome || ''}</span>
+          </div>
+          <button onclick="reimprimirMeli(${i})" style="padding:5px 10px;background:#1a1f63;color:#FFE600;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px">↩ Reimpr.</button>
+        </div>`
+      ).join('');
+    }
+
+    async function reimprimirMeli(idx) {
+      const h = getMeliHistory();
+      if (!h[idx]) return;
+      const zpl  = h[idx].zpl;
       const mode = localStorage.getItem('printMode') || 'wifi';
       if (mode === 'usb') {
         const ok = await imprimirViaUSB(zpl);
-        if (ok) toast('✅ Etiqueta Meli enviada via USB!', 'ok');
+        if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
       } else {
         const ip = document.getElementById('ip').value.trim();
         if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
         fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-          .then(() => toast('✅ Etiqueta Meli enviada!', 'ok'))
-          .catch(() => toast('❌ Erro ao enviar etiqueta.', 'err'));
+          .then(() => { toast('✅ Etiqueta reimprimida!', 'ok'); beep('ok'); })
+          .catch(() => { toast('❌ Erro ao reimprimir.', 'err'); beep('err'); });
+      }
+    }
+
+    async function imprimirMeli() {
+      const zpl = gerarZPLMeli();
+      if (!zpl) return;
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      const onOk = () => { toast('✅ Etiqueta Meli enviada!', 'ok'); beep('ok'); salvarMeliNoHistorico(zpl); };
+      const onErr= () => { toast('❌ Erro ao enviar etiqueta.', 'err'); beep('err'); };
+      if (mode === 'usb') {
+        const ok = await imprimirViaUSB(zpl);
+        ok ? onOk() : onErr();
+      } else {
+        const ip = document.getElementById('ip').value.trim();
+        if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
+        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+          .then(onOk).catch(onErr);
       }
     }
 
@@ -2105,6 +2175,7 @@
 
         const _onOk = () => {
           toast('✅ Etiqueta enviada com sucesso!', 'ok');
+          beep('ok');
           document.getElementById('saca').value = '';
           document.getElementById('qtd').value  = '';
           ultimoZPL = zpl; ultimoIP = ip;
@@ -2116,6 +2187,7 @@
         const _onErr = () => {
           setStatus('Registro salvo. Erro na impressora — verifique IP/conexão.', '#ffdce0');
           toast('❌ Erro na impressora.', 'err');
+          beep('err');
           gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
           btn.disabled = false;
         };
@@ -2156,7 +2228,35 @@
       }
     }
 
-    // ---- Contador do dia + meta ----
+    // ---- Beep de confirmação / erro ----
+    function beep(tipo) {
+      try {
+        const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+        const gain = ctx.createGain();
+        gain.connect(ctx.destination);
+        if (tipo === 'ok') {
+          // Tom curto agudo — sucesso
+          const o = ctx.createOscillator();
+          o.connect(gain); o.type = 'sine'; o.frequency.value = 880;
+          gain.gain.setValueAtTime(0.25, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+          o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.18);
+        } else {
+          // Dois tons descendentes — erro
+          [440, 280].forEach((freq, i) => {
+            const o = ctx.createOscillator();
+            o.connect(gain); o.type = 'sine'; o.frequency.value = freq;
+            const t = ctx.currentTime + i * 0.18;
+            gain.gain.setValueAtTime(0.25, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+            o.start(t); o.stop(t + 0.15);
+          });
+        }
+      } catch (_) {}
+    }
+
+    // ---- Contador do dia + meta + velocidade ----
+    let _metaJaCelebrou = false;
     async function atualizarContador() {
       const svc = document.getElementById('svc').value.trim();
       const el  = document.getElementById('contadorDia');
@@ -2164,21 +2264,52 @@
       if (!svc || !SUPABASE_URL) { el.innerHTML = ''; return; }
       try {
         const hoje = dataHoje();
-        const [countRes, totalRes] = await Promise.all([
+        const [countRes, totalRes, primeiroRes] = await Promise.all([
           db.from('log').select('*', { count: 'exact', head: true }).eq('svc', svc).like('data', hoje + '%'),
-          db.from('rota').select('*', { count: 'exact', head: true }).eq('svc', svc)
+          db.from('rota').select('*', { count: 'exact', head: true }).eq('svc', svc),
+          db.from('log').select('data').eq('svc', svc).like('data', hoje + '%').order('id', { ascending: true }).limit(1)
         ]);
         const count = countRes.count || 0;
         const total = totalRes.count || 0;
+
+        // Velocidade e projeção
+        let velocidadeHTML = '';
+        if (count > 0 && primeiroRes?.length) {
+          const inicio = new Date(primeiroRes[0].data);
+          const agora  = new Date();
+          const horas  = (agora - inicio) / 3600000;
+          if (horas > 0.05) {
+            const taxa = count / horas;
+            const taxaStr = taxa.toFixed(1).replace('.', ',');
+            if (total > count) {
+              const restante   = total - count;
+              const etaMinutos = Math.round((restante / taxa) * 60);
+              const etaHora    = new Date(agora.getTime() + etaMinutos * 60000);
+              const etaStr     = etaHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+              velocidadeHTML = `<div style="font-size:11px;color:#888;margin-top:3px">⚡ ${taxaStr}/h · termina ~${etaStr}</div>`;
+            } else {
+              velocidadeHTML = `<div style="font-size:11px;color:#888;margin-top:3px">⚡ ${taxaStr} sacas/h</div>`;
+            }
+          }
+        }
+
         if (total > 0) {
           const pct = Math.round(count / total * 100);
           const cor = pct === 100 ? '#00a650' : pct >= 70 ? '#ff9500' : '#1a1f63';
           el.innerHTML = `<div style="margin-bottom:4px">📦 <b>${count}</b>/${total} sacas hoje (${pct}%)</div>
             <div style="background:#e5e5ea;border-radius:4px;height:5px;overflow:hidden">
-              <div style="background:${cor};height:5px;border-radius:4px;width:${pct}%"></div>
-            </div>`;
+              <div style="background:${cor};height:5px;border-radius:4px;width:${pct}%;transition:width .5s"></div>
+            </div>${velocidadeHTML}`;
+
+          // Celebração ao atingir 100%
+          if (pct === 100 && !_metaJaCelebrou) {
+            _metaJaCelebrou = true;
+            toast('🎉 META ATINGIDA! Todas as sacas impressas!', 'ok', 5000);
+            beep('ok'); setTimeout(() => beep('ok'), 300); setTimeout(() => beep('ok'), 600);
+          }
+          if (pct < 100) _metaJaCelebrou = false;
         } else {
-          el.innerHTML = count > 0 ? `📦 ${count} saca${count !== 1 ? 's' : ''} impressa${count !== 1 ? 's' : ''} hoje` : '';
+          el.innerHTML = count > 0 ? `📦 ${count} saca${count !== 1 ? 's' : ''} impressa${count !== 1 ? 's' : ''} hoje${velocidadeHTML}` : '';
         }
       } catch (_) {}
     }
