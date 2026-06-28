@@ -768,7 +768,9 @@
       const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
 
       // Labels to skip (PT + ES) — these are section headers/UI text, not values
-      const skip = /^(ver no|ver en|mais dados|m[aá]s datos|datos del|dados do|endere[cç]|direcc|telef|telefone|n[uú]mero|nro\.|num\.|bairro|barrio|colonia|ciudad|cidade|estado|provincia|depto|cep|c[oó]d(igo)? postal|rua|calle|direcci[oó]n|refer|tipo)/i;
+      // Lines that look like section headers or field labels — skip when looking for values
+      // Matches standalone label lines only ($ anchors to end so "Rua Fulano" is NOT skipped)
+      const skip = /^(ver (no|en) |m[aá]s datos|mais dados|datos del |dados do |endere[cç]o de|direcci[oó]n de|telef[oô]ne?$|n[uú]mero$|nro\.$|num\.$|bairro$|barrio$|colonia$|ciudad$|cidade$|estado$|provincia$|departamento$|depto$|cp$|cep$|c[oó]digo postal$|rua$|calle$|referencias?( \(opcional\))?$|tipo de|nombre (y|completo)|nome completo|datos del paquete|dados do pacote)/i;
 
       // Try multiple label variants (PT first, then ES fallback)
       function after(...labels) {
@@ -777,21 +779,21 @@
           if (i < 0) continue;
           for (let j = i + 1; j < lines.length; j++) {
             const v = lines[j];
-            if (!skip.test(v) && v.length > 1) return v;
+            if (!skip.test(v) && v.length >= 1) return v;
           }
         }
         return '';
       }
 
-      const nome    = after('Nome completo',     'Nombre completo', 'Nombre');
-      const rua     = after('Rua',               'Calle',           'Dirección', 'Direccion', 'Avenida');
-      const numero  = after('Número',            'Nro.',            'Num.',      'No.');
-      const cep     = after('CEP',               'Código postal',   'Codigo postal', 'CP');
-      const bairro  = after('Bairro',            'Barrio',          'Colonia');
+      const nome    = after('Nome completo',     'Nombre y apellido', 'Nombre completo', 'Nombre');
+      const rua     = after('Rua',               'Calle',             'Dirección',       'Direccion', 'Avenida');
+      const numero  = after('Número',            'Nro.',              'Num.',             'No.');
+      const cep     = after('CEP',               'CP',                'Código postal',    'Codigo postal');
+      const bairro  = after('Bairro',            'Barrio',            'Colonia');
       const cidade  = after('Cidade',            'Ciudad');
-      const estado  = after('Estado',            'Provincia',       'Departamento');
-      const ref     = after('Referências',       'Referencias',     'Referencia', 'Más datos');
-      const tipoEnd = after('Tipo de endereço',  'Tipo de dirección', 'Tipo de domicilio', 'Tipo de direccion');
+      const estado  = after('Estado',            'Provincia',         'Departamento');
+      const ref     = after('Referências',       'Referencias (opcional)', 'Referencias', 'Referencia');
+      const tipoEnd = after('Tipo de endereço',  'Tipo de domicilio', 'Tipo de dirección', 'Tipo de direccion');
 
       if (nome)    document.getElementById('meliNome').value     = nome;
       if (rua)     document.getElementById('meliEndereco').value = rua + (numero ? ', ' + numero : '') + (bairro ? ' - ' + bairro : '');
