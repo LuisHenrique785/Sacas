@@ -1444,9 +1444,11 @@
         const svcAtual = getV('svc');
         let rotaQ = db.from('rota').select('saca_id,rota');
         if (svcAtual) rotaQ = rotaQ.eq('svc', svcAtual);
+        let logHojeQ = db.from('log').select('saca_id').like('data', hoje + '%');
+        if (svcAtual) logHojeQ = logHojeQ.eq('svc', svcAtual);
         const [rotaRows, logRows] = await Promise.all([
           sbCheck(await rotaQ),
-          sbCheck(await db.from('log').select('saca_id').like('data', hoje + '%'))
+          sbCheck(await logHojeQ)
         ]);
 
         let totalPorRota = {};
@@ -1750,7 +1752,8 @@
         }
 
         const sacaIds = sacasBase.map(r => r.saca_id);
-        let lQ = db.from('log').select('saca_id').ilike('rota', '%' + input + '%');
+        const hoje = dataHoje();
+        let lQ = db.from('log').select('saca_id').ilike('rota', '%' + input + '%').like('data', hoje + '%');
         if (svc) lQ = lQ.eq('svc', svc);
         const logRotaRows = await sbCheck(await lQ);
 
@@ -1775,9 +1778,9 @@
               <div style="background:${cor};height:6px;border-radius:4px;width:${pct}%"></div>
             </div>
           </div>
-          ${pendentes.length ? `<div style="font-size:11px;font-weight:800;color:#856404;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">⚠️ Pendentes (${pendentes.length})</div>
+          ${pendentes.length ? `<div style="font-size:11px;font-weight:800;color:#856404;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">⚠️ Pendentes hoje (${pendentes.length})</div>
           <div style="max-height:110px;overflow-y:auto;padding:2px 0;margin-bottom:8px">${tagPend}</div>` : ''}
-          ${impressas.length ? `<div style="font-size:11px;font-weight:800;color:#155724;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">✅ Impressas (${impressas.length})</div>
+          ${impressas.length ? `<div style="font-size:11px;font-weight:800;color:#155724;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">✅ Impressas hoje (${impressas.length})</div>
           <div style="max-height:80px;overflow-y:auto;padding:2px 0">${tagImp}</div>` : ''}
         `;
       } catch (e) {
