@@ -221,6 +221,25 @@
     <div class="m-cont" style="max-width:420px">
       <h3 style="margin-top:0;color:#1a1f63">&#128230; Etiqueta Meli</h3>
 
+      <!-- Tamanho -->
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:#888;font-weight:600;display:block;margin-bottom:4px">TAMANHO DA ETIQUETA</label>
+        <div style="display:flex;gap:0;border:1.5px solid #ddd;border-radius:8px;overflow:hidden">
+          <button id="meliSz100x150" onclick="setMeliTamanho('100x150')" style="flex:1;padding:7px 2px;border:none;cursor:pointer;font-weight:700;font-size:11px;background:#1a1f63;color:#FFE600;line-height:1.3">100×150<br><span style="font-size:9px;font-weight:400">Padrão</span></button>
+          <button id="meliSz100x100" onclick="setMeliTamanho('100x100')" style="flex:1;padding:7px 2px;border:none;cursor:pointer;font-weight:700;font-size:11px;background:#f5f5f7;color:#555;line-height:1.3">100×100<br><span style="font-size:9px;font-weight:400">Quadrada</span></button>
+          <button id="meliSz150x100" onclick="setMeliTamanho('150x100')" style="flex:1;padding:7px 2px;border:none;cursor:pointer;font-weight:700;font-size:11px;background:#f5f5f7;color:#555;line-height:1.3">150×100<br><span style="font-size:9px;font-weight:400">Paisagem</span></button>
+        </div>
+      </div>
+
+      <!-- Colar dados Meli -->
+      <div style="margin-bottom:10px">
+        <button onclick="toggleMeliPaste()" style="width:100%;padding:8px;background:#f0f0f5;color:#1a1f63;border:1.5px dashed #aab;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">&#128203; Colar dados da página do Meli</button>
+        <div id="meliPasteArea" style="display:none;margin-top:6px">
+          <textarea id="meliPasteText" rows="5" placeholder="Copie tudo da página do pedido Meli (Ctrl+A, Ctrl+C) e cole aqui..." style="width:100%;box-sizing:border-box;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;resize:vertical;font-family:inherit"></textarea>
+          <button onclick="parseMeliPaste()" style="width:100%;padding:8px;background:#1a1f63;color:#FFE600;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">&#10003; PREENCHER CAMPOS AUTOMATICAMENTE</button>
+        </div>
+      </div>
+
       <div style="display:flex;flex-direction:column;gap:8px">
         <div>
           <label style="font-size:12px;color:#888;font-weight:600">ID / CÓDIGO DE BARRAS</label>
@@ -707,10 +726,14 @@
 
     // ---- Etiqueta Meli ----
     let _meliTipo = 'R';
+    let _meliTamanho = '100x150';
 
     function abrirMeli() {
       _meliTipo = 'R';
+      _meliTamanho = '100x150';
       setMeliTipo('R');
+      setMeliTamanho('100x150');
+      document.getElementById('meliPasteArea').style.display = 'none';
       document.getElementById('modalMeli').style.display = 'flex';
     }
 
@@ -722,6 +745,64 @@
         b.style.background = x === t ? '#1a1f63' : '#f5f5f7';
         b.style.color       = x === t ? '#FFE600' : '#555';
       });
+    }
+
+    function setMeliTamanho(t) {
+      _meliTamanho = t;
+      ['100x150','100x100','150x100'].forEach(x => {
+        const b = document.getElementById('meliSz' + x);
+        if (!b) return;
+        b.style.background = x === t ? '#1a1f63' : '#f5f5f7';
+        b.style.color       = x === t ? '#FFE600' : '#555';
+      });
+    }
+
+    function toggleMeliPaste() {
+      const el = document.getElementById('meliPasteArea');
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+      if (el.style.display === 'block') document.getElementById('meliPasteText').focus();
+    }
+
+    function parseMeliPaste() {
+      const raw   = document.getElementById('meliPasteText').value;
+      const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+
+      // Returns value after the line that starts with label (case-insensitive)
+      function after(label) {
+        const i = lines.findIndex(l => l.toLowerCase().startsWith(label.toLowerCase()));
+        if (i < 0 || i + 1 >= lines.length) return '';
+        // Skip lines that look like labels or UI text
+        const skip = /^(ver no|mais dados|dados do|endere|telefone|n[uú]mero|bairro|cidade|estado|cep|rua|refer|tipo)/i;
+        for (let j = i + 1; j < lines.length; j++) {
+          const v = lines[j];
+          if (!skip.test(v) && v.length > 1) return v;
+        }
+        return '';
+      }
+
+      const nome    = after('Nome completo');
+      const rua     = after('Rua');
+      const numero  = after('Número');
+      const cep     = after('CEP');
+      const bairro  = after('Bairro');
+      const cidade  = after('Cidade');
+      const estado  = after('Estado');
+      const ref     = after('Referências');
+      const tipoEnd = after('Tipo de endereço');
+
+      if (nome)    document.getElementById('meliNome').value     = nome;
+      if (rua)     document.getElementById('meliEndereco').value = rua + (numero ? ', ' + numero : '') + (bairro ? ' - ' + bairro : '');
+      if (cep)     document.getElementById('meliCep').value      = cep;
+      if (cidade)  document.getElementById('meliCidade').value   = cidade + (estado ? ' / ' + estado : '');
+      if (ref)     document.getElementById('meliComp').value     = ref;
+
+      const tipoMap = { comercial: 'C', residencial: 'R', 'agência': 'A', agencia: 'A' };
+      const tipo = tipoMap[(tipoEnd || '').toLowerCase().trim()] || null;
+      if (tipo) setMeliTipo(tipo);
+
+      document.getElementById('meliPasteArea').style.display = 'none';
+      document.getElementById('meliPasteText').value = '';
+      toast('✅ Campos preenchidos!', 'ok');
     }
 
     function zplEscape(s) {
@@ -741,52 +822,107 @@
 
       if (!id) { toast('⚠️ Informe o ID.', 'warn'); return null; }
 
-      // Label: 100x150mm → 800x1200 dots @203dpi (8 dots/mm)
-      // Layout (portrait):
-      //   [ROTA box]       y=15..90
-      //   [CODE128]        y=95, h=90
-      //   [ID centered]    y=198
-      //   [divider line]   y=246
-      //   [big SVC]        y=252
-      //   [rota › svc]     y=390
-      //   [divider]        y=435
-      //   [nome]           y=445
-      //   [endereço]        y=480
-      //   [CEP cidade]     y=515
-      //   [comp]           y=550
-      //   [QR right]       y=440, x=570
-      //   [tipo box]       y=590, x=690
+      // @203dpi: 1mm = ~8 dots
+      if (_meliTamanho === '150x100') {
+        // Landscape 1200×800: left column = barcode/SVC, right = customer/QR
+        const mid = 598;
+        const iW  = 1200 - mid - 20; // info column width ~562
+        return [
+          '^XA^PW1200^LL800',
+          // Rota box top-left
+          '^FO20,14^GB210,62,4^FS',
+          '^FO30,17^A0N,20,20^FDRota^FS',
+          '^FO30,38^A0N,38,38^FD' + (rota || '--') + '^FS',
+          // Barcode (BY1 = narrow bars, centered in left half)
+          '^FO20,84^BY1,3,76^BCN,76,N,N,N^FD' + id + '^FS',
+          // ID text under barcode
+          '^FO20,170^A0N,22,22^FB' + (mid - 40) + ',1,0,C^FD' + id + '^FS',
+          // Big SVC
+          '^FO20,200^A0N,90,90^FB' + (mid - 40) + ',1,0,C^FD' + svcLabel + '^FS',
+          // Rota › SVC
+          '^FO20,305^A0N,22,22^FD' + (rota || '--') + ' > ' + svcLabel + '^FS',
+          // Tipo box bottom-left
+          '^FO468,655^GB100,100,4^FS',
+          '^FO472,659^A0N,88,88^FD' + tipo + '^FS',
+          // Vertical divider
+          '^FO' + mid + ',0^GB4,800,4^FS',
+          // Customer info right column
+          '^FO618,18^A0N,28,28^FB' + iW + ',1,0,L^FD' + nome + '^FS',
+          '^FO618,54^A0N,24,24^FB' + iW + ',1,0,L^FD' + endereco + '^FS',
+          '^FO618,86^A0N,24,24^FB' + iW + ',1,0,L^FDCEP: ' + cep + '^FS',
+          '^FO618,118^A0N,24,24^FB' + iW + ',1,0,L^FD' + cidade + '^FS',
+          '^FO618,150^A0N,22,22^FB' + iW + ',1,0,L^FD' + comp + '^FS',
+          // QR right bottom
+          '^FO880,400^BQN,2,5^FDQA,' + id + '^FS',
+          '^XZ'
+        ].join('\n');
+      }
 
+      if (_meliTamanho === '100x100') {
+        // Square portrait 800×800
+        return [
+          '^XA^PW800^LL800',
+          // Rota box
+          '^FO20,12^GB200,56,4^FS',
+          '^FO30,15^A0N,18,18^FDRota^FS',
+          '^FO30,34^A0N,36,36^FD' + (rota || '--') + '^FS',
+          // Barcode centered-ish (BY1 = narrow)
+          '^FO60,74^BY1,3,72^BCN,72,N,N,N^FD' + id + '^FS',
+          // ID text
+          '^FO20,156^A0N,22,22^FB760,1,0,C^FD' + id + '^FS',
+          // Divider
+          '^FO0,184^GB800,3,3^FS',
+          // Big SVC
+          '^FO20,190^A0N,70,70^FB760,1,0,C^FD' + svcLabel + '^FS',
+          // Rota › SVC
+          '^FO20,272^A0N,22,22^FD' + (rota || '--') + ' > ' + svcLabel + '^FS',
+          // Divider
+          '^FO0,300^GB800,3,3^FS',
+          // Customer info (left, with room for QR)
+          '^FO20,310^A0N,22,22^FB520,1,0,L^FD' + nome + '^FS',
+          '^FO20,340^A0N,20,20^FB520,1,0,L^FD' + endereco + '^FS',
+          '^FO20,368^A0N,20,20^FB520,1,0,L^FDCEP: ' + cep + '^FS',
+          '^FO20,396^A0N,20,20^FB520,1,0,L^FD' + cidade + '^FS',
+          '^FO20,424^A0N,18,18^FB520,1,0,L^FD' + comp + '^FS',
+          // QR right
+          '^FO562,300^BQN,2,4^FDQA,' + id + '^FS',
+          // Tipo box bottom right
+          '^FO688,660^GB100,100,4^FS',
+          '^FO692,664^A0N,88,88^FD' + tipo + '^FS',
+          '^XZ'
+        ].join('\n');
+      }
+
+      // Default: portrait 100×150mm — 800×1200
       return [
-        '^XA',
-        '^CF0,28',
-        // Rota box + label
-        '^FO20,15^GB220,75,4^FS',
-        '^FO30,18^A0N,22,22^FDRota^FS',
-        '^FO30,42^A0N,46,46^FD' + (rota || '--') + '^FS',
-        // CODE128 barcode (no HRI below)
-        '^FO20,100^BCN,90,N,N,N^FD' + id + '^FS',
+        '^XA^PW800^LL1200',
+        // Rota box
+        '^FO20,15^GB210,72,4^FS',
+        '^FO30,18^A0N,20,20^FDRota^FS',
+        '^FO30,40^A0N,46,46^FD' + (rota || '--') + '^FS',
+        // Barcode: BY1 = narrow bars (not ponta a ponta); starts at x=60
+        '^FO60,98^BY1,3,90^BCN,90,N,N,N^FD' + id + '^FS',
         // ID text centered
-        '^FO20,202^A0N,28,28^FB760,1,0,C^FD' + id + '^FS',
+        '^FO20,200^A0N,26,26^FB760,1,0,C^FD' + id + '^FS',
         // Divider
-        '^FO0,244^GB800,3,3^FS',
+        '^FO0,240^GB800,3,3^FS',
         // Big SVC centered
-        '^FO20,250^A0N,110,110^FB760,1,0,C^FD' + svcLabel + '^FS',
-        // Rota › SVC small
-        '^FO20,375^A0N,26,26^FD' + (rota || '--') + ' › ' + svcLabel + '^FS',
+        '^FO20,248^A0N,110,110^FB760,1,0,C^FD' + svcLabel + '^FS',
+        // Rota › SVC
+        '^FO20,374^A0N,24,24^FD' + (rota || '--') + ' > ' + svcLabel + '^FS',
         // Divider
-        '^FO0,415^GB800,3,3^FS',
-        // Customer info (left column, max width 530px to leave room for QR)
-        '^FO20,425^A0N,26,26^FB530,1,0,L^FD' + nome + '^FS',
-        '^FO20,458^A0N,24,24^FB530,1,0,L^FD' + endereco + '^FS',
-        '^FO20,489^A0N,24,24^FB530,1,0,L^FDCEP: ' + cep + '^FS',
-        '^FO20,520^A0N,24,24^FB530,1,0,L^FD' + cidade + '^FS',
-        '^FO20,551^A0N,22,22^FB530,1,0,L^FD' + comp + '^FS',
-        // QR code right side
-        '^FO570,420^BQN,2,4^FDQA,' + id + '^FS',
-        // Delivery type box bottom right
-        '^FO686,580^GB100,100,4^FS',
-        '^FO690,584^A0N,88,88^FD' + tipo + '^FS',
+        '^FO0,412^GB800,3,3^FS',
+        // Customer info (left, width 540 to leave QR space)
+        '^FO20,422^A0N,24,24^FB540,1,0,L^FD' + nome + '^FS',
+        '^FO20,454^A0N,22,22^FB540,1,0,L^FD' + endereco + '^FS',
+        '^FO20,484^A0N,22,22^FB540,1,0,L^FDCEP: ' + cep + '^FS',
+        '^FO20,514^A0N,22,22^FB540,1,0,L^FD' + cidade + '^FS',
+        '^FO20,544^A0N,20,20^FB540,1,0,L^FD' + comp + '^FS',
+        // QR right
+        '^FO572,415^BQN,2,5^FDQA,' + id + '^FS',
+        // Tipo box bottom right
+        '^FO688,578^GB100,100,4^FS',
+        '^FO692,582^A0N,88,88^FD' + tipo + '^FS',
         '^XZ'
       ].join('\n');
     }
