@@ -909,12 +909,12 @@
           '^FO472,659^A0N,88,88^FD' + tipo + '^FS',
           // Vertical divider
           '^FO' + mid + ',0^GB4,800,4^FS',
-          // Customer info right column
-          '^FO618,18^A0N,28,28^FB' + iW + ',1,0,L^FD' + nome + '^FS',
-          '^FO618,54^A0N,24,24^FB' + iW + ',1,0,L^FD' + endereco + '^FS',
-          '^FO618,86^A0N,24,24^FB' + iW + ',1,0,L^FDCEP: ' + cep + '^FS',
-          '^FO618,118^A0N,24,24^FB' + iW + ',1,0,L^FD' + cidade + '^FS',
-          '^FO618,150^A0N,22,22^FB' + iW + ',1,0,L^FD' + comp + '^FS',
+          // Customer info right column (endereco+comp allow 2 lines each)
+          '^FO618,18^A0N,24,24^FB' + iW + ',2,0,L^FD' + nome + '^FS',
+          '^FO618,70^A0N,22,22^FB' + iW + ',2,0,L^FD' + endereco + '^FS',
+          '^FO618,120^A0N,20,20^FB' + iW + ',1,0,L^FDCEP: ' + cep + '^FS',
+          '^FO618,146^A0N,20,20^FB' + iW + ',1,0,L^FD' + cidade + '^FS',
+          '^FO618,172^A0N,20,20^FB' + iW + ',2,0,L^FD' + comp + '^FS',
           // QR right bottom
           '^FO880,400^BQN,2,5^FDQA,' + id + '^FS',
           '^XZ'
@@ -941,13 +941,13 @@
           '^FO20,272^A0N,22,22^FD' + (rota || '--') + ' > ' + svcLabel + '^FS',
           // Divider
           '^FO0,300^GB800,3,3^FS',
-          // Customer info (left, with room for QR)
-          '^FO20,310^A0N,22,22^FB520,1,0,L^FD' + nome + '^FS',
-          '^FO20,340^A0N,20,20^FB520,1,0,L^FD' + endereco + '^FS',
-          '^FO20,368^A0N,20,20^FB520,1,0,L^FDCEP: ' + cep + '^FS',
-          '^FO20,396^A0N,20,20^FB520,1,0,L^FD' + cidade + '^FS',
-          '^FO20,424^A0N,18,18^FB520,1,0,L^FD' + comp + '^FS',
-          // QR right
+          // Customer info (left, with room for QR; endereco+comp allow 2 lines)
+          '^FO20,310^A0N,20,20^FB520,2,0,L^FD' + nome + '^FS',
+          '^FO20,358^A0N,18,18^FB520,2,0,L^FD' + endereco + '^FS',
+          '^FO20,402^A0N,18,18^FB520,1,0,L^FDCEP: ' + cep + '^FS',
+          '^FO20,426^A0N,18,18^FB520,1,0,L^FD' + cidade + '^FS',
+          '^FO20,450^A0N,18,18^FB520,2,0,L^FD' + comp + '^FS',
+          // QR right (BQN,2,4 = ~116 dots from y=300 → ends ~y=416)
           '^FO562,300^BQN,2,4^FDQA,' + id + '^FS',
           // Tipo box bottom right
           '^FO688,660^GB100,100,4^FS',
@@ -975,17 +975,17 @@
         '^FO20,374^A0N,24,24^FD' + (rota || '--') + ' > ' + svcLabel + '^FS',
         // Divider
         '^FO0,412^GB800,3,3^FS',
-        // Customer info (left, width 540 to leave QR space)
-        '^FO20,422^A0N,24,24^FB540,1,0,L^FD' + nome + '^FS',
-        '^FO20,454^A0N,22,22^FB540,1,0,L^FD' + endereco + '^FS',
-        '^FO20,484^A0N,22,22^FB540,1,0,L^FDCEP: ' + cep + '^FS',
-        '^FO20,514^A0N,22,22^FB540,1,0,L^FD' + cidade + '^FS',
-        '^FO20,544^A0N,20,20^FB540,1,0,L^FD' + comp + '^FS',
-        // QR right
+        // Customer info (left col, 540 wide; endereco+comp allow 2 lines each)
+        '^FO20,422^A0N,22,22^FB540,2,0,L^FD' + nome + '^FS',
+        '^FO20,476^A0N,22,22^FB540,2,0,L^FD' + endereco + '^FS',
+        '^FO20,530^A0N,20,20^FB540,1,0,L^FDCEP: ' + cep + '^FS',
+        '^FO20,558^A0N,20,20^FB540,1,0,L^FD' + cidade + '^FS',
+        '^FO20,586^A0N,20,20^FB540,2,0,L^FD' + comp + '^FS',
+        // QR right (starts at y=415, size 5 = ~125 dots → ends at y=540)
         '^FO572,415^BQN,2,5^FDQA,' + id + '^FS',
-        // Tipo box bottom right
-        '^FO688,578^GB100,100,4^FS',
-        '^FO692,582^A0N,88,88^FD' + tipo + '^FS',
+        // Tipo box bottom right (moved down to y=700)
+        '^FO688,700^GB100,100,4^FS',
+        '^FO692,704^A0N,88,88^FD' + tipo + '^FS',
         '^XZ'
       ].join('\n');
     }
