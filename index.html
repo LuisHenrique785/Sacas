@@ -2024,7 +2024,7 @@
         const hoje = dataHoje();
         const [countRes, totalRes] = await Promise.all([
           db.from('log').select('*', { count: 'exact', head: true }).eq('svc', svc).like('data', hoje + '%'),
-          db.from('base').select('*', { count: 'exact', head: true }).eq('svc', svc)
+          db.from('rota').select('*', { count: 'exact', head: true }).eq('svc', svc)
         ]);
         const count = countRes.count || 0;
         const total = totalRes.count || 0;
