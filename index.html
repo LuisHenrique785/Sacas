@@ -111,6 +111,7 @@
 
   <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
   <button class="btn-blue" onclick="abrirDashboard()" style="background:#5856d6">&#128202; DASHBOARD</button>
+  <button class="btn-blue" onclick="abrirRelatorioOperadores()" style="background:#2c7a3f">&#128101; OPERADORES</button>
   <button class="btn-purple" onclick="abrirLog()">&#128203; CONSULTAR LOG</button>
   <button class="btn-navy"   onclick="abrirImpressaoLivre()">&#128438; IMPRESSAO LIVRE</button>
   <button class="btn-orange" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
@@ -123,10 +124,12 @@
   <div class="card">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
       <div style="display:flex;gap:6px;align-items:center;margin-top:0">
-        <input type="text" id="ip" placeholder="IP Impressora" onchange="sv();testarImpressora()"
+        <input type="text" id="ip" placeholder="IP Impressora" onchange="sv();testarImpressora();renderPrinters()"
           style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box">
+        <button onclick="salvarImpressoraAtual()" title="Salvar impressora" style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer;font-size:14px;flex-shrink:0">💾</button>
         <span id="printerDot" title="Status da impressora" style="width:12px;height:12px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
       </div>
+      <div id="printersRow" style="display:flex;gap:5px;flex-wrap:wrap;margin:5px 0 0"></div>
       <div style="display:flex;gap:6px;align-items:stretch;margin:8px 0 0">
         <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()"
           style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;min-width:0">
@@ -174,7 +177,7 @@
     <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
     <input type="number" id="qtd"  placeholder="Quantidade" min="1">
     <button id="btPrint" class="btn-green" onclick="processar()">IMPRIMIR</button>
-    <div id="contadorDia" style="text-align:center;font-size:12px;color:#888;margin-top:6px;min-height:16px"></div>
+    <div id="contadorDia" style="text-align:center;font-size:12px;color:#888;margin-top:6px;min-height:16px;padding:0 2px"></div>
     <button id="btnReimp" onclick="reimprimir()" style="display:none;width:100%;padding:9px;border-radius:8px;border:1.5px solid #1a1f63;background:white;color:#1a1f63;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px">&#128260; Reimprimir última etiqueta</button>
     <div id="historicoWrap" style="display:none;margin-top:10px">
       <div style="font-size:10px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:5px">ÚLTIMAS IMPRESSÕES</div>
@@ -192,6 +195,16 @@
       <button onclick="buscarRapido()" style="padding:9px 16px;border:none;border-radius:8px;background:#1a1f63;color:#FFE600;font-size:13px;font-weight:700;cursor:pointer">Verificar</button>
     </div>
     <div id="buscaResult" style="margin-top:8px;font-size:13px;min-height:18px;font-weight:600"></div>
+  </div>
+
+  <!-- Modal: Relatório Operadores -->
+  <div id="modalOps" class="modal-bg">
+    <div class="m-cont" style="max-width:500px">
+      <h3 style="margin-top:0">&#128101; Operadores — <span id="opsSvcLabel"></span></h3>
+      <div style="font-size:11px;color:#aaa;margin-bottom:12px">Últimos 7 dias</div>
+      <div id="opsContent" style="font-size:13px;color:#555">Carregando...</div>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharModal('modalOps')">FECHAR</button>
+    </div>
   </div>
 
   <!-- Modal: Dashboard -->
@@ -488,6 +501,10 @@
       <div id="importStatus" style="font-size:13px;text-align:center;min-height:18px;margin-bottom:10px"></div>
 
       <button id="btnImportar" class="btn-green" onclick="importar()" disabled style="margin-bottom:8px">IMPORTAR PARA O BANCO</button>
+      <div id="importHistoryPanel" style="margin-top:14px;border-top:1px solid #eee;padding-top:12px;display:none">
+        <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:6px">📋 HISTÓRICO DE IMPORTAÇÕES</div>
+        <div id="importHistoryList" style="font-size:12px;color:#555;max-height:140px;overflow-y:auto"></div>
+      </div>
       <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalAtualizar')">FECHAR</button>
     </div>
   </div>
@@ -570,6 +587,52 @@
       renderManageSVC();
     }
 
+    // ---- Multi-impressora ----
+    function getPrinters() {
+      try { return JSON.parse(localStorage.getItem('printers') || '[]'); } catch (_) { return []; }
+    }
+    function savePrinters(list) { localStorage.setItem('printers', JSON.stringify(list)); }
+
+    function renderPrinters() {
+      const list = getPrinters();
+      const row  = document.getElementById('printersRow');
+      if (!row) return;
+      const ipAtual = document.getElementById('ip').value.trim();
+      row.innerHTML = list.map((p, i) =>
+        `<span style="display:inline-flex;align-items:center;gap:3px;background:${p.ip===ipAtual?'#1a1f63':'#e8eaf6'};color:${p.ip===ipAtual?'#FFE600':'#1a1f63'};border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;cursor:pointer" onclick="selectPrinter('${p.ip}')" title="${p.ip}">
+          🖨️ ${p.nome}
+          <button onclick="event.stopPropagation();removerImpressora(${i})" style="background:none;border:none;cursor:pointer;color:${p.ip===ipAtual?'#FFE600':'#c0392b'};font-size:12px;font-weight:900;padding:0 0 0 3px;line-height:1">×</button>
+        </span>`
+      ).join('');
+    }
+
+    function selectPrinter(ip) {
+      document.getElementById('ip').value = ip;
+      sv();
+      testarImpressora();
+      renderPrinters();
+    }
+
+    function salvarImpressoraAtual() {
+      const ip = document.getElementById('ip').value.trim();
+      if (!ip) { toast('⚠️ Informe o IP primeiro.', 'warn'); return; }
+      const list = getPrinters();
+      if (list.find(p => p.ip === ip)) { toast('ℹ️ IP já salvo.', 'info'); return; }
+      const nome = prompt('Nome para esta impressora (ex: ZT411 Doca A):', 'Impressora');
+      if (!nome || !nome.trim()) return;
+      list.push({ nome: nome.trim(), ip });
+      savePrinters(list);
+      renderPrinters();
+      toast('✅ Impressora "' + nome.trim() + '" salva!', 'ok');
+    }
+
+    function removerImpressora(idx) {
+      const list = getPrinters();
+      list.splice(idx, 1);
+      savePrinters(list);
+      renderPrinters();
+    }
+
     // ---- Geolocalização por SVC ----
     function getSVCCoords() {
       try { return JSON.parse(localStorage.getItem('svcCoords') || '{}'); } catch (_) { return {}; }
@@ -645,6 +708,7 @@
       atualizarBadge();
       atualizarContador();
       if (savedIp) testarImpressora();
+      renderPrinters();
     };
 
     // Salva tamanho vinculado ao IP da impressora
@@ -1397,7 +1461,15 @@
           (dadosBase ? dadosBase.length + ' sacas' : 'nao alterada') + ' | Rota: ' +
           (dadosRota ? dadosRota.length + ' sacas' : 'nao alterada');
 
+        const _baseCount = dadosBase ? dadosBase.length : null;
+        const _rotaCount = dadosRota ? dadosRota.length : null;
         dadosBase = dadosRota = null;
+
+        const _hist = getImportHistory();
+        _hist.unshift({ svc: svcSel, data: dataHoraAtual(), base: _baseCount, rota: _rotaCount });
+        if (_hist.length > 15) _hist.pop();
+        localStorage.setItem('importHistory', JSON.stringify(_hist));
+        renderImportHistory();
 
       } catch (e) {
         st.style.color = '#ff3b30';
@@ -1405,6 +1477,25 @@
         bar.style.background = '#ff3b30';
       }
       btn.disabled = false;
+    }
+
+    function getImportHistory() {
+      try { return JSON.parse(localStorage.getItem('importHistory') || '[]'); } catch (_) { return []; }
+    }
+    function renderImportHistory() {
+      const hist = getImportHistory();
+      const panel = document.getElementById('importHistoryPanel');
+      const list  = document.getElementById('importHistoryList');
+      if (!panel || !list) return;
+      if (!hist.length) { panel.style.display = 'none'; return; }
+      panel.style.display = 'block';
+      list.innerHTML = hist.map(h =>
+        `<div style="padding:5px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span style="font-weight:700;color:#1a1f63">${h.svc}</span>
+          <span style="color:#555">${h.base != null ? h.base + ' base' : ''}${h.base != null && h.rota != null ? ' · ' : ''}${h.rota != null ? h.rota + ' rota' : ''}</span>
+          <span style="color:#aaa;font-size:11px;white-space:nowrap">${h.data}</span>
+        </div>`
+      ).join('');
     }
 
     function abrirAtualizar() {
@@ -1420,6 +1511,7 @@
       document.getElementById('boxBase').classList.remove('has-file');
       document.getElementById('boxRota').classList.remove('has-file');
       populateSvcUpload();
+      renderImportHistory();
       document.getElementById('modalAtualizar').style.display = 'block';
     }
 
@@ -1673,16 +1765,30 @@
       }
     }
 
-    // ---- Contador do dia ----
+    // ---- Contador do dia + meta ----
     async function atualizarContador() {
       const svc = document.getElementById('svc').value.trim();
-      if (!svc || !SUPABASE_URL) return;
+      const el  = document.getElementById('contadorDia');
+      if (!el) return;
+      if (!svc || !SUPABASE_URL) { el.innerHTML = ''; return; }
       try {
         const hoje = dataHoje();
-        const { count } = await db.from('log').select('*', { count: 'exact', head: true })
-          .eq('svc', svc).like('data', hoje + '%');
-        const el = document.getElementById('contadorDia');
-        if (el) el.innerText = count > 0 ? '📦 ' + count + ' saca' + (count !== 1 ? 's' : '') + ' impressa' + (count !== 1 ? 's' : '') + ' hoje' : '';
+        const [countRes, totalRes] = await Promise.all([
+          db.from('log').select('*', { count: 'exact', head: true }).eq('svc', svc).like('data', hoje + '%'),
+          db.from('base').select('*', { count: 'exact', head: true }).eq('svc', svc)
+        ]);
+        const count = countRes.count || 0;
+        const total = totalRes.count || 0;
+        if (total > 0) {
+          const pct = Math.round(count / total * 100);
+          const cor = pct === 100 ? '#00a650' : pct >= 70 ? '#ff9500' : '#1a1f63';
+          el.innerHTML = `<div style="margin-bottom:4px">📦 <b>${count}</b>/${total} sacas hoje (${pct}%)</div>
+            <div style="background:#e5e5ea;border-radius:4px;height:5px;overflow:hidden">
+              <div style="background:${cor};height:5px;border-radius:4px;width:${pct}%"></div>
+            </div>`;
+        } else {
+          el.innerHTML = count > 0 ? `📦 ${count} saca${count !== 1 ? 's' : ''} impressa${count !== 1 ? 's' : ''} hoje` : '';
+        }
       } catch (_) {}
     }
 
@@ -1857,6 +1963,73 @@
       fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
         .then(() => { clearTimeout(tid); dot.style.background = '#00a650'; })
         .catch(() => { clearTimeout(tid); dot.style.background = '#c0392b'; });
+    }
+
+    // ---- Relatório por operador ----
+    async function abrirRelatorioOperadores() {
+      document.getElementById('modalOps').style.display = 'block';
+      const svc = getV('svc');
+      document.getElementById('opsSvcLabel').innerText = svc || 'Geral';
+      const cont = document.getElementById('opsContent');
+      cont.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">⏳ Carregando...</div>';
+      try {
+        const dias = 7;
+        const hoje = new Date();
+        const datas = Array.from({ length: dias }, (_, i) => {
+          const d = new Date(hoje); d.setDate(d.getDate() - i);
+          return new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }).format(d);
+        });
+
+        let q = db.from('log').select('responsavel,data').gte('id', 0);
+        if (svc) q = q.eq('svc', svc);
+        // Filter last 7 days using the oldest date pattern
+        const oldest = datas[datas.length - 1];
+        const rows = await sbCheck(await q.order('id', { ascending: false }).limit(5000)) || [];
+
+        const byOp = {};
+        for (const r of rows) {
+          const op = r.responsavel || '—';
+          if (!byOp[op]) byOp[op] = { total: 0, dias: {} };
+          const dia = (r.data || '').slice(0, 10); // DD/MM/YYYY
+          if (datas.includes(dia)) {
+            byOp[op].total++;
+            byOp[op].dias[dia] = (byOp[op].dias[dia] || 0) + 1;
+          }
+        }
+
+        const ops = Object.entries(byOp)
+          .filter(([, v]) => v.total > 0)
+          .sort((a, b) => b[1].total - a[1].total);
+
+        if (!ops.length) {
+          cont.innerHTML = '<div style="color:#aaa;text-align:center;padding:20px">Nenhum dado nos últimos 7 dias.</div>';
+          return;
+        }
+
+        const maxTotal = ops[0][1].total || 1;
+        cont.innerHTML = ops.map(([op, v]) => {
+          const pct = Math.round(v.total / maxTotal * 100);
+          const media = (v.total / dias).toFixed(1);
+          const diasAtivos = Object.keys(v.dias).length;
+          const barDias = datas.slice().reverse().map(d => {
+            const n = v.dias[d] || 0;
+            const h = n ? Math.max(6, Math.round(n / maxTotal * 32)) : 3;
+            return `<div title="${d}: ${n}" style="width:10px;background:${n ? '#1a1f63' : '#e5e5ea'};height:${h}px;border-radius:2px;flex-shrink:0"></div>`;
+          }).join('');
+          return `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f0f0f0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-weight:800;color:#1a1f63;font-size:13px">👤 ${op}</span>
+              <span style="font-size:12px;color:#555">${v.total} total · ${media}/dia · ${diasAtivos}d ativo</span>
+            </div>
+            <div style="background:#e5e5ea;border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px">
+              <div style="background:#1a1f63;height:6px;border-radius:4px;width:${pct}%"></div>
+            </div>
+            <div style="display:flex;gap:3px;align-items:flex-end;height:36px">${barDias}</div>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        cont.innerHTML = '<div style="color:#c0392b">Erro: ' + e.message + '</div>';
+      }
     }
 
     // ---- Dashboard ----
