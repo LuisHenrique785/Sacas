@@ -167,7 +167,13 @@
             style="padding:7px 12px;border:none;border-radius:7px;background:#1a1f63;color:#FFE600;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">+ Adicionar</button>
         </div>
       </div>
-      <input type="text" id="resp" placeholder="Seu Nome"      onchange="sv()">
+      <div id="operadoresRow" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:5px"></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" id="resp" placeholder="Seu Nome" onchange="sv();renderOperadores()"
+          style="flex:1;min-width:0;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px">
+        <button onclick="salvarOperadorAtual()" title="Salvar operador"
+          style="padding:10px 12px;border:none;border-radius:8px;background:#1a1f63;color:#FFE600;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0">💾</button>
+      </div>
       <select id="labelSizeMain" onchange="svSize()"
         style="width:100%;padding:10px;margin:8px 0 0;border:1px solid #ccc;border-radius:8px;font-size:15px;background:white">
         <option value="800x800">Etiqueta 100 × 100 mm</option>
@@ -730,6 +736,50 @@
       renderPrinters();
     }
 
+    // ---- Operadores cadastrados ----
+    function getOperadores() { try { return JSON.parse(localStorage.getItem('operadores') || '[]'); } catch (_) { return []; } }
+    function saveOperadores(list) { localStorage.setItem('operadores', JSON.stringify(list)); }
+
+    function renderOperadores() {
+      const list  = getOperadores();
+      const row   = document.getElementById('operadoresRow');
+      if (!row) return;
+      const atual = (document.getElementById('resp')?.value || '').trim();
+      if (!list.length) { row.style.display = 'none'; return; }
+      row.style.display = 'flex';
+      row.innerHTML = list.map((op, i) => {
+        const ativo = op === atual;
+        return `<div style="display:inline-flex;align-items:center;gap:3px;padding:5px 10px;border-radius:20px;border:1.5px solid ${ativo ? '#1a1f63' : '#ddd'};background:${ativo ? '#1a1f63' : 'white'};cursor:pointer;font-size:12px;font-weight:700;color:${ativo ? '#FFE600' : '#333'}" onclick="selecionarOperador(${JSON.stringify(op)})">
+          ${op}
+          <span onclick="event.stopPropagation();removerOperador(${i})" style="font-size:10px;opacity:.6;margin-left:2px;line-height:1">✕</span>
+        </div>`;
+      }).join('');
+    }
+
+    function selecionarOperador(nome) {
+      document.getElementById('resp').value = nome;
+      sv();
+      renderOperadores();
+    }
+
+    function salvarOperadorAtual() {
+      const nome = (document.getElementById('resp').value || '').trim();
+      if (!nome) { toast('⚠️ Digite um nome primeiro.', 'warn'); return; }
+      const list = getOperadores();
+      if (list.includes(nome)) { toast('Operador já na lista.', 'warn'); return; }
+      list.push(nome);
+      saveOperadores(list);
+      renderOperadores();
+      toast('✅ "' + nome + '" salvo!', 'ok');
+    }
+
+    function removerOperador(idx) {
+      const list = getOperadores();
+      list.splice(idx, 1);
+      saveOperadores(list);
+      renderOperadores();
+    }
+
     // ---- Etiqueta Meli ----
     let _meliTipo = 'R';
     let _meliTamanho = '100x150';
@@ -1155,6 +1205,7 @@
       atualizarContador();
       if (savedIp) testarImpressora();
       renderPrinters();
+      renderOperadores();
       setPrintMode(localStorage.getItem('printMode') || 'wifi');
     };
 
