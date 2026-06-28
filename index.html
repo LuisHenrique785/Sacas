@@ -123,13 +123,31 @@
 
   <div class="card">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
-      <div style="display:flex;gap:6px;align-items:center;margin-top:0">
-        <input type="text" id="ip" placeholder="IP Impressora" onchange="sv();testarImpressora();renderPrinters()"
-          style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box">
-        <button onclick="salvarImpressoraAtual()" title="Salvar impressora" style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer;font-size:14px;flex-shrink:0">💾</button>
-        <span id="printerDot" title="Status da impressora" style="width:12px;height:12px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
+      <!-- Toggle WiFi / USB -->
+      <div style="display:flex;gap:0;margin-bottom:7px;border:1px solid #ccc;border-radius:8px;overflow:hidden">
+        <button id="btnModeWifi" onclick="setPrintMode('wifi')" style="flex:1;padding:8px;border:none;background:#1a1f63;color:#FFE600;font-size:12px;font-weight:800;cursor:pointer">🌐 WiFi / Rede</button>
+        <button id="btnModeUsb"  onclick="setPrintMode('usb')"  style="flex:1;padding:8px;border:none;background:white;color:#555;font-size:12px;font-weight:800;cursor:pointer">🔌 USB / Cabo</button>
       </div>
-      <div id="printersRow" style="display:flex;gap:5px;flex-wrap:wrap;margin:5px 0 0"></div>
+      <!-- Seção WiFi -->
+      <div id="wifiSection">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="ip" placeholder="IP Impressora" onchange="sv();testarImpressora();renderPrinters()"
+            style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box">
+          <button onclick="salvarImpressoraAtual()" title="Salvar impressora" style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer;font-size:14px;flex-shrink:0">💾</button>
+          <span id="printerDot" title="Status da impressora" style="width:12px;height:12px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
+        </div>
+        <div id="printersRow" style="display:flex;gap:5px;flex-wrap:wrap;margin:5px 0 0"></div>
+      </div>
+      <!-- Seção USB (Zebra Browser Print) -->
+      <div id="usbSection" style="display:none">
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="usbPrinterSel" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:14px;background:white">
+            <option value="">-- Clique em 🔍 para detectar --</option>
+          </select>
+          <button onclick="detectarImpressorasUSB()" title="Detectar impressoras USB" style="padding:10px 13px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer;font-size:16px;flex-shrink:0">🔍</button>
+        </div>
+        <div id="usbStatus" style="font-size:11px;color:#888;margin-top:5px;text-align:center;line-height:1.6"></div>
+      </div>
       <div style="display:flex;gap:6px;align-items:stretch;margin:8px 0 0">
         <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()"
           style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;min-width:0">
@@ -633,6 +651,66 @@
       renderPrinters();
     }
 
+    // ---- Modo de impressão: WiFi / USB ----
+    const ZBP_URL = 'https://localhost:9101';
+    let _zbpPrinters = [];
+
+    function setPrintMode(mode) {
+      localStorage.setItem('printMode', mode);
+      const isUsb = mode === 'usb';
+      document.getElementById('wifiSection').style.display = isUsb ? 'none' : 'block';
+      document.getElementById('usbSection').style.display  = isUsb ? 'block' : 'none';
+      document.getElementById('btnModeWifi').style.cssText += ';background:' + (isUsb ? 'white' : '#1a1f63') + ';color:' + (isUsb ? '#555' : '#FFE600');
+      document.getElementById('btnModeUsb').style.cssText  += ';background:' + (isUsb ? '#1a1f63' : 'white') + ';color:' + (isUsb ? '#FFE600' : '#555');
+    }
+
+    async function detectarImpressorasUSB() {
+      const sel = document.getElementById('usbPrinterSel');
+      const st  = document.getElementById('usbStatus');
+      sel.innerHTML = '<option>⏳ Detectando...</option>';
+      st.innerHTML  = '';
+      try {
+        const res  = await fetch(ZBP_URL + '/available');
+        const data = await res.json();
+        _zbpPrinters = data.printer || [];
+        if (!_zbpPrinters.length) {
+          sel.innerHTML = '<option value="">Nenhuma impressora encontrada</option>';
+          st.innerHTML  = 'Verifique se a impressora está conectada e ligada.';
+          return;
+        }
+        sel.innerHTML = '<option value="">Selecione a impressora</option>' +
+          _zbpPrinters.map((p, i) => `<option value="${i}">${p.name}</option>`).join('');
+        st.style.color = '#00a650';
+        st.innerHTML   = '✅ ' + _zbpPrinters.length + ' impressora(s) detectada(s)';
+      } catch (_) {
+        sel.innerHTML = '<option value="">Erro ao conectar ao Zebra Browser Print</option>';
+        st.innerHTML  = `❌ Zebra Browser Print não encontrado.<br>
+          <b>1.</b> <a href="https://www.zebra.com/us/en/support-downloads/software/developer-tools/browser-print.html" target="_blank" style="color:#007aff">Instale o Zebra Browser Print</a><br>
+          <b>2.</b> <a href="${ZBP_URL}" target="_blank" style="color:#007aff">Clique aqui, aceite o certificado</a> e tente novamente`;
+      }
+    }
+
+    function getSelectedUSBPrinter() {
+      const sel = document.getElementById('usbPrinterSel');
+      if (!sel || sel.value === '') return null;
+      return _zbpPrinters[parseInt(sel.value)] || null;
+    }
+
+    async function imprimirViaUSB(zpl) {
+      const printer = getSelectedUSBPrinter();
+      if (!printer) { toast('⚠️ Selecione a impressora USB primeiro.', 'warn'); return false; }
+      try {
+        await fetch(ZBP_URL + '/write', {
+          method: 'POST',
+          body: JSON.stringify({ device: printer, data: zpl })
+        });
+        return true;
+      } catch (e) {
+        toast('❌ Erro USB: ' + e.message, 'err');
+        return false;
+      }
+    }
+
     // ---- Geolocalização por SVC ----
     function getSVCCoords() {
       try { return JSON.parse(localStorage.getItem('svcCoords') || '{}'); } catch (_) { return {}; }
@@ -709,6 +787,7 @@
       atualizarContador();
       if (savedIp) testarImpressora();
       renderPrinters();
+      setPrintMode(localStorage.getItem('printMode') || 'wifi');
     };
 
     // Salva tamanho vinculado ao IP da impressora
@@ -1139,14 +1218,23 @@
       const zpl = document.getElementById('zplContent').value.trim();
       const st  = document.getElementById('livreStatus');
       const btn = document.getElementById('btnImprimirLivre');
-      if (!ip)  { st.style.color = '#c0392b'; st.innerText = '⚠️ Informe o IP da impressora.'; return; }
+      const modoUsb = localStorage.getItem('printMode') === 'usb';
+      if (!modoUsb && !ip) { st.style.color = '#c0392b'; st.innerText = '⚠️ Informe o IP da impressora.'; return; }
       if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL esta vazio.'; return; }
       btn.disabled = true;
       st.style.color = '#666'; st.innerText = '⏳ Enviando...';
-      fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-        .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; toast('✅ Enviado!', 'ok'); })
-        .catch(() => { st.style.color = '#c0392b'; st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.'; toast('❌ Erro ao conectar — verifique o IP.', 'err'); })
-        .finally(() => { btn.disabled = false; });
+      if (modoUsb) {
+        const ok = await imprimirViaUSB(zpl);
+        st.style.color = ok ? '#00a650' : '#c0392b';
+        st.innerText   = ok ? '✅ Enviado via USB!' : '❌ Erro ao imprimir via USB.';
+        if (ok) toast('✅ Enviado!', 'ok');
+        btn.disabled = false;
+      } else {
+        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+          .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; toast('✅ Enviado!', 'ok'); })
+          .catch(() => { st.style.color = '#c0392b'; st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.'; toast('❌ Erro ao conectar — verifique o IP.', 'err'); })
+          .finally(() => { btn.disabled = false; });
+      }
     }
 
     // ---- Abas do modal de consulta ----
@@ -1717,23 +1805,28 @@
           }
         }
 
-        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-          .then(() => {
-            toast('✅ Etiqueta enviada com sucesso!', 'ok');
-            document.getElementById('saca').value = '';
-            document.getElementById('qtd').value  = '';
-            ultimoZPL = zpl;
-            ultimoIP  = ip;
-            document.getElementById('btnReimp').style.display = 'block';
-            adicionarHistorico(sacaId, rotaSaca, qtdVal);
-            atualizarContador();
-          })
-          .catch(() => {
-            setStatus('Registro salvo. Erro na impressora — verifique o IP.', '#ffdce0');
-            toast('❌ Erro na impressora — verifique o IP.', 'err');
-            gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
-          })
-          .finally(() => { btn.disabled = false; });
+        const _onOk = () => {
+          toast('✅ Etiqueta enviada com sucesso!', 'ok');
+          document.getElementById('saca').value = '';
+          document.getElementById('qtd').value  = '';
+          ultimoZPL = zpl; ultimoIP = ip;
+          document.getElementById('btnReimp').style.display = 'block';
+          adicionarHistorico(sacaId, rotaSaca, qtdVal);
+          atualizarContador();
+          btn.disabled = false;
+        };
+        const _onErr = () => {
+          setStatus('Registro salvo. Erro na impressora — verifique IP/conexão.', '#ffdce0');
+          toast('❌ Erro na impressora.', 'err');
+          gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
+          btn.disabled = false;
+        };
+        if (localStorage.getItem('printMode') === 'usb') {
+          imprimirViaUSB(zpl).then(ok => ok ? _onOk() : _onErr());
+        } else {
+          fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+            .then(_onOk).catch(_onErr);
+        }
 
       } catch (e) {
         setStatus('Erro: ' + e.message, '#ffdce0');
@@ -1947,9 +2040,13 @@
       }
 
       toast('🖨️ Enviando etiqueta de teste...', 'info', 2000);
-      fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-        .then(() => toast('✅ Etiqueta de teste enviada!', 'ok'))
-        .catch(() => toast('❌ Erro ao conectar na impressora.', 'err'));
+      if (localStorage.getItem('printMode') === 'usb') {
+        imprimirViaUSB(zpl).then(ok => { if (ok) toast('✅ Etiqueta de teste enviada!', 'ok'); });
+      } else {
+        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+          .then(() => toast('✅ Etiqueta de teste enviada!', 'ok'))
+          .catch(() => toast('❌ Erro ao conectar na impressora.', 'err'));
+      }
     }
 
     // ---- Status da impressora ----
