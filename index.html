@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFE600">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sacas MELI">
   <title>Sistema Auditoria - Oficial</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -85,9 +91,17 @@
     .rot-btn.rot-active { background: #1a1f63; color: #FFE600; border-color: #1a1f63; }
     .ed-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .ed-grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    #toastCont { position:fixed; top:18px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; width:92%; max-width:360px; }
+    .toast { padding:12px 20px; border-radius:12px; font-size:14px; font-weight:700; opacity:0; transform:translateY(-14px); transition:all .28s cubic-bezier(.34,1.56,.64,1); text-align:center; box-shadow:0 6px 24px rgba(0,0,0,.22); }
+    .toast.t-show { opacity:1; transform:translateY(0); }
+    .t-ok   { background:#00a650; color:#fff; }
+    .t-err  { background:#c0392b; color:#fff; }
+    .t-warn { background:#ff9500; color:#fff; }
+    .t-info { background:#1a1f63; color:#FFE600; }
   </style>
 </head>
 <body>
+  <div id="toastCont"></div>
 
   <div id="setupBanner">
     <b>&#9888;&#65039; Supabase nao configurado</b><br>
@@ -96,13 +110,23 @@
   </div>
 
   <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
+  <button class="btn-blue" onclick="abrirDashboard()" style="background:#5856d6">&#128202; DASHBOARD</button>
   <button class="btn-purple" onclick="abrirLog()">&#128203; CONSULTAR LOG</button>
   <button class="btn-navy"   onclick="abrirImpressaoLivre()">&#128438; IMPRESSAO LIVRE</button>
   <button class="btn-orange" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
 
+  <div id="sessionBadge" style="display:none;background:#e8eaf6;border-radius:10px;padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+    <span id="sessionLabel" style="font-size:13px;font-weight:800;color:#1a1f63"></span>
+    <span style="font-size:11px;color:#888">sessao ativa</span>
+  </div>
+
   <div class="card">
     <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
-      <input type="text" id="ip"   placeholder="IP Impressora" onchange="sv()">
+      <div style="display:flex;gap:6px;align-items:center;margin-top:0">
+        <input type="text" id="ip" placeholder="IP Impressora" onchange="sv();testarImpressora()"
+          style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box">
+        <span id="printerDot" title="Status da impressora" style="width:12px;height:12px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
+      </div>
       <div style="display:flex;gap:6px;align-items:stretch;margin:8px 0 0">
         <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()"
           style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;min-width:0">
@@ -146,7 +170,33 @@
     <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
     <input type="number" id="qtd"  placeholder="Quantidade" min="1">
     <button id="btPrint" class="btn-green" onclick="processar()">IMPRIMIR</button>
+    <div id="contadorDia" style="text-align:center;font-size:12px;color:#888;margin-top:6px;min-height:16px"></div>
+    <button id="btnReimp" onclick="reimprimir()" style="display:none;width:100%;padding:9px;border-radius:8px;border:1.5px solid #1a1f63;background:white;color:#1a1f63;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px">&#128260; Reimprimir última etiqueta</button>
+    <div id="historicoWrap" style="display:none;margin-top:10px">
+      <div style="font-size:10px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:5px">ÚLTIMAS IMPRESSÕES</div>
+      <div id="historicoList"></div>
+    </div>
     <div id="status"></div>
+  </div>
+
+  <div style="background:white;border-radius:14px;padding:14px 16px;margin-top:10px;box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #eee">
+    <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:8px">&#128269; BUSCA RÁPIDA</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="buscaInput" placeholder="N° Saca para verificar" inputmode="numeric"
+        style="flex:1;padding:9px 12px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px"
+        onkeydown="if(event.key==='Enter')buscarRapido()">
+      <button onclick="buscarRapido()" style="padding:9px 16px;border:none;border-radius:8px;background:#1a1f63;color:#FFE600;font-size:13px;font-weight:700;cursor:pointer">Verificar</button>
+    </div>
+    <div id="buscaResult" style="margin-top:8px;font-size:13px;min-height:18px;font-weight:600"></div>
+  </div>
+
+  <!-- Modal: Dashboard -->
+  <div id="modalDash" class="modal-bg">
+    <div class="m-cont" style="max-width:500px">
+      <h3 style="margin-top:0">&#128202; Dashboard — <span id="dashSvcLabel"></span></h3>
+      <div id="dashContent" style="font-size:13px;color:#555">Carregando...</div>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharModal('modalDash')">FECHAR</button>
+    </div>
   </div>
 
   <!-- Modal: Editor Visual de Etiqueta -->
@@ -337,6 +387,7 @@
       <div class="log-header">
         <h3 style="margin:0">&#128203; Consultas</h3>
         <button class="btn-export" id="btnExport" onclick="exportarAtivo()">&#11015;&#65039; Exportar CSV</button>
+        <button class="btn-buscar" style="background:#5856d6;padding:8px 14px;width:auto" onclick="exportarPDF()">&#128196; EXPORTAR PDF</button>
       </div>
 
       <!-- Abas -->
@@ -477,6 +528,8 @@
 
     let dadosBase = null;  // rows parsed do CSV Base
     let dadosRota = null;  // rows parsed do CSV Rota
+    let ultimoZPL = null, ultimoIP = null;
+    let historicoSessao = [];
 
     // ---- Gerenciamento de SVCs ----
     function getSVCAll() {
@@ -547,6 +600,9 @@
         document.getElementById('setupBanner').style.display = 'block';
         document.getElementById('btPrint').disabled = true;
       }
+      atualizarBadge();
+      atualizarContador();
+      if (savedIp) testarImpressora();
     };
 
     // Salva tamanho vinculado ao IP da impressora
@@ -598,6 +654,8 @@
       document.getElementById('darkness').value = dk;
       document.getElementById('darkVal').innerText = dk;
       atualizarBotaoOrient();
+      atualizarBadge();
+      atualizarContador();
     };
     const fecharModal = id => document.getElementById(id).style.display = 'none';
 
@@ -1009,8 +1067,8 @@
       btn.disabled = true;
       st.style.color = '#666'; st.innerText = '⏳ Enviando...';
       fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-        .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; })
-        .catch(() => { st.style.color = '#c0392b'; st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.'; })
+        .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; toast('✅ Enviado!', 'ok'); })
+        .catch(() => { st.style.color = '#c0392b'; st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.'; toast('❌ Erro ao conectar — verifique o IP.', 'err'); })
         .finally(() => { btn.disabled = false; });
     }
 
@@ -1576,12 +1634,18 @@
 
         fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
           .then(() => {
-            setStatus('✅ Sucesso!', '#e6ffed');
+            toast('✅ Etiqueta enviada com sucesso!', 'ok');
             document.getElementById('saca').value = '';
             document.getElementById('qtd').value  = '';
+            ultimoZPL = zpl;
+            ultimoIP  = ip;
+            document.getElementById('btnReimp').style.display = 'block';
+            adicionarHistorico(sacaId, rotaSaca, qtdVal);
+            atualizarContador();
           })
           .catch(() => {
             setStatus('Registro salvo. Erro na impressora — verifique o IP.', '#ffdce0');
+            toast('❌ Erro na impressora — verifique o IP.', 'err');
             gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
           })
           .finally(() => { btn.disabled = false; });
@@ -1590,6 +1654,215 @@
         setStatus('Erro: ' + e.message, '#ffdce0');
         btn.disabled = false;
       }
+    }
+
+    // ---- Toast notifications ----
+    function toast(msg, type = 'ok', dur = 3000) {
+      const el = document.createElement('div');
+      el.className = 'toast t-' + type;
+      el.innerText = msg;
+      document.getElementById('toastCont').appendChild(el);
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('t-show')));
+      setTimeout(() => { el.classList.remove('t-show'); setTimeout(() => el.remove(), 300); }, dur);
+    }
+
+    // ---- Session Badge ----
+    function atualizarBadge() {
+      const svc  = document.getElementById('svc').value.trim();
+      const resp = document.getElementById('resp').value.trim();
+      const badge = document.getElementById('sessionBadge');
+      const label = document.getElementById('sessionLabel');
+      if (svc || resp) {
+        badge.style.display = 'flex';
+        label.innerText = (svc ? '📍 ' + svc : '') + (svc && resp ? ' · ' : '') + (resp ? '👤 ' + resp : '');
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    // ---- Contador do dia ----
+    async function atualizarContador() {
+      const svc = document.getElementById('svc').value.trim();
+      if (!svc || !SUPABASE_URL) return;
+      try {
+        const hoje = dataHoje();
+        const { count } = await db.from('log').select('*', { count: 'exact', head: true })
+          .eq('svc', svc).like('data', hoje + '%');
+        const el = document.getElementById('contadorDia');
+        if (el) el.innerText = count > 0 ? '📦 ' + count + ' saca' + (count !== 1 ? 's' : '') + ' impressa' + (count !== 1 ? 's' : '') + ' hoje' : '';
+      } catch (_) {}
+    }
+
+    // ---- Reimprimir ----
+    function reimprimir() {
+      if (!ultimoZPL || !ultimoIP) return;
+      toast('🔄 Reenviando...', 'info', 1500);
+      fetch('http://' + ultimoIP + '/pstprnt', { method: 'POST', body: ultimoZPL, mode: 'no-cors' })
+        .then(() => toast('✅ Reimpresso com sucesso!', 'ok'))
+        .catch(() => toast('❌ Erro na impressora.', 'err'));
+    }
+
+    // ---- Histórico da sessão ----
+    function adicionarHistorico(sacaId, rota, qtd) {
+      historicoSessao.unshift({ sacaId, rota, qtd, hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) });
+      if (historicoSessao.length > 5) historicoSessao.pop();
+      renderHistorico();
+    }
+    function renderHistorico() {
+      const wrap = document.getElementById('historicoWrap');
+      const list = document.getElementById('historicoList');
+      if (!historicoSessao.length) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      list.innerHTML = historicoSessao.map(h =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f9f9f9;border-radius:7px;font-size:12px;margin-bottom:4px;border:1px solid #eee;cursor:pointer" onclick="document.getElementById('saca').value='${h.sacaId}'">
+          <span style="font-weight:700;color:#1a1f63">${h.sacaId}</span>
+          <span style="color:#888">${h.rota} · ${h.qtd}x</span>
+          <span style="color:#aaa">${h.hora}</span>
+        </div>`
+      ).join('');
+    }
+
+    // ---- Busca Rápida ----
+    async function buscarRapido() {
+      const sacaId = document.getElementById('buscaInput').value.trim();
+      const res    = document.getElementById('buscaResult');
+      if (!sacaId) return;
+      res.style.color = '#888'; res.innerText = '⏳ Buscando...';
+      try {
+        const svc = getV('svc');
+        let q = db.from('base').select('rota').eq('saca_id', sacaId);
+        if (svc) q = q.eq('svc', svc);
+        const [baseRows, logRows] = await Promise.all([
+          sbCheck(await q.limit(1)),
+          sbCheck(await db.from('log').select('data,responsavel').eq('saca_id', sacaId).order('id', { ascending: false }).limit(1))
+        ]);
+        if (!baseRows || !baseRows.length) {
+          res.style.color = '#c0392b'; res.innerText = '❌ Saca não encontrada na base' + (svc ? ' do ' + svc : '') + '.';
+          return;
+        }
+        const rota = baseRows[0].rota || '—';
+        if (logRows && logRows.length) {
+          const ultimo = logRows[0];
+          res.style.color = '#00a650';
+          res.innerText = '✅ ' + sacaId + ' · ' + rota + ' · Última impressão: ' + ultimo.data + ' por ' + ultimo.responsavel;
+        } else {
+          res.style.color = '#ff9500';
+          res.innerText = '⚠️ ' + sacaId + ' · ' + rota + ' · Ainda não impressa hoje.';
+        }
+      } catch (e) {
+        res.style.color = '#c0392b'; res.innerText = 'Erro: ' + e.message;
+      }
+    }
+
+    // ---- Status da impressora ----
+    function testarImpressora() {
+      const ip  = document.getElementById('ip').value.trim();
+      const dot = document.getElementById('printerDot');
+      if (!ip) { dot.style.background = '#d1d1d6'; return; }
+      dot.style.background = '#ff9500';
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 2500);
+      fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
+        .then(() => { clearTimeout(tid); dot.style.background = '#00a650'; })
+        .catch(() => { clearTimeout(tid); dot.style.background = '#c0392b'; });
+    }
+
+    // ---- Dashboard ----
+    async function abrirDashboard() {
+      document.getElementById('modalDash').style.display = 'block';
+      const svc = getV('svc');
+      document.getElementById('dashSvcLabel').innerText = svc || 'Geral';
+      const cont = document.getElementById('dashContent');
+      cont.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">⏳ Carregando...</div>';
+      try {
+        const hoje = dataHoje();
+        let logQ = db.from('log').select('saca_id,rota,data,responsavel');
+        if (svc) logQ = logQ.eq('svc', svc);
+        let erroQ = db.from('erros').select('id', { count: 'exact', head: true });
+        if (svc) erroQ = erroQ.eq('svc', svc);
+        const [logRows, erroRes] = await Promise.all([
+          sbCheck(await logQ.like('data', hoje + '%').order('id', { ascending: false })),
+          erroQ.like('data', hoje + '%')
+        ]);
+        const total = logRows ? logRows.length : 0;
+        const erros = erroRes.count || 0;
+        const porRota = {};
+        (logRows || []).forEach(r => { if (r.rota) porRota[r.rota] = (porRota[r.rota] || 0) + 1; });
+        const rotasSorted = Object.entries(porRota).sort((a, b) => b[1] - a[1]);
+        const maxVal = rotasSorted[0]?.[1] || 1;
+        const rotasHTML = rotasSorted.length
+          ? rotasSorted.map(([r, n]) =>
+              `<div style="margin-bottom:7px">
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
+                  <span style="font-weight:700">${r}</span><span style="color:#1a1f63;font-weight:700">${n}</span>
+                </div>
+                <div style="background:#eee;border-radius:4px;height:8px;overflow:hidden">
+                  <div style="background:#1a1f63;height:8px;border-radius:4px;width:${Math.round(n/maxVal*100)}%;transition:width .4s"></div>
+                </div>
+              </div>`
+            ).join('')
+          : '<div style="color:#aaa;text-align:center;padding:10px">Nenhuma impressão hoje ainda.</div>';
+        const ops = {};
+        (logRows || []).forEach(r => { if (r.responsavel) ops[r.responsavel] = (ops[r.responsavel] || 0) + 1; });
+        const opsHTML = Object.entries(ops).sort((a,b)=>b[1]-a[1]).slice(0,5)
+          .map(([op,n]) => `<span style="display:inline-flex;align-items:center;gap:4px;background:#e8eaf6;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;color:#1a1f63;margin:2px">👤 ${op} <span style="color:#888;font-weight:400">${n}x</span></span>`).join('') || '<span style="color:#aaa">—</span>';
+        cont.innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="background:#e8f5e9;border-radius:10px;padding:12px;text-align:center">
+              <div style="font-size:28px;font-weight:900;color:#00a650">${total}</div>
+              <div style="font-size:11px;color:#666;font-weight:700">SACAS HOJE</div>
+            </div>
+            <div style="background:#fce4ec;border-radius:10px;padding:12px;text-align:center">
+              <div style="font-size:28px;font-weight:900;color:#c0392b">${erros}</div>
+              <div style="font-size:11px;color:#666;font-weight:700">ERROS HOJE</div>
+            </div>
+            <div style="background:#e8eaf6;border-radius:10px;padding:12px;text-align:center">
+              <div style="font-size:28px;font-weight:900;color:#1a1f63">${rotasSorted.length}</div>
+              <div style="font-size:11px;color:#666;font-weight:700">ROTAS</div>
+            </div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:8px">IMPRESSÕES POR ROTA</div>
+          ${rotasHTML}
+          <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin:12px 0 6px">OPERADORES ATIVOS HOJE</div>
+          <div>${opsHTML}</div>
+        `;
+      } catch (e) {
+        cont.innerHTML = '<div style="color:#c0392b">Erro: ' + e.message + '</div>';
+      }
+    }
+
+    // ---- Exportar PDF ----
+    function exportarPDF() {
+      const svc  = getV('svc') || 'Todos';
+      const rows = document.querySelectorAll('#logBody tr');
+      let tabela = '';
+      rows.forEach(r => { tabela += r.outerHTML; });
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <title>Log Auditoria — ${svc}</title>
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 11px; color: #222; }
+          h2 { color: #1a1f63; margin-bottom: 4px; }
+          p { color: #666; margin: 0 0 12px; font-size: 10px; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #1a1f63; color: #FFE600; padding: 6px 8px; text-align: left; font-size: 10px; }
+          td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+          tr:nth-child(even) td { background: #f9f9f9; }
+          @media print { body { margin: 0; } }
+        </style></head><body>
+        <h2>📦 Log de Auditoria — ${svc}</h2>
+        <p>Gerado em ${new Date().toLocaleString('pt-BR')} | Sistema Auditoria de Sacas — Mercado Livre</p>
+        <table><thead><tr>
+          <th>Data / Hora</th><th>Responsavel</th><th>Saca ID</th><th>Qtd</th><th>QR Mae</th><th>Rota</th><th>Auditoria</th>
+        </tr></thead><tbody>${tabela}</tbody></table>
+        <script>window.onload=()=>{window.print();}<\/script>
+        </body></html>`);
+      win.document.close();
+    }
+
+    // ---- Service Worker ----
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/Sacas/sw.js').catch(() => {}));
     }
   </script>
 </body>

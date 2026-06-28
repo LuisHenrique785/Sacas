@@ -1,0 +1,10 @@
+{
+  "name": "Auditoria de Sacas — MELI",
+  "short_name": "Sacas MELI",
+  "description": "Sistema de auditoria e impressão de etiquetas de sacas",
+  "start_url": "/Sacas/",
+  "display": "standalone",
+  "background_color": "#1a1f63",
+  "theme_color": "#FFE600",
+  "orientation": "portrait"
+}
