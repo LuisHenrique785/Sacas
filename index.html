@@ -114,6 +114,7 @@
   <button class="btn-blue" onclick="abrirRelatorioOperadores()" style="background:#2c7a3f">&#128101; OPERADORES</button>
   <button class="btn-purple" onclick="abrirLog()">&#128203; CONSULTAR LOG</button>
   <button class="btn-navy"   onclick="abrirImpressaoLivre()">&#128438; IMPRESSAO LIVRE</button>
+  <button onclick="abrirMeli()" style="width:100%;padding:10px;background:#FFE600;color:#1a1f63;border:none;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:15px;font-weight:800">&#128230; ETIQUETA MELI</button>
   <button class="btn-orange" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
 
   <div id="sessionBadge" style="display:none;background:#e8eaf6;border-radius:10px;padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
@@ -213,6 +214,59 @@
       <button onclick="buscarRapido()" style="padding:9px 16px;border:none;border-radius:8px;background:#1a1f63;color:#FFE600;font-size:13px;font-weight:700;cursor:pointer">Verificar</button>
     </div>
     <div id="buscaResult" style="margin-top:8px;font-size:13px;min-height:18px;font-weight:600"></div>
+  </div>
+
+  <!-- Modal: Etiqueta Meli -->
+  <div id="modalMeli" class="modal-bg">
+    <div class="m-cont" style="max-width:420px">
+      <h3 style="margin-top:0;color:#1a1f63">&#128230; Etiqueta Meli</h3>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">ID / CÓDIGO DE BARRAS</label>
+          <input id="meliId" type="text" placeholder="Ex: BR012345678901" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:1px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">ROTA</label>
+          <input id="meliRota" type="text" placeholder="Ex: XSP5" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:15px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">TIPO DE ENTREGA</label>
+          <div style="display:flex;gap:0;border:1.5px solid #ddd;border-radius:8px;overflow:hidden;margin-top:3px">
+            <button id="meliTipoR" onclick="setMeliTipo('R')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#1a1f63;color:#FFE600">R<br><span style="font-size:10px;font-weight:400">Residencial</span></button>
+            <button id="meliTipoC" onclick="setMeliTipo('C')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#f5f5f7;color:#555">C<br><span style="font-size:10px;font-weight:400">Comercial</span></button>
+            <button id="meliTipoA" onclick="setMeliTipo('A')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#f5f5f7;color:#555">A<br><span style="font-size:10px;font-weight:400">Agência</span></button>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">NOME DO COMPRADOR</label>
+          <input id="meliNome" type="text" placeholder="Nome completo" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">ENDEREÇO</label>
+          <input id="meliEndereco" type="text" placeholder="Rua, número" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+        </div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <label style="font-size:12px;color:#888;font-weight:600">CEP</label>
+            <input id="meliCep" type="text" placeholder="00000-000" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+          </div>
+          <div style="flex:2">
+            <label style="font-size:12px;color:#888;font-weight:600">CIDADE / ESTADO</label>
+            <input id="meliCidade" type="text" placeholder="São Paulo / SP" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">COMPLEMENTO</label>
+          <input id="meliComp" type="text" placeholder="Apto, bloco, referência..." style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button onclick="imprimirMeli()" style="flex:1;padding:11px;background:#FFE600;color:#1a1f63;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer">&#128438; IMPRIMIR</button>
+        <button onclick="fecharModal('modalMeli')" style="flex:1;padding:11px;background:#f2f2f7;color:#333;border:none;border-radius:10px;font-size:14px;cursor:pointer">FECHAR</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal: Relatório Operadores -->
@@ -649,6 +703,108 @@
       list.splice(idx, 1);
       savePrinters(list);
       renderPrinters();
+    }
+
+    // ---- Etiqueta Meli ----
+    let _meliTipo = 'R';
+
+    function abrirMeli() {
+      _meliTipo = 'R';
+      setMeliTipo('R');
+      document.getElementById('modalMeli').style.display = 'flex';
+    }
+
+    function setMeliTipo(t) {
+      _meliTipo = t;
+      ['R','C','A'].forEach(x => {
+        const b = document.getElementById('meliTipo' + x);
+        if (!b) return;
+        b.style.background = x === t ? '#1a1f63' : '#f5f5f7';
+        b.style.color       = x === t ? '#FFE600' : '#555';
+      });
+    }
+
+    function zplEscape(s) {
+      return String(s || '').replace(/[^A-Za-z0-9 \-\.\/\,\:\(\)]/g, ' ');
+    }
+
+    function gerarZPLMeli() {
+      const id       = (document.getElementById('meliId').value || '').trim();
+      const rota     = zplEscape((document.getElementById('meliRota').value || '').trim().toUpperCase());
+      const nome     = zplEscape((document.getElementById('meliNome').value || '').trim());
+      const endereco = zplEscape((document.getElementById('meliEndereco').value || '').trim());
+      const cep      = zplEscape((document.getElementById('meliCep').value || '').trim());
+      const cidade   = zplEscape((document.getElementById('meliCidade').value || '').trim());
+      const comp     = zplEscape((document.getElementById('meliComp').value || '').trim());
+      const svcLabel = zplEscape((document.getElementById('svcSelect')?.value || localStorage.getItem('svc') || '').trim());
+      const tipo     = _meliTipo;
+
+      if (!id) { toast('⚠️ Informe o ID.', 'warn'); return null; }
+
+      // Label: 100x150mm → 800x1200 dots @203dpi (8 dots/mm)
+      // Layout (portrait):
+      //   [ROTA box]       y=15..90
+      //   [CODE128]        y=95, h=90
+      //   [ID centered]    y=198
+      //   [divider line]   y=246
+      //   [big SVC]        y=252
+      //   [rota › svc]     y=390
+      //   [divider]        y=435
+      //   [nome]           y=445
+      //   [endereço]        y=480
+      //   [CEP cidade]     y=515
+      //   [comp]           y=550
+      //   [QR right]       y=440, x=570
+      //   [tipo box]       y=590, x=690
+
+      return [
+        '^XA',
+        '^CF0,28',
+        // Rota box + label
+        '^FO20,15^GB220,75,4^FS',
+        '^FO30,18^A0N,22,22^FDRota^FS',
+        '^FO30,42^A0N,46,46^FD' + (rota || '--') + '^FS',
+        // CODE128 barcode (no HRI below)
+        '^FO20,100^BCN,90,N,N,N^FD' + id + '^FS',
+        // ID text centered
+        '^FO20,202^A0N,28,28^FB760,1,0,C^FD' + id + '^FS',
+        // Divider
+        '^FO0,244^GB800,3,3^FS',
+        // Big SVC centered
+        '^FO20,250^A0N,110,110^FB760,1,0,C^FD' + svcLabel + '^FS',
+        // Rota › SVC small
+        '^FO20,375^A0N,26,26^FD' + (rota || '--') + ' › ' + svcLabel + '^FS',
+        // Divider
+        '^FO0,415^GB800,3,3^FS',
+        // Customer info (left column, max width 530px to leave room for QR)
+        '^FO20,425^A0N,26,26^FB530,1,0,L^FD' + nome + '^FS',
+        '^FO20,458^A0N,24,24^FB530,1,0,L^FD' + endereco + '^FS',
+        '^FO20,489^A0N,24,24^FB530,1,0,L^FDCEP: ' + cep + '^FS',
+        '^FO20,520^A0N,24,24^FB530,1,0,L^FD' + cidade + '^FS',
+        '^FO20,551^A0N,22,22^FB530,1,0,L^FD' + comp + '^FS',
+        // QR code right side
+        '^FO570,420^BQN,2,4^FDQA,' + id + '^FS',
+        // Delivery type box bottom right
+        '^FO686,580^GB100,100,4^FS',
+        '^FO690,584^A0N,88,88^FD' + tipo + '^FS',
+        '^XZ'
+      ].join('\n');
+    }
+
+    async function imprimirMeli() {
+      const zpl = gerarZPLMeli();
+      if (!zpl) return;
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      if (mode === 'usb') {
+        const ok = await imprimirViaUSB(zpl);
+        if (ok) toast('✅ Etiqueta Meli enviada via USB!', 'ok');
+      } else {
+        const ip = document.getElementById('ip').value.trim();
+        if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
+        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+          .then(() => toast('✅ Etiqueta Meli enviada!', 'ok'))
+          .catch(() => toast('❌ Erro ao enviar etiqueta.', 'err'));
+      }
     }
 
     // ---- Modo de impressão: WiFi / USB ----
