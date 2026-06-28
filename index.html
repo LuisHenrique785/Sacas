@@ -561,10 +561,20 @@
       if (p.style.display === 'block') renderManageSVC();
     }
     function renderManageSVC() {
-      const list = getSVCAll();
-      document.getElementById('svcManageList').innerHTML = list.map((v, i) =>
-        `<span style="display:inline-flex;align-items:center;gap:3px;background:#e8eaf6;border-radius:5px;padding:3px 8px;font-size:13px;font-weight:700;color:#1a1f63">${v}<button onclick="removeSVC(${i})" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:13px;font-weight:900;padding:0 0 0 3px;line-height:1">×</button></span>`
-      ).join('');
+      const list   = getSVCAll();
+      const coords = getSVCCoords();
+      document.getElementById('svcManageList').innerHTML = list.map((v, i) => {
+        const c = coords[v];
+        const coordTxt = c
+          ? `<span style="font-size:10px;color:#888;font-weight:400">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}</span>`
+          : `<span style="font-size:10px;color:#bbb;font-weight:400">sem coord</span>`;
+        return `<div style="display:flex;align-items:center;gap:5px;background:#e8eaf6;border-radius:7px;padding:5px 8px;width:100%;margin-bottom:4px">
+          <span style="flex:1;font-size:13px;font-weight:700;color:#1a1f63">${v}</span>
+          ${coordTxt}
+          <button onclick="capturarLocalizacaoParaSVC('${v}')" title="Capturar localização GPS" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px">📍</button>
+          <button onclick="removeSVC(${i})" title="Remover SVC" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px;font-weight:900;padding:0 2px;line-height:1">×</button>
+        </div>`;
+      }).join('');
     }
     function addSVC() {
       const inp = document.getElementById('svcNewInput');
@@ -584,6 +594,57 @@
       renderManageSVC();
     }
 
+    // ---- Geolocalização por SVC ----
+    function getSVCCoords() {
+      try { return JSON.parse(localStorage.getItem('svcCoords') || '{}'); } catch (_) { return {}; }
+    }
+    function saveSVCCoords(c) { localStorage.setItem('svcCoords', JSON.stringify(c)); }
+
+    function haversineKm(lat1, lng1, lat2, lng2) {
+      const R = 6371, toRad = x => x * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function detectarSVCPorLocalizacao() {
+      if (!navigator.geolocation) return;
+      if (document.getElementById('svc').value.trim()) return;
+      navigator.geolocation.getCurrentPosition(pos => {
+        const { latitude, longitude } = pos.coords;
+        const coords = getSVCCoords();
+        const svcs   = getSVCAll();
+        let melhor = null, menorDist = Infinity;
+        for (const nome of svcs) {
+          if (!coords[nome]) continue;
+          const dist = haversineKm(latitude, longitude, coords[nome].lat, coords[nome].lng);
+          if (dist < menorDist) { menorDist = dist; melhor = nome; }
+        }
+        if (melhor && menorDist <= 3) {
+          document.getElementById('svc').value = melhor;
+          localStorage.setItem('svc', melhor);
+          atualizarBadge();
+          atualizarContador();
+          toast('📍 SVC detectado: ' + melhor + ' (' + menorDist.toFixed(1) + ' km)', 'info', 4000);
+        }
+      }, () => {});
+    }
+
+    function capturarLocalizacaoParaSVC(nome) {
+      if (!navigator.geolocation) { toast('❌ Geolocalização não disponível neste browser.', 'err'); return; }
+      toast('📍 Capturando GPS...', 'info', 2500);
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const c = getSVCCoords();
+          c[nome] = { lat: +pos.coords.latitude.toFixed(7), lng: +pos.coords.longitude.toFixed(7) };
+          saveSVCCoords(c);
+          renderManageSVC();
+          toast('✅ Localização salva para ' + nome, 'ok');
+        },
+        err => toast('❌ Erro GPS: ' + err.message, 'err')
+      );
+    }
+
     window.onload = () => {
       const savedIp = localStorage.getItem('ip') || '';
       document.getElementById('ip').value   = savedIp;
@@ -596,6 +657,11 @@
       document.getElementById('darkVal').innerText = savedDark;
       atualizarBotaoOrient();
       populateSvcDatalist();
+      // Garante coordenadas iniciais do SMG3
+      const _c = getSVCCoords();
+      if (!_c['SMG3']) { _c['SMG3'] = { lat: -22.3477512, lng: -45.9251672 }; saveSVCCoords(_c); }
+      // Auto-detecta SVC por GPS se nenhum estiver selecionado
+      detectarSVCPorLocalizacao();
       if (!SUPABASE_URL || !SUPABASE_KEY) {
         document.getElementById('setupBanner').style.display = 'block';
         document.getElementById('btPrint').disabled = true;
