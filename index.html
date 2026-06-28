@@ -767,28 +767,31 @@
       const raw   = document.getElementById('meliPasteText').value;
       const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
 
-      // Returns value after the line that starts with label (case-insensitive)
-      function after(label) {
-        const i = lines.findIndex(l => l.toLowerCase().startsWith(label.toLowerCase()));
-        if (i < 0 || i + 1 >= lines.length) return '';
-        // Skip lines that look like labels or UI text
-        const skip = /^(ver no|mais dados|dados do|endere|telefone|n[uú]mero|bairro|cidade|estado|cep|rua|refer|tipo)/i;
-        for (let j = i + 1; j < lines.length; j++) {
-          const v = lines[j];
-          if (!skip.test(v) && v.length > 1) return v;
+      // Labels to skip (PT + ES) — these are section headers/UI text, not values
+      const skip = /^(ver no|ver en|mais dados|m[aá]s datos|datos del|dados do|endere[cç]|direcc|telef|telefone|n[uú]mero|nro\.|num\.|bairro|barrio|colonia|ciudad|cidade|estado|provincia|depto|cep|c[oó]d(igo)? postal|rua|calle|direcci[oó]n|refer|tipo)/i;
+
+      // Try multiple label variants (PT first, then ES fallback)
+      function after(...labels) {
+        for (const label of labels) {
+          const i = lines.findIndex(l => l.toLowerCase().startsWith(label.toLowerCase()));
+          if (i < 0) continue;
+          for (let j = i + 1; j < lines.length; j++) {
+            const v = lines[j];
+            if (!skip.test(v) && v.length > 1) return v;
+          }
         }
         return '';
       }
 
-      const nome    = after('Nome completo');
-      const rua     = after('Rua');
-      const numero  = after('Número');
-      const cep     = after('CEP');
-      const bairro  = after('Bairro');
-      const cidade  = after('Cidade');
-      const estado  = after('Estado');
-      const ref     = after('Referências');
-      const tipoEnd = after('Tipo de endereço');
+      const nome    = after('Nome completo',     'Nombre completo', 'Nombre');
+      const rua     = after('Rua',               'Calle',           'Dirección', 'Direccion', 'Avenida');
+      const numero  = after('Número',            'Nro.',            'Num.',      'No.');
+      const cep     = after('CEP',               'Código postal',   'Codigo postal', 'CP');
+      const bairro  = after('Bairro',            'Barrio',          'Colonia');
+      const cidade  = after('Cidade',            'Ciudad');
+      const estado  = after('Estado',            'Provincia',       'Departamento');
+      const ref     = after('Referências',       'Referencias',     'Referencia', 'Más datos');
+      const tipoEnd = after('Tipo de endereço',  'Tipo de dirección', 'Tipo de domicilio', 'Tipo de direccion');
 
       if (nome)    document.getElementById('meliNome').value     = nome;
       if (rua)     document.getElementById('meliEndereco').value = rua + (numero ? ', ' + numero : '') + (bairro ? ' - ' + bairro : '');
@@ -796,7 +799,8 @@
       if (cidade)  document.getElementById('meliCidade').value   = cidade + (estado ? ' / ' + estado : '');
       if (ref)     document.getElementById('meliComp').value     = ref;
 
-      const tipoMap = { comercial: 'C', residencial: 'R', 'agência': 'A', agencia: 'A' };
+      const tipoMap = { comercial: 'C', residencial: 'R', 'agência': 'A', agencia: 'A',
+                        casa: 'R', apartamento: 'R', oficina: 'C', negocio: 'C', agencia: 'A' };
       const tipo = tipoMap[(tipoEnd || '').toLowerCase().trim()] || null;
       if (tipo) setMeliTipo(tipo);
 
@@ -834,7 +838,7 @@
           '^FO30,17^A0N,20,20^FDRota^FS',
           '^FO30,38^A0N,38,38^FD' + (rota || '--') + '^FS',
           // Barcode (BY1 = narrow bars, centered in left half)
-          '^FO20,84^BY1,3,76^BCN,76,N,N,N^FD' + id + '^FS',
+          '^FO20,84^BY2,3,76^BCN,76,N,N,N^FD' + id + '^FS',
           // ID text under barcode
           '^FO20,170^A0N,22,22^FB' + (mid - 40) + ',1,0,C^FD' + id + '^FS',
           // Big SVC
@@ -867,7 +871,7 @@
           '^FO30,15^A0N,18,18^FDRota^FS',
           '^FO30,34^A0N,36,36^FD' + (rota || '--') + '^FS',
           // Barcode centered-ish (BY1 = narrow)
-          '^FO60,74^BY1,3,72^BCN,72,N,N,N^FD' + id + '^FS',
+          '^FO60,74^BY2,3,72^BCN,72,N,N,N^FD' + id + '^FS',
           // ID text
           '^FO20,156^A0N,22,22^FB760,1,0,C^FD' + id + '^FS',
           // Divider
@@ -901,7 +905,7 @@
         '^FO30,18^A0N,20,20^FDRota^FS',
         '^FO30,40^A0N,46,46^FD' + (rota || '--') + '^FS',
         // Barcode: BY1 = narrow bars (not ponta a ponta); starts at x=60
-        '^FO60,98^BY1,3,90^BCN,90,N,N,N^FD' + id + '^FS',
+        '^FO60,98^BY2,3,90^BCN,90,N,N,N^FD' + id + '^FS',
         // ID text centered
         '^FO20,200^A0N,26,26^FB760,1,0,C^FD' + id + '^FS',
         // Divider
