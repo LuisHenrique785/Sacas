@@ -2097,6 +2097,7 @@
     // -------- PROCESSAR / IMPRIMIR --------
     async function processar() {
       const btn    = document.getElementById('btPrint');
+      const mode   = localStorage.getItem('printMode') || 'wifi';
       const ip     = getV('ip');
       const sacaId = getV('saca');
       const qtdVal = parseInt(getV('qtd'));
@@ -2106,8 +2107,16 @@
         document.getElementById('svc').focus();
         return;
       }
-      if (!ip || !sacaId || !qtdVal || qtdVal < 1) {
-        alert('Preencha IP da impressora, Nº Saca e Quantidade.');
+      if (!sacaId || !qtdVal || qtdVal < 1) {
+        alert('Preencha Nº Saca e Quantidade.');
+        return;
+      }
+      if (mode !== 'usb' && !ip) {
+        alert('Preencha o IP da impressora.');
+        return;
+      }
+      if (mode === 'usb' && !getSelectedUSBPrinter()) {
+        toast('⚠️ Selecione a impressora USB primeiro.', 'warn');
         return;
       }
 
@@ -2366,12 +2375,19 @@
     }
 
     // ---- Reimprimir ----
-    function reimprimir() {
-      if (!ultimoZPL || !ultimoIP) return;
+    async function reimprimir() {
+      if (!ultimoZPL) return;
       toast('🔄 Reenviando...', 'info', 1500);
-      fetch('http://' + ultimoIP + '/pstprnt', { method: 'POST', body: ultimoZPL, mode: 'no-cors' })
-        .then(() => toast('✅ Reimpresso com sucesso!', 'ok'))
-        .catch(() => toast('❌ Erro na impressora.', 'err'));
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      if (mode === 'usb') {
+        const ok = await imprimirViaUSB(ultimoZPL);
+        if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
+      } else {
+        if (!ultimoIP) return;
+        fetch('http://' + ultimoIP + '/pstprnt', { method: 'POST', body: ultimoZPL, mode: 'no-cors' })
+          .then(() => { toast('✅ Reimpresso com sucesso!', 'ok'); beep('ok'); })
+          .catch(() => { toast('❌ Erro na impressora.', 'err'); beep('err'); });
+      }
     }
 
     // ---- Histórico da sessão ----
@@ -2472,9 +2488,11 @@
     }
 
     // ---- Etiqueta de teste ----
-    function imprimirTeste() {
+    async function imprimirTeste() {
+      const modoUsb = localStorage.getItem('printMode') === 'usb';
       const ip = document.getElementById('ip').value.trim();
-      if (!ip) { toast('⚠️ Informe o IP da impressora primeiro.', 'warn'); return; }
+      if (!modoUsb && !ip) { toast('⚠️ Informe o IP da impressora primeiro.', 'warn'); return; }
+      if (modoUsb && !getSelectedUSBPrinter()) { toast('⚠️ Selecione a impressora USB primeiro.', 'warn'); return; }
 
       const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
       const dark  = document.getElementById('darkness').value || '30';
@@ -2520,12 +2538,13 @@
       }
 
       toast('🖨️ Enviando etiqueta de teste...', 'info', 2000);
-      if (localStorage.getItem('printMode') === 'usb') {
-        imprimirViaUSB(zpl).then(ok => { if (ok) toast('✅ Etiqueta de teste enviada!', 'ok'); });
+      if (modoUsb) {
+        const ok = await imprimirViaUSB(zpl);
+        if (ok) { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); }
       } else {
         fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-          .then(() => toast('✅ Etiqueta de teste enviada!', 'ok'))
-          .catch(() => toast('❌ Erro ao conectar na impressora.', 'err'));
+          .then(() => { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); })
+          .catch(() => { toast('❌ Erro ao conectar na impressora.', 'err'); beep('err'); });
       }
     }
 
