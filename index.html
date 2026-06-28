@@ -133,6 +133,14 @@
         style="width:100%;margin-top:7px;padding:8px;border:1.5px solid #ccc;border-radius:8px;background:white;font-size:13px;font-weight:700;cursor:pointer;color:#555">
         &#11014; Orientacao: Normal
       </button>
+      <div style="margin-top:7px;padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:white">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:700;color:#555">&#9632; Escuridao</span>
+          <span id="darkVal" style="font-size:13px;font-weight:900;color:#1a1f63">30</span>
+        </div>
+        <input type="range" id="darkness" min="0" max="30" value="30" oninput="svDark()"
+          style="width:100%;accent-color:#1a1f63">
+      </div>
     </div>
     <input type="text"   id="log"  placeholder="Descricao Log">
     <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
@@ -530,6 +538,9 @@
       document.getElementById('resp').value = localStorage.getItem('rp') || '';
       const savedSize = savedIp ? (localStorage.getItem('lsz_' + savedIp) || '800x800') : '800x800';
       document.getElementById('labelSizeMain').value = savedSize;
+      const savedDark = savedIp ? (localStorage.getItem('dk_' + savedIp) || '30') : '30';
+      document.getElementById('darkness').value = savedDark;
+      document.getElementById('darkVal').innerText = savedDark;
       atualizarBotaoOrient();
       populateSvcDatalist();
       if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -543,6 +554,13 @@
       const ip   = document.getElementById('ip').value.trim();
       const size = document.getElementById('labelSizeMain').value;
       if (ip) localStorage.setItem('lsz_' + ip, size);
+    };
+
+    const svDark = () => {
+      const val = document.getElementById('darkness').value;
+      document.getElementById('darkVal').innerText = val;
+      const ip = document.getElementById('ip').value.trim();
+      if (ip) localStorage.setItem('dk_' + ip, val);
     };
 
     function isInvertido() {
@@ -576,6 +594,9 @@
       localStorage.setItem('rp', getV('resp'));
       const savedSize = localStorage.getItem('lsz_' + ip) || '800x800';
       document.getElementById('labelSizeMain').value = savedSize;
+      const dk = localStorage.getItem('dk_' + ip) || '30';
+      document.getElementById('darkness').value = dk;
+      document.getElementById('darkVal').innerText = dk;
       atualizarBotaoOrient();
     };
     const fecharModal = id => document.getElementById(id).style.display = 'none';
@@ -1487,8 +1508,9 @@
 
         setStatus('Enviando para impressora...', '#fff3cd');
         const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
-        const inv = isInvertido();
-        const rot = inv ? 'I' : 'N';
+        const inv  = isInvertido();
+        const rot  = inv ? 'I' : 'N';
+        const dark = document.getElementById('darkness').value || '30';
         const svcResp = (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp');
         let zpl = '';
 
@@ -1515,7 +1537,7 @@
             const _y2  = inv ? ll - ty2 - 42       : ty2;
             const _y3  = inv ? ll - ty3 - 24       : ty3;
             const _y4  = inv ? ll - ty4 - 24       : ty4;
-            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
+            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
                    '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
@@ -1543,7 +1565,7 @@
           const _y4  = inv ? ll - y4  - fC   : y4;
           for (let k = 1; k <= qtdVal; k++) {
             const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
-            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD25' +
+            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                    '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
