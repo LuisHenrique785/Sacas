@@ -165,6 +165,10 @@
         <input type="range" id="darkness" min="0" max="30" value="30" oninput="svDark()"
           style="width:100%;accent-color:#1a1f63">
       </div>
+      <button onclick="imprimirTeste()"
+        style="width:100%;margin-top:7px;padding:8px;border:1.5px dashed #ccc;border-radius:8px;background:white;font-size:13px;font-weight:700;cursor:pointer;color:#888">
+        &#127384; Imprimir etiqueta de teste
+      </button>
     </div>
     <input type="text"   id="log"  placeholder="Descricao Log">
     <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
@@ -1786,6 +1790,60 @@
       } catch (e) {
         res.style.color = '#c0392b'; res.innerHTML = 'Erro: ' + e.message;
       }
+    }
+
+    // ---- Etiqueta de teste ----
+    function imprimirTeste() {
+      const ip = document.getElementById('ip').value.trim();
+      if (!ip) { toast('⚠️ Informe o IP da impressora primeiro.', 'warn'); return; }
+
+      const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
+      const dark  = document.getElementById('darkness').value || '30';
+      const inv   = isInvertido();
+      const rot   = inv ? 'I' : 'N';
+      const svc   = getV('svc') || 'SVC';
+      const dataStr = dataHoraAtual();
+      let zpl;
+
+      if (pw === 640 && ll === 320) {
+        const qrMag = 3, qrDots = qrMag * 21;
+        const vOff  = Math.round((ll - 166) / 2);
+        const tX    = inv ? pw - 5 : 150;
+        const tW    = pw - 155;
+        const _qrY  = inv ? ll - vOff - 10 - qrDots : vOff + 10;
+        const _y1   = inv ? ll - (vOff + 10)  - 50 : vOff + 10;
+        const _y2   = inv ? ll - (vOff + 65)  - 42 : vOff + 65;
+        const _y3   = inv ? ll - (vOff + 112) - 24 : vOff + 112;
+        const _y4   = inv ? ll - (vOff + 142) - 24 : vOff + 142;
+        zpl = `^XA^CI28^PW${pw}^LL${ll}^MD${dark}` +
+              `^FO10,${_qrY}^BQN,2,${qrMag}^FDQA,TESTE^FS` +
+              `^FO${tX},${_y1}^A0${rot},50,50^FB${tW},1,0,L^FDTESTE IMPRESSAO^FS` +
+              `^FO${tX},${_y2}^A0${rot},42,42^FB${tW},1,0,L^FD${svc}^FS` +
+              `^FO${tX},${_y3}^A0${rot},24,24^FB${tW},1,0,L^FD${dataStr}^FS` +
+              `^FO${tX},${_y4}^A0${rot},24,24^FB${tW},1,0,L^FDIP: ${ip}^FS^XZ`;
+      } else {
+        const sx = pw / 800, sy = ll / 800;
+        const qrX = Math.round(250 * sx), qrY = Math.round(30 * sy);
+        const y1 = Math.round(360 * sy), y2 = Math.round(480 * sy);
+        const y3 = Math.round(620 * sy), y4 = Math.round(660 * sy);
+        const fA = Math.round(70 * sy), fB = Math.round(60 * sy), fC = Math.round(25 * sy);
+        const _qrY = inv ? ll - qrY - 5 * 21 : qrY;
+        const _y1  = inv ? ll - y1 - fA : y1;
+        const _y2  = inv ? ll - y2 - fB : y2;
+        const _y3  = inv ? ll - y3 - fC : y3;
+        const _y4  = inv ? ll - y4 - fC : y4;
+        zpl = `^XA^CI28^PW${pw}^LL${ll}^MD${dark}` +
+              `^FO${qrX},${_qrY}^BQN,2,5^FDQA,TESTE^FS` +
+              `^FO0,${_y1}^A0${rot},${fA},${fA}^FB${pw},1,0,C^FDTESTE DE IMPRESSAO^FS` +
+              `^FO0,${_y2}^A0${rot},${fB},${fB}^FB${pw},1,0,C^FD${svc}^FS` +
+              `^FO0,${_y3}^A0${rot},${fC},${fC}^FB${pw},1,0,C^FD${dataStr}^FS` +
+              `^FO0,${_y4}^A0${rot},${fC},${fC}^FB${pw},1,0,C^FDIP: ${ip}^FS^XZ`;
+      }
+
+      toast('🖨️ Enviando etiqueta de teste...', 'info', 2000);
+      fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+        .then(() => toast('✅ Etiqueta de teste enviada!', 'ok'))
+        .catch(() => toast('❌ Erro ao conectar na impressora.', 'err'));
     }
 
     // ---- Status da impressora ----
