@@ -32,6 +32,17 @@
       --s2:0 4px 18px rgba(0,0,0,.09),0 1px 4px rgba(0,0,0,.04);
       --s3:0 8px 32px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.05);
     }
+    [data-dark]{
+      --bg:#0d0f1c; --surf:#161929; --surf2:#0f1220;
+      --bdr:#2a2f5a; --bdr-focus:#818cf8;
+      --tx:#e8eaff; --tx2:#8b92c4; --tx3:#4a5080;
+      --s1:0 2px 8px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.2);
+      --s2:0 4px 18px rgba(0,0,0,.4),0 1px 4px rgba(0,0,0,.2);
+      --s3:0 8px 32px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.2);
+    }
+    body{transition:background .25s,color .25s;}
+    .card{transition:background .25s,box-shadow .25s;}
+    input[type=text],input[type=number],select{transition:background .25s,border-color .25s,color .25s;}
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
     body{font-family:'Inter',sans-serif;background:var(--bg);padding:0 14px 52px;display:flex;flex-direction:column;align-items:center;min-height:100vh;margin:0;-webkit-font-smoothing:antialiased;}
 
@@ -100,6 +111,16 @@
     .btn-print:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(0,166,80,.4),0 2px 6px rgba(0,0,0,.1);}
     .btn-print:active{transform:translateY(0) scale(.98);box-shadow:0 2px 8px var(--ok-glow);}
     .btn-print:disabled{background:linear-gradient(135deg,#cbd5e1,#94a3b8);box-shadow:none;transform:none;cursor:not-allowed;color:rgba(255,255,255,.7);}
+    @keyframes ripple-anim{to{transform:scale(4);opacity:0;}}
+    .btn-print{position:relative;overflow:hidden;}
+    .ripple-el{
+      position:absolute;border-radius:50%;
+      background:rgba(255,255,255,.35);
+      transform:scale(0);animation:ripple-anim .55s linear;
+      pointer-events:none;
+    }
+    @keyframes btn-pulse{0%,100%{box-shadow:0 4px 18px var(--ok-glow),0 1px 3px rgba(0,0,0,.1);}50%{box-shadow:0 4px 28px rgba(0,166,80,.6),0 1px 3px rgba(0,0,0,.1);}}
+    .btn-print.printing{animation:btn-pulse .7s infinite;}
 
     /* ═══ SECONDARY BUTTONS ═══ */
     .btn-reimp{
@@ -147,6 +168,11 @@
       border:1px solid #dde3f8;border-radius:12px;
       padding:14px 16px;margin-bottom:16px;min-height:46px;
     }
+
+    /* ═══ SECTION SEPARATORS ═══ */
+    .sec-row{display:flex;align-items:center;gap:8px;margin:14px 0 10px;}
+    .sec-row::before,.sec-row::after{content:'';flex:1;height:1px;background:var(--bdr);}
+    .sec-row span{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--tx3);white-space:nowrap;}
 
     /* ═══ ACTIONS GRID ═══ */
     .act-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
@@ -264,7 +290,14 @@
         <div class="hd-sub">Mercado Livre</div>
       </div>
     </div>
-    <div id="sessionBadge"><span id="sessionLabel"></span></div>
+    <div style="display:flex;align-items:center;gap:8px;position:relative;">
+      <div id="hdPrinter" style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 10px;cursor:pointer" onclick="testarImpressora()" title="Testar impressora">
+        <span style="font-size:13px">🖨️</span>
+        <span id="hdPrinterDot" style="width:8px;height:8px;border-radius:50%;background:#6b7280;flex-shrink:0;transition:background .3s"></span>
+      </div>
+      <button id="darkBtn" onclick="toggleDark()" style="width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.13);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:#fff" title="Modo escuro">🌙</button>
+      <div id="sessionBadge"><span id="sessionLabel"></span></div>
+    </div>
   </header>
 
   <!-- ── ERROS HOJE ── -->
@@ -337,6 +370,7 @@
   <!-- ── IMPRESSÃO ── -->
   <div class="card">
     <div id="contadorDia" class="counter"></div>
+    <div class="sec-row"><span>Dados da Etiqueta</span></div>
     <label class="fl">Descricao / Log</label>
     <input type="text" id="log" placeholder="ex: Auditoria turno manha">
     <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;margin-bottom:8px">
@@ -349,6 +383,7 @@
         <input type="number" id="qtd" placeholder="1" min="1" style="margin:0">
       </div>
     </div>
+    <div class="sec-row"><span>Ajustes de Impressão</span></div>
     <div style="padding:10px 12px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf2);margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8596; Posicao Horizontal</span>
@@ -1384,7 +1419,24 @@
       arrow.textContent  = open ? '▼ expandir' : '▲ recolher';
     }
 
+    function toggleDark() {
+      const on = document.documentElement.hasAttribute('data-dark');
+      if (on) {
+        document.documentElement.removeAttribute('data-dark');
+        document.getElementById('darkBtn').textContent = '🌙';
+        localStorage.setItem('darkMode', '0');
+      } else {
+        document.documentElement.setAttribute('data-dark', '');
+        document.getElementById('darkBtn').textContent = '☀️';
+        localStorage.setItem('darkMode', '1');
+      }
+    }
+
     window.onload = () => {
+      // Modo escuro — carregar preferência salva
+      const _dk = localStorage.getItem('darkMode') === '1';
+      if (_dk) { document.documentElement.setAttribute('data-dark',''); document.getElementById('darkBtn').textContent = '☀️'; }
+
       const savedIp   = localStorage.getItem('ip')  || '';
       const savedSvc  = localStorage.getItem('svc') || '';
       const savedResp = localStorage.getItem('rp')  || '';
@@ -2384,7 +2436,19 @@
         return;
       }
 
+      // Ripple
+      btn.addEventListener('click', function rippleOnce(e) {
+        btn.removeEventListener('click', rippleOnce);
+        const r = btn.getBoundingClientRect();
+        const size = Math.max(r.width, r.height);
+        const el = document.createElement('span');
+        el.className = 'ripple-el';
+        el.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+(e.clientX-r.left-size/2)+'px;top:'+(e.clientY-r.top-size/2)+'px';
+        btn.appendChild(el);
+        setTimeout(() => el.remove(), 600);
+      }, {once:true});
       btn.disabled = true;
+      btn.classList.add('printing');
       setStatus('Buscando saca na Base...', '#fff3cd');
 
       try {
@@ -2395,6 +2459,7 @@
         if (!baseRows || !baseRows.length || !baseRows[0].qr_mae) {
           setStatus('Saca nao encontrada na Base!', '#ffdce0');
           gravarErro(sacaId, qtdVal, ip, getV('log'), 'Saca nao encontrada na base');
+          btn.classList.remove('printing');
           btn.disabled = false;
           return;
         }
@@ -2409,11 +2474,13 @@
 
         if (logHoje && logHoje.length > 0) {
           btn.disabled = false;
+          btn.classList.remove('printing');
           if (!confirm('Saca ja lancada hoje.\nRegistrar nova impressao mesmo assim?')) {
             setStatus('Cancelado.', '#f2f2f7');
             return;
           }
           btn.disabled = true;
+          btn.classList.add('printing');
         }
 
         setStatus('Registrando...', '#fff3cd');
@@ -2506,6 +2573,7 @@
           document.getElementById('btnReimp').style.display = 'block';
           adicionarHistorico(sacaId, rotaSaca, qtdVal);
           atualizarContador();
+          btn.classList.remove('printing');
           btn.disabled = false;
         };
         const _onErr = () => {
@@ -2513,6 +2581,7 @@
           toast('❌ Erro na impressora.', 'err');
           beep('err');
           gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
+          btn.classList.remove('printing');
           btn.disabled = false;
         };
         if (localStorage.getItem('printMode') === 'usb') {
@@ -2523,6 +2592,7 @@
 
       } catch (e) {
         setStatus('Erro: ' + e.message, '#ffdce0');
+        btn.classList.remove('printing');
         btn.disabled = false;
       }
     }
@@ -2845,13 +2915,15 @@
     function testarImpressora() {
       const ip  = document.getElementById('ip').value.trim();
       const dot = document.getElementById('printerDot');
-      if (!ip) { dot.style.background = '#d1d1d6'; return; }
-      dot.style.background = '#ff9500';
+      const hdDot = document.getElementById('hdPrinterDot');
+      const setColor = c => { dot.style.background = c; if(hdDot) hdDot.style.background = c; };
+      if (!ip) { setColor('#6b7280'); return; }
+      setColor('#ff9500');
       const ctrl = new AbortController();
       const tid  = setTimeout(() => ctrl.abort(), 2500);
       fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
-        .then(() => { clearTimeout(tid); dot.style.background = '#00a650'; })
-        .catch(() => { clearTimeout(tid); dot.style.background = '#c0392b'; });
+        .then(() => { clearTimeout(tid); setColor('#00a650'); })
+        .catch(() => { clearTimeout(tid); setColor('#c0392b'); });
     }
 
     // ---- Relatório por operador ----
