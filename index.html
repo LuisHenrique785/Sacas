@@ -12,216 +12,288 @@
   <title>Sistema Auditoria - Oficial</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: sans-serif; background: #f2f2f7; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
-    .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 340px; }
-    input[type=text], input[type=number] { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
-    .btn-green  { width: 100%; padding: 15px; background: #34c759; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
-    .btn-green:disabled { background: #a0a0a0; cursor: not-allowed; }
-    .btn-blue   { width: 100%; padding: 10px; background: #007aff; color: white; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; }
-    .btn-orange { width: 100%; padding: 10px; background: #ff9500; color: white; border: none; border-radius: 10px; margin-bottom: 10px; cursor: pointer; font-size: 15px; font-weight: bold; }
-    #status { margin-top: 10px; font-size: 14px; text-align: center; padding: 10px; border-radius: 8px; display: none; }
-    .modal-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; }
-    #modalEditor { z-index: 20; }
-    .m-cont { background: white; margin: 8% auto; padding: 20px; width: 88%; max-width: 380px; border-radius: 15px; max-height: 80vh; overflow-y: auto; }
-    .ranking-item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-    .barra-fundo  { background: #e5e5ea; border-radius: 4px; height: 8px; flex: 1; }
-    .barra-fill   { height: 8px; border-radius: 4px; }
+    :root {
+      --y:#FFE600; --n:#1a1f63; --g:#00a650; --r:#c0392b; --o:#ff9500;
+      --bg:#edf0f7; --card:#fff; --bd:#e2e5ed; --t:#1c1c1e; --t2:#5a6272; --t3:#aaa;
+      --R:14px; --Rs:9px; --sh:0 2px 10px rgba(0,0,0,.07);
+    }
+    *{box-sizing:border-box;}
+    body{font-family:'Inter',sans-serif;background:var(--bg);padding:0 0 40px;display:flex;flex-direction:column;align-items:center;min-height:100vh;margin:0;}
 
-    /* Upload section */
-    .upload-box { border: 2px dashed #ccc; border-radius: 10px; padding: 14px; margin: 8px 0; text-align: center; cursor: pointer; position: relative; transition: border-color .2s; }
-    .upload-box:hover, .upload-box.has-file { border-color: #007aff; background: #f0f6ff; }
-    .upload-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .upload-label { font-size: 13px; color: #555; pointer-events: none; }
-    .upload-preview { font-size: 12px; color: #34c759; margin-top: 4px; font-weight: bold; pointer-events: none; }
-    .progress-bar { height: 6px; background: #e5e5ea; border-radius: 3px; margin: 8px 0; overflow: hidden; }
-    .progress-fill { height: 6px; background: #007aff; border-radius: 3px; transition: width .3s; }
-    #setupBanner { background: #fff3cd; border: 1px solid #ffc107; padding: 14px; border-radius: 10px; margin-bottom: 10px; font-size: 13px; width: 100%; max-width: 340px; line-height: 1.6; display: none; }
-    .btn-purple { width: 100%; padding: 10px; background: #6c3dd3; color: white; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: bold; }
+    /* ── Header ── */
+    .app-hd{width:100%;background:var(--n);padding:18px 20px 16px;display:flex;align-items:center;justify-content:space-between;border-radius:0 0 24px 24px;box-shadow:0 4px 24px rgba(26,31,99,.3);margin-bottom:14px;}
+    .hd-brand{display:flex;align-items:center;gap:12px;}
+    .hd-icon{font-size:28px;line-height:1;}
+    .hd-title{font-size:17px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.3px;}
+    .hd-sub{font-size:10px;font-weight:700;color:var(--y);letter-spacing:1px;text-transform:uppercase;}
+    #sessionBadge{background:rgba(255,255,255,.18);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;color:#fff;display:none;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
 
-    /* Log modal */
-    .m-cont-log { background: white; margin: 4% auto; padding: 20px; width: 95%; max-width: 720px; border-radius: 15px; max-height: 90vh; overflow-y: auto; }
-    .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
-    .filter-grid label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #888; display: block; margin-bottom: 3px; }
-    .filter-grid input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; }
-    .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .log-table th { background: #1a1f63; color: #FFE600; padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 700; white-space: nowrap; position: sticky; top: 0; }
-    .log-table td { padding: 7px 10px; border-bottom: 1px solid #eee; white-space: nowrap; color: #333; }
-    .log-table tr:nth-child(even) td { background: #fafafa; }
-    .log-table tr:hover td { background: #f0f2ff; }
-    .log-table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; margin-top: 10px; }
-    .log-info { font-size: 12px; color: #666; margin: 6px 0; min-height: 16px; }
-    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-    .btn-export { padding: 8px 14px; background: #00a650; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
-    .btn-buscar { width: 100%; padding: 11px; background: #6c3dd3; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 6px; }
-    .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #e0e0e0; padding-bottom: 0; }
-    .tab-btn { flex: 1; padding: 10px 8px; border: none; background: #f2f2f7; color: #666; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 13px; font-weight: 700; border-bottom: 2px solid transparent; margin-bottom: -2px; }
-    .tab-btn.tab-active { background: white; color: #6c3dd3; border-bottom-color: #6c3dd3; }
-    .tab-sec { display: none; }
-    .tab-sec.tab-vis { display: block; }
-    .motivo-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-    .motivo-badge.nf  { background: #ffdce0; color: #c0392b; }
-    .motivo-badge.imp { background: #fff3cd; color: #856404; }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+    /* ── Card ── */
+    .card{background:var(--card);border-radius:var(--R);box-shadow:var(--sh);width:100%;max-width:400px;padding:16px 18px;margin-bottom:10px;}
 
-    /* Impressão Livre */
-    .btn-navy   { width: 100%; padding: 10px; background: #1a1f63; color: #FFE600; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: bold; letter-spacing: .3px; }
-    .m-cont-livre { background: white; margin: 3% auto; padding: 22px; width: 95%; max-width: 600px; border-radius: 15px; max-height: 94vh; overflow-y: auto; }
-    .libre-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    .libre-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-    .lbl { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #888; display: block; margin-bottom: 4px; }
-    .lbl-input { width: 100%; padding: 9px 11px; border: 1.5px solid #d1d1d6; border-radius: 8px; font-size: 14px; }
-    .lbl-input:focus { outline: none; border-color: #1a1f63; }
-    .lbl-select { width: 100%; padding: 9px 11px; border: 1.5px solid #d1d1d6; border-radius: 8px; font-size: 14px; background: white; }
-    .zpl-area { width: 100%; height: 260px; font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; padding: 12px; border: 1.5px solid #d1d1d6; border-radius: 8px; resize: vertical; line-height: 1.5; color: #1a1a1a; background: #fafafa; }
-    .zpl-area:focus { outline: none; border-color: #1a1f63; background: white; }
-    .libre-actions { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-    .btn-action { padding: 8px 14px; border: 1.5px solid #d1d1d6; border-radius: 8px; background: white; font-size: 13px; font-weight: 600; cursor: pointer; color: #333; display: flex; align-items: center; gap: 6px; }
-    .btn-action:hover { background: #f2f2f7; }
-    .btn-action.file-btn { position: relative; overflow: hidden; }
-    .btn-action.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .libre-status { font-size: 13px; text-align: center; min-height: 20px; margin: 8px 0; font-weight: 600; }
-    .size-chip { display: inline-block; background: #e8eaf6; color: #1a1f63; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+    /* ── Labels ── */
+    .sec-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);display:block;}
+    .fl{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:4px;}
 
-    /* Editor visual */
-    .m-cont-editor { background: white; margin: 2% auto; padding: 20px; width: 95%; max-width: 580px; border-radius: 15px; max-height: 96vh; overflow-y: auto; }
-    #edCanvas { display: block; margin: 0 auto; cursor: grab; touch-action: none; border: 2px solid white; box-shadow: 0 4px 20px rgba(0,0,0,.4); max-width: 100%; }
-    #edCanvas:active { cursor: grabbing; }
-    .rot-btn { flex: 1; padding: 8px 6px; border: 1.5px solid #d1d1d6; border-radius: 8px; background: white; font-size: 13px; cursor: pointer; font-weight: 700; transition: all .15s; }
-    .rot-btn.rot-active { background: #1a1f63; color: #FFE600; border-color: #1a1f63; }
-    .ed-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    .ed-grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-    #toastCont { position:fixed; top:18px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; width:92%; max-width:360px; }
-    .toast { padding:12px 20px; border-radius:12px; font-size:14px; font-weight:700; opacity:0; transform:translateY(-14px); transition:all .28s cubic-bezier(.34,1.56,.64,1); text-align:center; box-shadow:0 6px 24px rgba(0,0,0,.22); }
-    .toast.t-show { opacity:1; transform:translateY(0); }
-    .t-ok   { background:#00a650; color:#fff; }
-    .t-err  { background:#c0392b; color:#fff; }
-    .t-warn { background:#ff9500; color:#fff; }
-    .t-info { background:#1a1f63; color:#FFE600; }
+    /* ── Inputs (main page) ── */
+    input[type=text],input[type=number]{width:100%;padding:11px 13px;margin:0 0 8px;border:1.5px solid var(--bd);border-radius:var(--Rs);font-size:15px;font-family:'Inter',sans-serif;color:var(--t);background:#fff;transition:border-color .15s;}
+    input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--n);box-shadow:0 0 0 3px rgba(26,31,99,.09);}
+    select{font-family:'Inter',sans-serif;}
+
+    /* ── Buttons ── */
+    .btn-print{width:100%;padding:16px;background:var(--g);color:#fff;border:none;border-radius:10px;font-size:18px;font-weight:800;cursor:pointer;letter-spacing:.4px;font-family:'Inter',sans-serif;transition:filter .15s;margin-top:4px;}
+    .btn-print:hover{filter:brightness(1.07);}
+    .btn-print:active{filter:brightness(.94);}
+    .btn-print:disabled{background:#a5a5a5;cursor:not-allowed;filter:none;}
+    .btn-reimp{width:100%;padding:10px;border-radius:var(--Rs);border:1.5px solid var(--n);background:#fff;color:var(--n);font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;display:none;font-family:'Inter',sans-serif;}
+    .btn-erros{display:none;width:100%;max-width:400px;padding:10px 14px;background:#fce4ec;color:var(--r);border:1.5px solid #f4b8c6;border-radius:10px;margin-bottom:10px;cursor:pointer;font-size:14px;font-weight:800;font-family:'Inter',sans-serif;text-align:left;}
+    .btn-atualizar{width:100%;padding:12px;background:var(--o);color:#fff;border:none;border-radius:var(--Rs);font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+    .btn-verificar{padding:11px 18px;border:none;border-radius:var(--Rs);background:var(--n);color:var(--y);font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+
+    /* ── Config toggle ── */
+    .cfg-btn{width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:2px 0;font-family:'Inter',sans-serif;}
+    .cfg-lbl{font-size:13px;font-weight:700;color:var(--t2);}
+    .cfg-hint{font-size:11px;color:var(--t3);}
+
+    /* ── Counter ── */
+    .counter{background:#f5f7fc;border-radius:var(--Rs);padding:10px 14px;margin-bottom:12px;min-height:38px;font-size:13px;color:var(--t2);}
+
+    /* ── Actions grid ── */
+    .act-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+    .act-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:12px 6px;border-radius:10px;border:1.5px solid var(--bd);background:#fff;cursor:pointer;transition:transform .12s;min-height:72px;font-family:'Inter',sans-serif;}
+    .act-btn:active{transform:scale(.94);}
+    .act-icon{font-size:22px;}
+    .act-lbl{font-size:10px;font-weight:700;color:var(--t2);text-align:center;line-height:1.3;}
+    .a-blue{background:#f0f1ff;border-color:#c5c8f5;}.a-blue .act-lbl{color:#3a37cc;}
+    .a-green{background:#e8f5e9;border-color:#a5d6a7;}.a-green .act-lbl{color:#1a6e2f;}
+    .a-purple{background:#f3e8fd;border-color:#ce9ff4;}.a-purple .act-lbl{color:#5c25b0;}
+    .a-meli{background:#fffde7;border-color:#ffe082;}.a-meli .act-lbl{color:#6b5800;}
+    .a-navy{background:#e8eaf6;border-color:#9fa8da;}.a-navy .act-lbl{color:var(--n);}
+
+    /* ── Modals (unchanged) ── */
+    #status{margin-top:10px;font-size:14px;text-align:center;padding:10px;border-radius:8px;display:none;}
+    .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:10;}
+    #modalEditor{z-index:20;}
+    .m-cont{background:#fff;margin:8% auto;padding:20px;width:88%;max-width:380px;border-radius:15px;max-height:80vh;overflow-y:auto;}
+    .ranking-item{padding:8px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+    .barra-fundo{background:#e5e5ea;border-radius:4px;height:8px;flex:1;}
+    .barra-fill{height:8px;border-radius:4px;}
+    .upload-box{border:2px dashed #ccc;border-radius:10px;padding:14px;margin:8px 0;text-align:center;cursor:pointer;position:relative;transition:border-color .2s;}
+    .upload-box:hover,.upload-box.has-file{border-color:#007aff;background:#f0f6ff;}
+    .upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+    .upload-label{font-size:13px;color:#555;pointer-events:none;}
+    .upload-preview{font-size:12px;color:var(--g);margin-top:4px;font-weight:bold;pointer-events:none;}
+    .progress-bar{height:6px;background:#e5e5ea;border-radius:3px;margin:8px 0;overflow:hidden;}
+    .progress-fill{height:6px;background:#007aff;border-radius:3px;transition:width .3s;}
+    #setupBanner{background:#fff3cd;border:1px solid #ffc107;padding:14px;border-radius:10px;margin-bottom:10px;font-size:13px;width:100%;max-width:400px;line-height:1.6;display:none;}
+    .m-cont-log{background:#fff;margin:4% auto;padding:20px;width:95%;max-width:720px;border-radius:15px;max-height:90vh;overflow-y:auto;}
+    .filter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px;}
+    .filter-grid label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#888;display:block;margin-bottom:3px;}
+    .filter-grid input{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;}
+    .log-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .log-table th{background:var(--n);color:var(--y);padding:8px 10px;text-align:left;font-size:11px;font-weight:700;white-space:nowrap;position:sticky;top:0;}
+    .log-table td{padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;color:#333;}
+    .log-table tr:nth-child(even) td{background:#fafafa;}
+    .log-table tr:hover td{background:#f0f2ff;}
+    .log-table-wrap{overflow-x:auto;max-height:400px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;margin-top:10px;}
+    .log-info{font-size:12px;color:#666;margin:6px 0;min-height:16px;}
+    .log-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+    .btn-export{padding:8px 14px;background:var(--g);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
+    .btn-buscar{width:100%;padding:11px;background:#6c3dd3;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:6px;}
+    .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e0e0e0;}
+    .tab-btn{flex:1;padding:10px 8px;border:none;background:#f2f2f7;color:#666;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-2px;}
+    .tab-btn.tab-active{background:#fff;color:#6c3dd3;border-bottom-color:#6c3dd3;}
+    .tab-sec{display:none;}.tab-sec.tab-vis{display:block;}
+    .motivo-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+    .motivo-badge.nf{background:#ffdce0;color:var(--r);}
+    .motivo-badge.imp{background:#fff3cd;color:#856404;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+    .m-cont-livre{background:#fff;margin:3% auto;padding:22px;width:95%;max-width:600px;border-radius:15px;max-height:94vh;overflow-y:auto;}
+    .libre-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+    .libre-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+    .lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#888;display:block;margin-bottom:4px;}
+    .lbl-input{width:100%;padding:9px 11px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px;}
+    .lbl-input:focus{outline:none;border-color:var(--n);}
+    .lbl-select{width:100%;padding:9px 11px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px;background:#fff;}
+    .zpl-area{width:100%;height:260px;font-family:'SF Mono','Fira Code',monospace;font-size:12px;padding:12px;border:1.5px solid #d1d1d6;border-radius:8px;resize:vertical;line-height:1.5;color:#1a1a1a;background:#fafafa;}
+    .zpl-area:focus{outline:none;border-color:var(--n);background:#fff;}
+    .libre-actions{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+    .btn-action{padding:8px 14px;border:1.5px solid #d1d1d6;border-radius:8px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#333;display:flex;align-items:center;gap:6px;}
+    .btn-action:hover{background:#f2f2f7;}
+    .btn-action.file-btn{position:relative;overflow:hidden;}
+    .btn-action.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+    .libre-status{font-size:13px;text-align:center;min-height:20px;margin:8px 0;font-weight:600;}
+    .size-chip{display:inline-block;background:#e8eaf6;color:var(--n);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px;}
+    .m-cont-editor{background:#fff;margin:2% auto;padding:20px;width:95%;max-width:580px;border-radius:15px;max-height:96vh;overflow-y:auto;}
+    #edCanvas{display:block;margin:0 auto;cursor:grab;touch-action:none;border:2px solid #fff;box-shadow:0 4px 20px rgba(0,0,0,.4);max-width:100%;}
+    #edCanvas:active{cursor:grabbing;}
+    .rot-btn{flex:1;padding:8px 6px;border:1.5px solid #d1d1d6;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-weight:700;transition:all .15s;}
+    .rot-btn.rot-active{background:var(--n);color:var(--y);border-color:var(--n);}
+    .ed-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+    .ed-grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:12px;}
+    .btn-blue{width:100%;padding:10px;background:#007aff;color:#fff;border:none;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:15px;}
+    .btn-orange{width:100%;padding:10px;background:var(--o);color:#fff;border:none;border-radius:10px;margin-bottom:10px;cursor:pointer;font-size:15px;font-weight:bold;}
+    .btn-purple{width:100%;padding:10px;background:#6c3dd3;color:#fff;border:none;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:15px;font-weight:bold;}
+    .btn-navy{width:100%;padding:10px;background:var(--n);color:var(--y);border:none;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:15px;font-weight:bold;letter-spacing:.3px;}
+    .btn-green{width:100%;padding:15px;background:var(--g);color:#fff;border:none;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;}
+    .btn-green:disabled{background:#a0a0a0;cursor:not-allowed;}
+    #toastCont{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:92%;max-width:360px;}
+    .toast{padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;opacity:0;transform:translateY(-14px);transition:all .28s cubic-bezier(.34,1.56,.64,1);text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.22);}
+    .toast.t-show{opacity:1;transform:translateY(0);}
+    .t-ok{background:#00a650;color:#fff;}.t-err{background:#c0392b;color:#fff;}.t-warn{background:#ff9500;color:#fff;}.t-info{background:#1a1f63;color:#FFE600;}
   </style>
 </head>
 <body>
   <div id="toastCont"></div>
+  <div id="setupBanner"><b>&#9888;&#65039; Supabase nao configurado</b><br>Preencha <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code> no HTML.<br>Consulte o arquivo <b>SETUP.md</b> do repositorio.</div>
 
-  <div id="setupBanner">
-    <b>&#9888;&#65039; Supabase nao configurado</b><br>
-    Preencha <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code> no HTML.<br>
-    Consulte o arquivo <b>SETUP.md</b> do repositorio.
-  </div>
+  <!-- ── HEADER ── -->
+  <header class="app-hd">
+    <div class="hd-brand">
+      <span class="hd-icon">&#128230;</span>
+      <div>
+        <div class="hd-title">Auditoria de Sacas</div>
+        <div class="hd-sub">Mercado Livre</div>
+      </div>
+    </div>
+    <div id="sessionBadge"><span id="sessionLabel"></span></div>
+  </header>
 
-  <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
-  <button class="btn-blue" onclick="abrirDashboard()" style="background:#5856d6">&#128202; DASHBOARD AO VIVO</button>
-  <button id="btnErrosHoje" onclick="abrirErrosHoje()" style="display:none;width:100%;padding:10px;background:#fce4ec;color:#c0392b;border:1px solid #f4b8c6;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px;font-weight:800">&#128680; <span id="errosHojeCount">0</span> ERROS HOJE</button>
-  <button class="btn-blue" onclick="abrirRelatorioOperadores()" style="background:#2c7a3f">&#128101; OPERADORES</button>
-  <button class="btn-purple" onclick="abrirLog()">&#128203; CONSULTAR LOG</button>
-  <button class="btn-navy"   onclick="abrirImpressaoLivre()">&#128438; IMPRESSAO LIVRE</button>
-  <button onclick="abrirMeli()" style="width:100%;padding:10px;background:#FFE600;color:#1a1f63;border:none;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:15px;font-weight:800">&#128230; ETIQUETA MELI</button>
-  <button class="btn-orange" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
+  <!-- ── ERROS HOJE ── -->
+  <button id="btnErrosHoje" onclick="abrirErrosHoje()" class="btn-erros">&#128680; <span id="errosHojeCount">0</span> erros registrados hoje &mdash; ver detalhes</button>
 
-  <div id="sessionBadge" style="display:none;background:#e8eaf6;border-radius:10px;padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-    <span id="sessionLabel" style="font-size:13px;font-weight:800;color:#1a1f63"></span>
-    <span style="font-size:11px;color:#888">sessao ativa</span>
-  </div>
-
+  <!-- ── CONFIGURAÇÕES ── -->
   <div class="card">
-    <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px;">
-      <!-- Toggle WiFi / USB -->
-      <div style="display:flex;gap:0;margin-bottom:7px;border:1px solid #ccc;border-radius:8px;overflow:hidden">
-        <button id="btnModeWifi" onclick="setPrintMode('wifi')" style="flex:1;padding:8px;border:none;background:#1a1f63;color:#FFE600;font-size:12px;font-weight:800;cursor:pointer">🌐 WiFi / Rede</button>
-        <button id="btnModeUsb"  onclick="setPrintMode('usb')"  style="flex:1;padding:8px;border:none;background:white;color:#555;font-size:12px;font-weight:800;cursor:pointer">🔌 USB / Cabo</button>
+    <button class="cfg-btn" onclick="toggleConfig()">
+      <span class="cfg-lbl">&#9881;&#65039; Configurações da Impressora</span>
+      <span class="cfg-hint" id="cfgArrow">▼ expandir</span>
+    </button>
+    <div id="configBody" style="display:none;margin-top:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-radius:9px;overflow:hidden;border:1.5px solid var(--bd);margin-bottom:10px">
+        <button id="btnModeWifi" onclick="setPrintMode('wifi')" style="padding:9px;border:none;background:var(--n);color:var(--y);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#127760; WiFi / Rede</button>
+        <button id="btnModeUsb"  onclick="setPrintMode('usb')"  style="padding:9px;border:none;background:#fff;color:#555;font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#128268; USB / Cabo</button>
       </div>
-      <!-- Seção WiFi -->
       <div id="wifiSection">
-        <div style="display:flex;gap:6px;align-items:center">
-          <input type="text" id="ip" placeholder="IP Impressora" onchange="sv();testarImpressora();renderPrinters()"
-            style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box">
-          <button onclick="salvarImpressoraAtual()" title="Salvar impressora" style="padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer;font-size:14px;flex-shrink:0">💾</button>
-          <span id="printerDot" title="Status da impressora" style="width:12px;height:12px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <input type="text" id="ip" placeholder="IP da Impressora" onchange="sv();testarImpressora();renderPrinters()" style="flex:1;margin:0">
+          <button onclick="salvarImpressoraAtual()" style="padding:9px 11px;border:1.5px solid var(--bd);border-radius:var(--Rs);background:#fff;cursor:pointer;font-size:14px;flex-shrink:0">&#128190;</button>
+          <span id="printerDot" style="width:11px;height:11px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
         </div>
-        <div id="printersRow" style="display:flex;gap:5px;flex-wrap:wrap;margin:5px 0 0"></div>
+        <div id="printersRow" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"></div>
       </div>
-      <!-- Seção USB (Zebra Browser Print) -->
-      <div id="usbSection" style="display:none">
+      <div id="usbSection" style="display:none;margin-bottom:8px">
         <div style="display:flex;gap:6px;align-items:center">
-          <select id="usbPrinterSel" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:14px;background:white">
-            <option value="">-- Clique em 🔍 para detectar --</option>
+          <select id="usbPrinterSel" style="flex:1;padding:10px;border:1.5px solid var(--bd);border-radius:var(--Rs);font-size:14px;background:#fff;font-family:'Inter',sans-serif">
+            <option value="">-- Clique em &#128269; para detectar --</option>
           </select>
-          <button onclick="detectarImpressorasUSB()" title="Detectar impressoras USB" style="padding:10px 13px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer;font-size:16px;flex-shrink:0">🔍</button>
+          <button onclick="detectarImpressorasUSB()" style="padding:10px 13px;border:1.5px solid var(--bd);border-radius:var(--Rs);background:#fff;cursor:pointer;font-size:16px;flex-shrink:0">&#128269;</button>
         </div>
         <div id="usbStatus" style="font-size:11px;color:#888;margin-top:5px;text-align:center;line-height:1.6"></div>
       </div>
-      <div style="display:flex;gap:6px;align-items:stretch;margin:8px 0 0">
-        <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()"
-          style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;min-width:0">
-        <button onclick="toggleManageSVC()" title="Gerenciar SVCs"
-          style="padding:10px 13px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer;font-size:16px;flex-shrink:0">&#9881;</button>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()" style="flex:1;margin:0;min-width:0">
+        <button onclick="toggleManageSVC()" style="padding:10px 13px;border:1.5px solid var(--bd);border-radius:var(--Rs);background:#fff;cursor:pointer;font-size:16px;flex-shrink:0">&#9881;</button>
       </div>
       <datalist id="svcList"></datalist>
-      <div id="svcManagePanel" style="display:none;background:#f0f0f5;border-radius:8px;padding:10px;margin-top:4px">
+      <div id="svcManagePanel" style="display:none;background:#f5f5f8;border-radius:9px;padding:10px;margin-bottom:8px">
         <div style="font-size:11px;font-weight:800;color:#777;letter-spacing:.5px;margin-bottom:6px">GERENCIAR SVCs</div>
         <div id="svcManageList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
         <div style="display:flex;gap:6px">
-          <input id="svcNewInput" type="text" placeholder="Novo SVC (ex: SSP20)"
-            style="flex:1;padding:7px 10px;border:1px solid #ccc;border-radius:7px;font-size:13px;min-width:0"
-            onkeydown="if(event.key==='Enter')addSVC()">
-          <button onclick="addSVC()"
-            style="padding:7px 12px;border:none;border-radius:7px;background:#1a1f63;color:#FFE600;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">+ Adicionar</button>
+          <input id="svcNewInput" type="text" placeholder="Novo SVC (ex: SSP20)" style="flex:1;margin:0;font-size:13px" onkeydown="if(event.key==='Enter')addSVC()">
+          <button onclick="addSVC()" style="padding:8px 12px;border:none;border-radius:var(--Rs);background:var(--n);color:var(--y);font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:'Inter',sans-serif">+ Add</button>
         </div>
       </div>
-      <div id="operadoresRow" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:5px"></div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input type="text" id="resp" placeholder="Seu Nome" onchange="sv();renderOperadores()"
-          style="flex:1;min-width:0;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px">
-        <button onclick="salvarOperadorAtual()" title="Salvar operador"
-          style="padding:10px 12px;border:none;border-radius:8px;background:#1a1f63;color:#FFE600;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0">💾</button>
+      <div id="operadoresRow" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <input type="text" id="resp" placeholder="Seu Nome" onchange="sv();renderOperadores()" style="flex:1;min-width:0;margin:0">
+        <button onclick="salvarOperadorAtual()" style="padding:10px 12px;border:none;border-radius:var(--Rs);background:var(--n);color:var(--y);font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0">&#128190;</button>
       </div>
-      <select id="labelSizeMain" onchange="svSize()"
-        style="width:100%;padding:10px;margin:8px 0 0;border:1px solid #ccc;border-radius:8px;font-size:15px;background:white">
+      <select id="labelSizeMain" onchange="svSize()" style="width:100%;padding:10px;margin-bottom:8px;border:1.5px solid var(--bd);border-radius:var(--Rs);font-size:14px;background:#fff;font-family:'Inter',sans-serif">
         <option value="800x800">Etiqueta 100 × 100 mm</option>
         <option value="800x1200">Etiqueta 100 × 150 mm</option>
         <option value="1200x800">Etiqueta 150 × 100 mm</option>
         <option value="640x320">Etiqueta 80 × 40 mm (horizontal)</option>
       </select>
-      <button id="btnOrient" onclick="toggleOrient()"
-        style="width:100%;margin-top:7px;padding:8px;border:1.5px solid #ccc;border-radius:8px;background:white;font-size:13px;font-weight:700;cursor:pointer;color:#555">
-        &#11014; Orientacao: Normal
-      </button>
-      <div style="margin-top:7px;padding:8px 10px;border:1px solid #ccc;border-radius:8px;background:white">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <button id="btnOrient" onclick="toggleOrient()" style="width:100%;margin-bottom:8px;padding:9px;border:1.5px solid var(--bd);border-radius:var(--Rs);background:#fff;font-size:13px;font-weight:700;cursor:pointer;color:#555;font-family:'Inter',sans-serif">&#11014; Orientacao: Normal</button>
+      <div style="padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--Rs);background:#fff;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
           <span style="font-size:12px;font-weight:700;color:#555">&#9632; Escuridao</span>
-          <span id="darkVal" style="font-size:13px;font-weight:900;color:#1a1f63">30</span>
+          <span id="darkVal" style="font-size:13px;font-weight:900;color:var(--n)">30</span>
         </div>
-        <input type="range" id="darkness" min="0" max="30" value="30" oninput="svDark()"
-          style="width:100%;accent-color:#1a1f63">
+        <input type="range" id="darkness" min="0" max="30" value="30" oninput="svDark()" style="width:100%;accent-color:var(--n)">
       </div>
-      <button onclick="imprimirTeste()"
-        style="width:100%;margin-top:7px;padding:8px;border:1.5px dashed #ccc;border-radius:8px;background:white;font-size:13px;font-weight:700;cursor:pointer;color:#888">
-        &#127384; Imprimir etiqueta de teste
-      </button>
+      <button onclick="imprimirTeste()" style="width:100%;padding:9px;border:1.5px dashed var(--bd);border-radius:var(--Rs);background:#fff;font-size:13px;font-weight:700;cursor:pointer;color:#888;font-family:'Inter',sans-serif">&#127384; Imprimir etiqueta de teste</button>
     </div>
-    <input type="text"   id="log"  placeholder="Descricao Log">
-    <input type="text"   id="saca" placeholder="N&#186; Saca" inputmode="numeric">
-    <input type="number" id="qtd"  placeholder="Quantidade" min="1">
-    <button id="btPrint" class="btn-green" onclick="processar()">IMPRIMIR</button>
-    <div id="contadorDia" style="text-align:center;font-size:12px;color:#888;margin-top:6px;min-height:16px;padding:0 2px"></div>
-    <button id="btnReimp" onclick="reimprimir()" style="display:none;width:100%;padding:9px;border-radius:8px;border:1.5px solid #1a1f63;background:white;color:#1a1f63;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px">&#128260; Reimprimir última etiqueta</button>
-    <div id="historicoWrap" style="display:none;margin-top:10px">
-      <div style="font-size:10px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:5px">ÚLTIMAS IMPRESSÕES</div>
+  </div>
+
+  <!-- ── IMPRESSÃO ── -->
+  <div class="card">
+    <div id="contadorDia" class="counter"></div>
+    <label class="fl">Descricao / Log</label>
+    <input type="text" id="log" placeholder="ex: Auditoria turno manha">
+    <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;margin-bottom:8px">
+      <div>
+        <label class="fl">N&#186; Saca</label>
+        <input type="text" id="saca" placeholder="Numero" inputmode="numeric" style="margin:0">
+      </div>
+      <div>
+        <label class="fl">Qtd</label>
+        <input type="number" id="qtd" placeholder="1" min="1" style="margin:0">
+      </div>
+    </div>
+    <button id="btPrint" class="btn-print" onclick="processar()">IMPRIMIR</button>
+    <button id="btnReimp" onclick="reimprimir()" class="btn-reimp">&#128260; Reimprimir ultima etiqueta</button>
+    <div id="historicoWrap" style="display:none;margin-top:12px">
+      <div class="sec-lbl" style="margin-bottom:6px">&#128337; ÚLTIMAS IMPRESSÕES</div>
       <div id="historicoList"></div>
     </div>
     <div id="status"></div>
   </div>
 
-  <div style="background:white;border-radius:14px;padding:14px 16px;margin-top:10px;box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #eee">
-    <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:8px">&#128269; BUSCA RÁPIDA</div>
-    <div style="display:flex;gap:8px">
-      <input type="text" id="buscaInput" placeholder="N° Saca ou Nome da Rota"
-        style="flex:1;padding:9px 12px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px"
-        onkeydown="if(event.key==='Enter')buscarRapido()">
-      <button onclick="buscarRapido()" style="padding:9px 16px;border:none;border-radius:8px;background:#1a1f63;color:#FFE600;font-size:13px;font-weight:700;cursor:pointer">Verificar</button>
+  <!-- ── AÇÕES ── -->
+  <div class="card">
+    <div class="sec-lbl" style="margin-bottom:12px">AÇÕES</div>
+    <div class="act-grid">
+      <button class="act-btn" onclick="verStatus()">
+        <span class="act-icon">&#128202;</span>
+        <span class="act-lbl">Status<br>Rotas</span>
+      </button>
+      <button class="act-btn a-blue" onclick="abrirDashboard()">
+        <span class="act-icon">&#128308;</span>
+        <span class="act-lbl">Dashboard<br>Ao Vivo</span>
+      </button>
+      <button class="act-btn a-green" onclick="abrirRelatorioOperadores()">
+        <span class="act-icon">&#128101;</span>
+        <span class="act-lbl">Opera-<br>dores</span>
+      </button>
+      <button class="act-btn a-purple" onclick="abrirLog()">
+        <span class="act-icon">&#128203;</span>
+        <span class="act-lbl">Consultar<br>Log</span>
+      </button>
+      <button class="act-btn a-navy" onclick="abrirImpressaoLivre()">
+        <span class="act-icon">&#128438;</span>
+        <span class="act-lbl">Impr.<br>Livre</span>
+      </button>
+      <button class="act-btn a-meli" onclick="abrirMeli()">
+        <span class="act-icon">&#128230;</span>
+        <span class="act-lbl">Etiq.<br>Meli</span>
+      </button>
     </div>
-    <div id="buscaResult" style="margin-top:8px;font-size:13px;min-height:18px;font-weight:600"></div>
+    <button class="btn-atualizar" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
+  </div>
+
+  <!-- ── BUSCA RÁPIDA ── -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="sec-lbl" style="margin-bottom:10px">&#128269; BUSCA RÁPIDA</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="buscaInput" placeholder="N&#186; Saca ou Nome da Rota" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')buscarRapido()">
+      <button onclick="buscarRapido()" class="btn-verificar">Verificar</button>
+    </div>
+    <div id="buscaResult" style="margin-top:10px;font-size:13px;min-height:18px;font-weight:600"></div>
   </div>
 
   <!-- Modal: Etiqueta Meli -->
@@ -1189,11 +1261,21 @@
       );
     }
 
+    function toggleConfig() {
+      const body  = document.getElementById('configBody');
+      const arrow = document.getElementById('cfgArrow');
+      const open  = body.style.display !== 'none';
+      body.style.display = open ? 'none' : 'block';
+      arrow.textContent  = open ? '▼ expandir' : '▲ recolher';
+    }
+
     window.onload = () => {
-      const savedIp = localStorage.getItem('ip') || '';
+      const savedIp   = localStorage.getItem('ip')  || '';
+      const savedSvc  = localStorage.getItem('svc') || '';
+      const savedResp = localStorage.getItem('rp')  || '';
       document.getElementById('ip').value   = savedIp;
-      document.getElementById('svc').value  = localStorage.getItem('svc') || '';
-      document.getElementById('resp').value = localStorage.getItem('rp') || '';
+      document.getElementById('svc').value  = savedSvc;
+      document.getElementById('resp').value = savedResp;
       const savedSize = savedIp ? (localStorage.getItem('lsz_' + savedIp) || '800x800') : '800x800';
       document.getElementById('labelSizeMain').value = savedSize;
       const savedDark = savedIp ? (localStorage.getItem('dk_' + savedIp) || '30') : '30';
@@ -1201,6 +1283,14 @@
       document.getElementById('darkVal').innerText = savedDark;
       atualizarBotaoOrient();
       populateSvcDatalist();
+      // Auto-collapse config se ja configurado
+      if (savedIp || savedSvc || savedResp) {
+        document.getElementById('configBody').style.display = 'none';
+        document.getElementById('cfgArrow').textContent = '▼ expandir';
+      } else {
+        document.getElementById('configBody').style.display = 'block';
+        document.getElementById('cfgArrow').textContent = '▲ recolher';
+      }
       // Garante coordenadas iniciais do SMG3
       const _c = getSVCCoords();
       if (!_c['SMG3']) { _c['SMG3'] = { lat: -22.3477512, lng: -45.9251672 }; saveSVCCoords(_c); }
@@ -2758,8 +2848,36 @@
           ? `<span style="color:#c0392b;font-weight:700">&#128680; ${erroGeral} erros</span>`
           : `<span style="color:#00a650;font-weight:700">&#10003; 0 erros</span>`;
 
+        // ── 7-day chart ──
+        const log7Rows = await sbCheck(await db.from('log').select('data').gte('data', (() => {
+          const d = new Date(); d.setDate(d.getDate() - 6);
+          return d.toISOString().slice(0, 10) + 'T00:00:00';
+        })()));
+        const diasMap = {};
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          diasMap[d.toISOString().slice(0, 10)] = 0;
+        }
+        (log7Rows || []).forEach(r => { const dia = (r.data || '').slice(0, 10); if (diasMap[dia] !== undefined) diasMap[dia]++; });
+        const diasArr = Object.entries(diasMap);
+        const maxDia  = Math.max(...diasArr.map(([, n]) => n), 1);
+        const hojeStr = dataHoje();
+        const barChart = `<div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:8px">ÚLTIMOS 7 DIAS</div>
+          <div style="display:flex;align-items:flex-end;gap:3px;height:54px;margin-bottom:4px">
+            ${diasArr.map(([d, n]) => {
+              const pct   = Math.round(n / maxDia * 100);
+              const isHj  = d === hojeStr;
+              const label = new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' });
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end">
+                <div style="font-size:9px;font-weight:800;color:${isHj ? '#1a1f63' : '#aaa'};margin-bottom:1px">${n > 0 ? n : ''}</div>
+                <div style="width:100%;background:${isHj ? '#1a1f63' : '#c9cbef'};border-radius:3px 3px 0 0;height:${Math.max(pct, n > 0 ? 4 : 1)}%"></div>
+                <div style="font-size:8px;color:${isHj ? '#1a1f63' : '#aaa'};font-weight:${isHj ? '800' : '600'};text-transform:capitalize;margin-top:2px">${label}</div>
+              </div>`;
+            }).join('')}
+          </div>`;
+
         cont.innerHTML = `
-          <div style="background:#e8eaf6;border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="background:#e8eaf6;border-radius:12px;padding:14px;margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <span style="font-weight:900;font-size:13px;color:#1a1f63">TOTAL GERAL</span>
               <span style="font-size:13px;font-weight:700;color:${corGeral}">${pctGeral}%</span>
@@ -2771,6 +2889,7 @@
               <span>${printGeral} impressas de ${totalGeral}</span>${erroGeralBadge}
             </div>
           </div>
+          <div style="background:#f5f7fc;border-radius:12px;padding:14px;margin-bottom:14px">${barChart}</div>
           <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:10px">SVCs</div>
           ${svcCards}
         `;
