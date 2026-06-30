@@ -1402,8 +1402,8 @@
       detectarSVCPorLocalizacao();
       if (!SUPABASE_URL || !SUPABASE_KEY) {
         document.getElementById('setupBanner').style.display = 'block';
-        document.getElementById('btPrint').disabled = true;
       }
+      document.getElementById('btPrint').disabled = false;
       atualizarBadge();
       atualizarContador();
       if (savedIp) testarImpressora();
@@ -2577,8 +2577,8 @@
 
         // Velocidade e projeção
         let velocidadeHTML = '';
-        if (count > 0 && primeiroRes?.length) {
-          const inicio = new Date(primeiroRes[0].data);
+        if (count > 0 && primeiroRes?.data?.length) {
+          const inicio = parseDateBR(primeiroRes.data[0].data) || new Date();
           const agora  = new Date();
           const horas  = (agora - inicio) / 3600000;
           if (horas > 0.05) {
@@ -2975,16 +2975,16 @@
           ? `<span style="color:#c0392b;font-weight:700">&#128680; ${erroGeral} erros</span>`
           : `<span style="color:#00a650;font-weight:700">&#10003; 0 erros</span>`;
 
-        // ── 7-day chart ──
-        const log7Rows = await sbCheck(await db.from('log').select('data').gte('data', (() => {
-          const d = new Date(); d.setDate(d.getDate() - 6);
-          return d.toISOString().slice(0, 10) + 'T00:00:00';
-        })()));
-        const diasMap = {};
+        // ── 7-day chart — usa formato BR (DD/MM/YYYY) igual ao campo `data` ──
+        const brDates7 = [];
         for (let i = 6; i >= 0; i--) {
           const d = new Date(); d.setDate(d.getDate() - i);
-          diasMap[d.toISOString().slice(0, 10)] = 0;
+          brDates7.push(d.toLocaleDateString('pt-BR'));
         }
+        const diasMap = {};
+        brDates7.forEach(d => { diasMap[d] = 0; });
+        const log7Rows = await sbCheck(await db.from('log').select('data')
+          .or(brDates7.map(d => 'data.like.' + d + '%').join(',')));
         (log7Rows || []).forEach(r => { const dia = (r.data || '').slice(0, 10); if (diasMap[dia] !== undefined) diasMap[dia]++; });
         const diasArr = Object.entries(diasMap);
         const maxDia  = Math.max(...diasArr.map(([, n]) => n), 1);
@@ -2994,7 +2994,9 @@
             ${diasArr.map(([d, n]) => {
               const pct   = Math.round(n / maxDia * 100);
               const isHj  = d === hojeStr;
-              const label = new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' });
+              const parts = d.split('/');
+              const dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+              const label = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' });
               return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end">
                 <div style="font-size:9px;font-weight:800;color:${isHj ? '#1a1f63' : '#aaa'};margin-bottom:1px">${n > 0 ? n : ''}</div>
                 <div style="width:100%;background:${isHj ? '#1a1f63' : '#c9cbef'};border-radius:3px 3px 0 0;height:${Math.max(pct, n > 0 ? 4 : 1)}%"></div>
@@ -3027,11 +3029,12 @@
     }
 
     async function abrirErrosHoje() {
-      const hoje = dataHoje();
-      document.getElementById('erroDataDe').value = hoje;
-      document.getElementById('erroDataAte').value = hoje;
       _abrirModalLog();
       trocarTab('erros');
+      // input[type=date] requer YYYY-MM-DD
+      const iso = new Date().toISOString().slice(0, 10);
+      document.getElementById('erroDataDe').value = iso;
+      document.getElementById('erroDataAte').value = iso;
       await buscarErros();
     }
 
