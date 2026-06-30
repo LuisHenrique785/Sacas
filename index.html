@@ -315,6 +315,12 @@
         <button id="btnModeUsb"  onclick="setPrintMode('usb')"  style="padding:9px;border:none;background:var(--surf);color:var(--tx2);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#128268; USB / Cabo</button>
       </div>
       <div id="wifiSection">
+        <div id="mixedContentWarn" style="display:none;background:#fff8e1;border:1.5px solid #f59e0b;border-radius:var(--rs);padding:10px 12px;margin-bottom:8px;font-size:12px;line-height:1.6;color:#92400e">
+          <b>⚠️ Ação necessária para imprimir via WiFi:</b><br>
+          1. Clique no <b>🔒 cadeado</b> na barra de endereço<br>
+          2. <b>Configurações do site</b> → <b>Conteúdo não seguro</b> → <b>Permitir</b><br>
+          3. Recarregue a página (F5)
+        </div>
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
           <input type="text" id="ip" placeholder="IP da Impressora" onchange="sv();testarImpressora();renderPrinters()" style="flex:1;margin:0">
           <button onclick="salvarImpressoraAtual()" style="padding:9px 11px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:14px;flex-shrink:0">&#128190;</button>
@@ -2577,7 +2583,10 @@
           btn.disabled = false;
         };
         const _onErr = () => {
-          setStatus('Registro salvo. Erro na impressora — verifique IP/conexão.', '#ffdce0');
+          const httpsBlocked = location.protocol === 'https:';
+          setStatus(httpsBlocked
+            ? 'Log salvo ✓  Impressora bloqueada pelo navegador (HTTPS→HTTP). Veja o aviso amarelo nas Configurações.'
+            : 'Log salvo ✓  Erro na impressora — verifique se o IP está correto e a impressora ligada.', '#ffdce0');
           toast('❌ Erro na impressora.', 'err');
           beep('err');
           gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
@@ -2916,13 +2925,16 @@
       const ip  = document.getElementById('ip').value.trim();
       const dot = document.getElementById('printerDot');
       const hdDot = document.getElementById('hdPrinterDot');
-      const setColor = c => { dot.style.background = c; if(hdDot) hdDot.style.background = c; };
+      const warn = document.getElementById('mixedContentWarn');
+      const setColor = c => { dot.style.background = c; if (hdDot) hdDot.style.background = c; };
+      // Avisa sobre mixed content: HTTPS page → HTTP printer
+      if (warn) warn.style.display = (location.protocol === 'https:' && ip) ? 'block' : 'none';
       if (!ip) { setColor('#6b7280'); return; }
       setColor('#ff9500');
       const ctrl = new AbortController();
       const tid  = setTimeout(() => ctrl.abort(), 2500);
       fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
-        .then(() => { clearTimeout(tid); setColor('#00a650'); })
+        .then(() => { clearTimeout(tid); setColor('#00a650'); if (warn) warn.style.display = 'none'; })
         .catch(() => { clearTimeout(tid); setColor('#c0392b'); });
     }
 
