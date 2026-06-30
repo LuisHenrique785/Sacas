@@ -330,14 +330,6 @@
         </div>
         <input type="range" id="darkness" min="0" max="30" value="30" oninput="svDark()" style="width:100%;accent-color:var(--brand)">
       </div>
-      <div style="padding:10px 12px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-          <span style="font-size:12px;font-weight:700;color:var(--tx2)">&#8596; Posicao Horizontal</span>
-          <span id="shiftVal" style="font-size:13px;font-weight:900;color:var(--brand)">0</span>
-        </div>
-        <input type="range" id="labelShift" min="-200" max="200" value="0" oninput="svShift()" style="width:100%;accent-color:var(--brand)">
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9664; Esquerda</span><span>Direita &#9654;</span></div>
-      </div>
       <button onclick="imprimirTeste()" style="width:100%;padding:9px;border:1.5px dashed var(--bdr);border-radius:var(--rs);background:var(--surf);font-size:13px;font-weight:700;cursor:pointer;color:var(--tx3);font-family:'Inter',sans-serif">&#127384; Imprimir etiqueta de teste</button>
     </div>
   </div>
@@ -356,6 +348,14 @@
         <label class="fl">Qtd</label>
         <input type="number" id="qtd" placeholder="1" min="1" style="margin:0">
       </div>
+    </div>
+    <div style="padding:10px 12px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf2);margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8596; Posicao Horizontal</span>
+        <span id="shiftVal" style="font-size:12px;font-weight:900;color:var(--brand)">0</span>
+      </div>
+      <input type="range" id="labelShift" min="-200" max="200" value="0" oninput="svShift()" style="width:100%;accent-color:var(--brand)">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9664; Esquerda</span><span>Direita &#9654;</span></div>
     </div>
     <button id="btPrint" class="btn-print" onclick="processar()">IMPRIMIR</button>
     <button id="btnReimp" onclick="reimprimir()" class="btn-reimp">&#128260; Reimprimir ultima etiqueta</button>
