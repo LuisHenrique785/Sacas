@@ -322,7 +322,7 @@
           3. Recarregue a página (F5)
         </div>
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-          <input type="text" id="ip" placeholder="IP da Impressora" onchange="sv();testarImpressora();renderPrinters()" style="flex:1;margin:0">
+          <input type="text" id="ip" placeholder="IP da Impressora" onchange="sv();testarImpressora();renderPrinters();atualizarAvisoHTTPS()" style="flex:1;margin:0">
           <button onclick="salvarImpressoraAtual()" style="padding:9px 11px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:14px;flex-shrink:0">&#128190;</button>
           <span id="printerDot" style="width:11px;height:11px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
         </div>
@@ -397,6 +397,17 @@
       </div>
       <input type="range" id="labelShift" min="-200" max="200" value="0" oninput="svShift()" style="width:100%;accent-color:var(--brand)">
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9664; Esquerda</span><span>Direita &#9654;</span></div>
+    </div>
+    <div id="httpsWarnMain" style="display:none;background:#fff3cd;border:2px solid #f59e0b;border-radius:var(--rs);padding:12px 14px;margin-bottom:10px;font-size:12px;line-height:1.7;color:#78350f">
+      <div style="font-weight:900;font-size:13px;margin-bottom:4px">&#128274; Impressao WiFi bloqueada pelo Chrome</div>
+      <div style="margin-bottom:8px">O Chrome bloqueia HTTP a partir de paginas HTTPS. Para liberar:</div>
+      <div style="background:#fff8e1;border-radius:8px;padding:8px 10px;font-weight:700">
+        <div>1. Clique no <b>&#128274; cadeado</b> na barra de endereco</div>
+        <div>2. Toque em <b>Configuracoes do site</b></div>
+        <div>3. Localize <b>Conteudo nao seguro</b> → clique → <b>Permitir</b></div>
+        <div>4. Recarregue a pagina <b>(F5 ou puxar para baixo)</b></div>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:#92400e;font-weight:600">&#128161; Precisa fazer isso apenas uma vez por dispositivo</div>
     </div>
     <button id="btPrint" class="btn-print" onclick="processar()">IMPRIMIR</button>
     <button id="btnReimp" onclick="reimprimir()" class="btn-reimp">&#128260; Reimprimir ultima etiqueta</button>
@@ -1313,6 +1324,7 @@
       document.getElementById('usbSection').style.display  = isUsb ? 'block' : 'none';
       document.getElementById('btnModeWifi').style.cssText += ';background:' + (isUsb ? 'white' : '#1a1f63') + ';color:' + (isUsb ? '#555' : '#FFE600');
       document.getElementById('btnModeUsb').style.cssText  += ';background:' + (isUsb ? '#1a1f63' : 'white') + ';color:' + (isUsb ? '#FFE600' : '#555');
+      atualizarAvisoHTTPS();
     }
 
     async function detectarImpressorasUSB() {
@@ -1482,7 +1494,16 @@
       renderPrinters();
       renderOperadores();
       setPrintMode(localStorage.getItem('printMode') || 'wifi');
+      atualizarAvisoHTTPS();
     };
+
+    function atualizarAvisoHTTPS() {
+      const warn = document.getElementById('httpsWarnMain');
+      if (!warn) return;
+      const isWifi = (localStorage.getItem('printMode') || 'wifi') !== 'usb';
+      const ip = document.getElementById('ip').value.trim();
+      warn.style.display = (location.protocol === 'https:' && isWifi && ip) ? 'block' : 'none';
+    }
 
     // Salva tamanho vinculado ao IP da impressora
     const svSize = () => {
@@ -2581,12 +2602,14 @@
           atualizarContador();
           btn.classList.remove('printing');
           btn.disabled = false;
+          const wm = document.getElementById('httpsWarnMain');
+          if (wm) wm.style.display = 'none';
         };
         const _onErr = () => {
           const httpsBlocked = location.protocol === 'https:';
           setStatus(httpsBlocked
-            ? 'Log salvo ✓  Impressora bloqueada pelo navegador (HTTPS→HTTP). Veja o aviso amarelo nas Configurações.'
-            : 'Log salvo ✓  Erro na impressora — verifique se o IP está correto e a impressora ligada.', '#ffdce0');
+            ? 'Log salvo ✓  Siga o aviso amarelo acima para liberar a impressora.'
+            : 'Log salvo ✓  Erro na impressora — verifique se o IP esta correto e a impressora ligada.', '#ffdce0');
           toast('❌ Erro na impressora.', 'err');
           beep('err');
           gravarErro(sacaId, qtdVal, ip, getV('log'), 'Falha na impressora (' + ip + ')');
@@ -2927,14 +2950,18 @@
       const hdDot = document.getElementById('hdPrinterDot');
       const warn = document.getElementById('mixedContentWarn');
       const setColor = c => { dot.style.background = c; if (hdDot) hdDot.style.background = c; };
-      // Avisa sobre mixed content: HTTPS page → HTTP printer
       if (warn) warn.style.display = (location.protocol === 'https:' && ip) ? 'block' : 'none';
       if (!ip) { setColor('#6b7280'); return; }
       setColor('#ff9500');
       const ctrl = new AbortController();
       const tid  = setTimeout(() => ctrl.abort(), 2500);
       fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
-        .then(() => { clearTimeout(tid); setColor('#00a650'); if (warn) warn.style.display = 'none'; })
+        .then(() => {
+          clearTimeout(tid); setColor('#00a650');
+          if (warn) warn.style.display = 'none';
+          const wm = document.getElementById('httpsWarnMain');
+          if (wm) wm.style.display = 'none';
+        })
         .catch(() => { clearTimeout(tid); setColor('#c0392b'); });
     }
 
