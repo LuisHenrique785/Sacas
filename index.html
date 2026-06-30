@@ -63,6 +63,7 @@
     .motivo-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
     .motivo-badge.nf  { background: #ffdce0; color: #c0392b; }
     .motivo-badge.imp { background: #fff3cd; color: #856404; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
 
     /* Impressão Livre */
     .btn-navy   { width: 100%; padding: 10px; background: #1a1f63; color: #FFE600; border: none; border-radius: 10px; margin-bottom: 8px; cursor: pointer; font-size: 15px; font-weight: bold; letter-spacing: .3px; }
@@ -110,7 +111,8 @@
   </div>
 
   <button class="btn-blue"   onclick="verStatus()">&#128202; VER STATUS ROTAS</button>
-  <button class="btn-blue" onclick="abrirDashboard()" style="background:#5856d6">&#128202; DASHBOARD</button>
+  <button class="btn-blue" onclick="abrirDashboard()" style="background:#5856d6">&#128202; DASHBOARD AO VIVO</button>
+  <button id="btnErrosHoje" onclick="abrirErrosHoje()" style="display:none;width:100%;padding:10px;background:#fce4ec;color:#c0392b;border:1px solid #f4b8c6;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px;font-weight:800">&#128680; <span id="errosHojeCount">0</span> ERROS HOJE</button>
   <button class="btn-blue" onclick="abrirRelatorioOperadores()" style="background:#2c7a3f">&#128101; OPERADORES</button>
   <button class="btn-purple" onclick="abrirLog()">&#128203; CONSULTAR LOG</button>
   <button class="btn-navy"   onclick="abrirImpressaoLivre()">&#128438; IMPRESSAO LIVRE</button>
@@ -312,10 +314,13 @@
 
   <!-- Modal: Dashboard -->
   <div id="modalDash" class="modal-bg">
-    <div class="m-cont" style="max-width:500px">
-      <h3 style="margin-top:0">&#128202; Dashboard — <span id="dashSvcLabel"></span></h3>
+    <div class="m-cont" style="max-width:520px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0">&#128202; Dashboard</h3>
+        <span id="dashLiveIndicator" style="display:none;font-size:11px;font-weight:800;color:#00a650;animation:pulse 1.5s infinite">&#9679; AO VIVO</span>
+      </div>
       <div id="dashContent" style="font-size:13px;color:#555">Carregando...</div>
-      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharModal('modalDash')">FECHAR</button>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharDashboard()">FECHAR</button>
     </div>
   </div>
 
@@ -556,7 +561,11 @@
     <div class="m-cont">
       <h3 style="margin-top:0">Ranking Rotas</h3>
       <div id="lista"></div>
-      <button style="width:100%;margin-top:15px;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:15px;cursor:pointer" onclick="fecharModal('modalRanking')">FECHAR</button>
+      <div id="pendentesRotaWrap" style="display:none;margin-top:12px;border-top:1px solid #eee;padding-top:12px">
+        <div id="pendentesRotaTitulo" style="font-weight:800;font-size:13px;margin-bottom:8px;color:#1a1f63"></div>
+        <div id="pendentesRotaLista"></div>
+      </div>
+      <button style="width:100%;margin-top:15px;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:15px;cursor:pointer" onclick="fecharModal('modalRanking');document.getElementById('pendentesRotaWrap').style.display='none'">FECHAR</button>
     </div>
   </div>
 
@@ -2039,9 +2048,13 @@
     }
 
     // -------- STATUS DAS ROTAS --------
+    let _rankingRotaRows = [];
+    let _rankingSacasHoje = new Set();
+
     async function verStatus() {
       document.getElementById('modalRanking').style.display = 'block';
       document.getElementById('lista').innerHTML = 'Carregando...';
+      document.getElementById('pendentesRotaWrap').style.display = 'none';
       try {
         const hoje = dataHoje();
         const svcAtual = getV('svc');
@@ -2054,19 +2067,20 @@
           sbCheck(await logHojeQ)
         ]);
 
+        _rankingRotaRows = rotaRows;
+        _rankingSacasHoje = new Set(logRows.map(r => (r.saca_id || '').trim()));
+
         let totalPorRota = {};
         for (const r of rotaRows) {
           if (r.rota) totalPorRota[r.rota] = (totalPorRota[r.rota] || 0) + 1;
         }
-
-        const sacasHoje = new Set(logRows.map(r => (r.saca_id || '').trim()));
 
         let progresso = {};
         for (const r of rotaRows) {
           const s = (r.saca_id || '').trim(), rt = r.rota;
           if (!s || !rt) continue;
           if (!progresso[rt]) progresso[rt] = 0;
-          if (sacasHoje.has(s)) progresso[rt]++;
+          if (_rankingSacasHoje.has(s)) progresso[rt]++;
         }
 
         const ranking = [];
@@ -2082,16 +2096,44 @@
         for (const d of ranking) {
           const pct = Math.round(d.porc);
           const cor = pct === 100 ? '#34c759' : pct >= 50 ? '#ff9500' : '#ff3b30';
-          h += '<div class="ranking-item">' +
-               '<span style="min-width:80px"><b>' + d.rota + '</b></span>' +
-               '<div class="barra-fundo"><div class="barra-fill" style="width:' + pct + '%;background:' + cor + '"></div></div>' +
-               '<span style="min-width:75px;text-align:right;color:' + cor + '">' + d.pronta + '/' + d.total + ' (' + pct + '%)</span>' +
-               '</div>';
+          const rotaEsc = d.rota.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          h += `<div class="ranking-item" style="cursor:pointer" onclick="verPendentesRota('${rotaEsc}')">` +
+               `<span style="min-width:80px"><b>${d.rota}</b></span>` +
+               `<div class="barra-fundo"><div class="barra-fill" style="width:${pct}%;background:${cor}"></div></div>` +
+               `<span style="min-width:75px;text-align:right;color:${cor}">${d.pronta}/${d.total} (${pct}%)</span>` +
+               `<span style="font-size:10px;color:#bbb;margin-left:4px">&#9656;</span>` +
+               `</div>`;
         }
         document.getElementById('lista').innerHTML = h;
       } catch (e) {
         document.getElementById('lista').innerHTML = '<span style="color:#c0392b">Erro: ' + e.message + '</span>';
       }
+    }
+
+    function verPendentesRota(rota) {
+      const wrap   = document.getElementById('pendentesRotaWrap');
+      const titulo = document.getElementById('pendentesRotaTitulo');
+      const lista  = document.getElementById('pendentesRotaLista');
+
+      wrap.style.display = 'block';
+
+      const todasDaRota = _rankingRotaRows.filter(r => r.rota === rota).map(r => (r.saca_id || '').trim()).filter(Boolean);
+      const pendentes   = todasDaRota.filter(s => !_rankingSacasHoje.has(s));
+      const impressas   = todasDaRota.filter(s => _rankingSacasHoje.has(s));
+
+      titulo.innerHTML = `Rota <b>${rota}</b> &mdash; ${impressas.length}/${todasDaRota.length} impressas hoje`;
+
+      if (!pendentes.length) {
+        lista.innerHTML = '<div style="color:#00a650;font-weight:800;font-size:13px">&#10003; Todas impressas!</div>';
+      } else {
+        const tagPend = pendentes.map(s => {
+          const sEsc = s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          return `<span style="display:inline-block;background:#fff3cd;border-radius:4px;padding:2px 8px;margin:2px;font-size:11px;color:#856404;font-weight:700;cursor:pointer" title="Clique para selecionar" onclick="fecharModal('modalRanking');document.getElementById('pendentesRotaWrap').style.display='none';document.getElementById('saca').value='${sEsc}';document.getElementById('saca').focus()">${s}</span>`;
+        }).join('');
+        lista.innerHTML = `<div style="font-size:11px;font-weight:800;color:#856404;margin-bottom:6px">&#9888; PENDENTES (${pendentes.length}) &mdash; toque para selecionar</div><div style="max-height:150px;overflow-y:auto">${tagPend}</div>`;
+      }
+
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     // -------- PROCESSAR / IMPRIMIR --------
@@ -2324,13 +2366,20 @@
       if (!svc || !SUPABASE_URL) { el.innerHTML = ''; return; }
       try {
         const hoje = dataHoje();
-        const [countRes, totalRes, primeiroRes] = await Promise.all([
+        const [countRes, totalRes, primeiroRes, erroRes] = await Promise.all([
           db.from('log').select('*', { count: 'exact', head: true }).eq('svc', svc).like('data', hoje + '%'),
           db.from('rota').select('*', { count: 'exact', head: true }).eq('svc', svc),
-          db.from('log').select('data').eq('svc', svc).like('data', hoje + '%').order('id', { ascending: true }).limit(1)
+          db.from('log').select('data').eq('svc', svc).like('data', hoje + '%').order('id', { ascending: true }).limit(1),
+          db.from('erros').select('id', { count: 'exact', head: true }).eq('svc', svc).like('data', hoje + '%')
         ]);
         const count = countRes.count || 0;
         const total = totalRes.count || 0;
+        const erroCount = erroRes.count || 0;
+        const btnErros = document.getElementById('btnErrosHoje');
+        if (btnErros) {
+          document.getElementById('errosHojeCount').innerText = erroCount;
+          btnErros.style.display = erroCount > 0 ? 'block' : 'none';
+        }
 
         // Velocidade e projeção
         let velocidadeHTML = '';
@@ -2628,68 +2677,116 @@
       }
     }
 
-    // ---- Dashboard ----
+    // ---- Dashboard Realtime ----
+    let _dashChannel = null;
+
     async function abrirDashboard() {
       document.getElementById('modalDash').style.display = 'block';
-      const svc = getV('svc');
-      document.getElementById('dashSvcLabel').innerText = svc || 'Geral';
+      document.getElementById('dashLiveIndicator').style.display = 'none';
+      await carregarDashboard();
+      if (_dashChannel) { try { db.removeChannel(_dashChannel); } catch (_) {} }
+      _dashChannel = db.channel('sacas-dashboard-' + Date.now())
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'log' }, () => {
+          carregarDashboard();
+        })
+        .subscribe(status => {
+          const ind = document.getElementById('dashLiveIndicator');
+          if (ind) ind.style.display = status === 'SUBSCRIBED' ? 'inline' : 'none';
+        });
+    }
+
+    function fecharDashboard() {
+      if (_dashChannel) { try { db.removeChannel(_dashChannel); } catch (_) {} _dashChannel = null; }
+      const ind = document.getElementById('dashLiveIndicator');
+      if (ind) ind.style.display = 'none';
+      fecharModal('modalDash');
+    }
+
+    async function carregarDashboard() {
       const cont = document.getElementById('dashContent');
-      cont.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">⏳ Carregando...</div>';
+      if (!cont) return;
       try {
         const hoje = dataHoje();
-        let logQ = db.from('log').select('saca_id,rota,data,responsavel');
-        if (svc) logQ = logQ.eq('svc', svc);
-        let erroQ = db.from('erros').select('id', { count: 'exact', head: true });
-        if (svc) erroQ = erroQ.eq('svc', svc);
-        const [logRows, erroRes] = await Promise.all([
-          sbCheck(await logQ.like('data', hoje + '%').order('id', { ascending: false })),
-          erroQ.like('data', hoje + '%')
+        const [rotaRows, logRows, erroRows] = await Promise.all([
+          sbCheck(await db.from('rota').select('svc,saca_id')),
+          sbCheck(await db.from('log').select('svc,saca_id').like('data', hoje + '%')),
+          sbCheck(await db.from('erros').select('svc').like('data', hoje + '%'))
         ]);
-        const total = logRows ? logRows.length : 0;
-        const erros = erroRes.count || 0;
-        const porRota = {};
-        (logRows || []).forEach(r => { if (r.rota) porRota[r.rota] = (porRota[r.rota] || 0) + 1; });
-        const rotasSorted = Object.entries(porRota).sort((a, b) => b[1] - a[1]);
-        const maxVal = rotasSorted[0]?.[1] || 1;
-        const rotasHTML = rotasSorted.length
-          ? rotasSorted.map(([r, n]) =>
-              `<div style="margin-bottom:7px">
-                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
-                  <span style="font-weight:700">${r}</span><span style="color:#1a1f63;font-weight:700">${n}</span>
-                </div>
-                <div style="background:#eee;border-radius:4px;height:8px;overflow:hidden">
-                  <div style="background:#1a1f63;height:8px;border-radius:4px;width:${Math.round(n/maxVal*100)}%;transition:width .4s"></div>
-                </div>
-              </div>`
-            ).join('')
-          : '<div style="color:#aaa;text-align:center;padding:10px">Nenhuma impressão hoje ainda.</div>';
-        const ops = {};
-        (logRows || []).forEach(r => { if (r.responsavel) ops[r.responsavel] = (ops[r.responsavel] || 0) + 1; });
-        const opsHTML = Object.entries(ops).sort((a,b)=>b[1]-a[1]).slice(0,5)
-          .map(([op,n]) => `<span style="display:inline-flex;align-items:center;gap:4px;background:#e8eaf6;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;color:#1a1f63;margin:2px">👤 ${op} <span style="color:#888;font-weight:400">${n}x</span></span>`).join('') || '<span style="color:#aaa">—</span>';
+
+        const totalPorSvc = {};
+        (rotaRows || []).forEach(r => { if (r.svc) totalPorSvc[r.svc] = (totalPorSvc[r.svc] || 0) + 1; });
+        const printPorSvc = {};
+        (logRows || []).forEach(r => { if (r.svc) printPorSvc[r.svc] = (printPorSvc[r.svc] || 0) + 1; });
+        const erroPorSvc = {};
+        (erroRows || []).forEach(r => { if (r.svc) erroPorSvc[r.svc] = (erroPorSvc[r.svc] || 0) + 1; });
+
+        const allSvcs = [...new Set([...Object.keys(totalPorSvc), ...Object.keys(printPorSvc)])].sort();
+
+        if (!allSvcs.length) {
+          cont.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px">Nenhum dado disponivel.</div>';
+          return;
+        }
+
+        const totalGeral = allSvcs.reduce((s, sv) => s + (totalPorSvc[sv] || 0), 0);
+        const printGeral = allSvcs.reduce((s, sv) => s + (printPorSvc[sv] || 0), 0);
+        const erroGeral  = allSvcs.reduce((s, sv) => s + (erroPorSvc[sv] || 0), 0);
+        const pctGeral   = totalGeral ? Math.round(printGeral / totalGeral * 100) : 0;
+        const corGeral   = pctGeral === 100 ? '#00a650' : pctGeral >= 50 ? '#ff9500' : '#c0392b';
+
+        const svcCards = allSvcs.map(sv => {
+          const total  = totalPorSvc[sv] || 0;
+          const feitas = printPorSvc[sv] || 0;
+          const erros  = erroPorSvc[sv] || 0;
+          const pct    = total ? Math.round(feitas / total * 100) : 0;
+          const cor    = pct === 100 ? '#00a650' : pct >= 50 ? '#ff9500' : '#c0392b';
+          const erroBadge = erros > 0
+            ? `<span style="background:#fce4ec;color:#c0392b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">&#128680; ${erros} erro${erros !== 1 ? 's' : ''}</span>`
+            : `<span style="background:#e8f5e9;color:#00a650;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">&#10003; Sem erros</span>`;
+          return `<div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:900;font-size:14px;color:#1a1f63">${sv}</span>
+              <span style="font-size:12px;font-weight:700;color:${cor}">${feitas}/${total} (${pct}%)</span>
+            </div>
+            <div style="background:#e5e5ea;border-radius:4px;height:8px;overflow:hidden;margin-bottom:8px">
+              <div style="background:${cor};height:8px;border-radius:4px;width:${pct}%;transition:width .5s"></div>
+            </div>
+            ${erroBadge}
+          </div>`;
+        }).join('');
+
+        const erroGeralBadge = erroGeral > 0
+          ? `<span style="color:#c0392b;font-weight:700">&#128680; ${erroGeral} erros</span>`
+          : `<span style="color:#00a650;font-weight:700">&#10003; 0 erros</span>`;
+
         cont.innerHTML = `
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-            <div style="background:#e8f5e9;border-radius:10px;padding:12px;text-align:center">
-              <div style="font-size:28px;font-weight:900;color:#00a650">${total}</div>
-              <div style="font-size:11px;color:#666;font-weight:700">SACAS HOJE</div>
+          <div style="background:#e8eaf6;border-radius:12px;padding:14px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:900;font-size:13px;color:#1a1f63">TOTAL GERAL</span>
+              <span style="font-size:13px;font-weight:700;color:${corGeral}">${pctGeral}%</span>
             </div>
-            <div style="background:#fce4ec;border-radius:10px;padding:12px;text-align:center">
-              <div style="font-size:28px;font-weight:900;color:#c0392b">${erros}</div>
-              <div style="font-size:11px;color:#666;font-weight:700">ERROS HOJE</div>
+            <div style="background:#c9cbef;border-radius:4px;height:10px;overflow:hidden;margin-bottom:8px">
+              <div style="background:${corGeral};height:10px;border-radius:4px;width:${pctGeral}%;transition:width .5s"></div>
             </div>
-            <div style="background:#e8eaf6;border-radius:10px;padding:12px;text-align:center">
-              <div style="font-size:28px;font-weight:900;color:#1a1f63">${rotasSorted.length}</div>
-              <div style="font-size:11px;color:#666;font-weight:700">ROTAS</div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#555">
+              <span>${printGeral} impressas de ${totalGeral}</span>${erroGeralBadge}
             </div>
           </div>
-          <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:8px">IMPRESSÕES POR ROTA</div>
-          ${rotasHTML}
-          <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin:12px 0 6px">OPERADORES ATIVOS HOJE</div>
-          <div>${opsHTML}</div>
+          <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:10px">SVCs</div>
+          ${svcCards}
         `;
       } catch (e) {
-        cont.innerHTML = '<div style="color:#c0392b">Erro: ' + e.message + '</div>';
+        const cont2 = document.getElementById('dashContent');
+        if (cont2) cont2.innerHTML = '<div style="color:#c0392b">Erro: ' + e.message + '</div>';
       }
+    }
+
+    async function abrirErrosHoje() {
+      const hoje = dataHoje();
+      document.getElementById('erroDataDe').value = hoje;
+      document.getElementById('erroDataAte').value = hoje;
+      _abrirModalLog();
+      trocarTab('erros');
+      await buscarErros();
     }
 
     // ---- Exportar PDF ----
