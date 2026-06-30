@@ -330,6 +330,14 @@
         </div>
         <input type="range" id="darkness" min="0" max="30" value="30" oninput="svDark()" style="width:100%;accent-color:var(--brand)">
       </div>
+      <div style="padding:10px 12px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:12px;font-weight:700;color:var(--tx2)">&#8596; Posicao Horizontal</span>
+          <span id="shiftVal" style="font-size:13px;font-weight:900;color:var(--brand)">0</span>
+        </div>
+        <input type="range" id="labelShift" min="-200" max="200" value="0" oninput="svShift()" style="width:100%;accent-color:var(--brand)">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9664; Esquerda</span><span>Direita &#9654;</span></div>
+      </div>
       <button onclick="imprimirTeste()" style="width:100%;padding:9px;border:1.5px dashed var(--bdr);border-radius:var(--rs);background:var(--surf);font-size:13px;font-weight:700;cursor:pointer;color:var(--tx3);font-family:'Inter',sans-serif">&#127384; Imprimir etiqueta de teste</button>
     </div>
   </div>
@@ -1231,7 +1239,7 @@
       } else {
         const ip = document.getElementById('ip').value.trim();
         if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
-        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+        enviarZPLWifi(ip, zpl)
           .then(() => { toast('✅ Etiqueta reimprimida!', 'ok'); beep('ok'); })
           .catch(() => { toast('❌ Erro ao reimprimir.', 'err'); beep('err'); });
       }
@@ -1249,8 +1257,7 @@
       } else {
         const ip = document.getElementById('ip').value.trim();
         if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
-        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-          .then(onOk).catch(onErr);
+        enviarZPLWifi(ip, zpl).then(onOk).catch(onErr);
       }
     }
 
@@ -1305,13 +1312,17 @@
       try {
         await fetch(ZBP_URL + '/write', {
           method: 'POST',
-          body: JSON.stringify({ device: printer, data: zpl })
+          body: JSON.stringify({ device: printer, data: applyLabelShift(zpl) })
         });
         return true;
       } catch (e) {
         toast('❌ Erro USB: ' + e.message, 'err');
         return false;
       }
+    }
+
+    function enviarZPLWifi(ip, zpl) {
+      return fetch('http://' + ip + '/pstprnt', { method: 'POST', body: applyLabelShift(zpl), mode: 'no-cors' });
     }
 
     // ---- Geolocalização por SVC ----
@@ -1385,6 +1396,9 @@
       const savedDark = savedIp ? (localStorage.getItem('dk_' + savedIp) || '30') : '30';
       document.getElementById('darkness').value = savedDark;
       document.getElementById('darkVal').innerText = savedDark;
+      const savedShift = savedIp ? (localStorage.getItem('lsx_' + savedIp) || '0') : '0';
+      document.getElementById('labelShift').value = savedShift;
+      document.getElementById('shiftVal').innerText = savedShift;
       atualizarBotaoOrient();
       populateSvcDatalist();
       // Auto-collapse config se ja configurado
@@ -1425,6 +1439,20 @@
       const ip = document.getElementById('ip').value.trim();
       if (ip) localStorage.setItem('dk_' + ip, val);
     };
+
+    const svShift = () => {
+      const val = document.getElementById('labelShift').value;
+      document.getElementById('shiftVal').innerText = val;
+      const ip = document.getElementById('ip').value.trim();
+      if (ip) localStorage.setItem('lsx_' + ip, val);
+    };
+
+    function applyLabelShift(zpl) {
+      const ip    = document.getElementById('ip').value.trim();
+      const shift = parseInt(localStorage.getItem('lsx_' + ip) || '0');
+      if (!shift) return zpl;
+      return zpl.replace(/\^XA/g, '^XA^LS' + shift);
+    }
 
     function isInvertido() {
       const ip = document.getElementById('ip').value.trim();
@@ -1852,7 +1880,7 @@
         if (ok) toast('✅ Enviado!', 'ok');
         btn.disabled = false;
       } else {
-        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+        enviarZPLWifi(ip, zpl)
           .then(() => { st.style.color = '#00a650'; st.innerText = '✅ Enviado para a impressora!'; toast('✅ Enviado!', 'ok'); })
           .catch(() => { st.style.color = '#c0392b'; st.innerText = '❌ Erro ao conectar na impressora — verifique o IP.'; toast('❌ Erro ao conectar — verifique o IP.', 'err'); })
           .finally(() => { btn.disabled = false; });
@@ -2490,8 +2518,7 @@
         if (localStorage.getItem('printMode') === 'usb') {
           imprimirViaUSB(zpl).then(ok => ok ? _onOk() : _onErr());
         } else {
-          fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
-            .then(_onOk).catch(_onErr);
+          enviarZPLWifi(ip, zpl).then(_onOk).catch(_onErr);
         }
 
       } catch (e) {
@@ -2650,7 +2677,7 @@
         if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
       } else {
         if (!ultimoIP) return;
-        fetch('http://' + ultimoIP + '/pstprnt', { method: 'POST', body: ultimoZPL, mode: 'no-cors' })
+        enviarZPLWifi(ultimoIP, ultimoZPL)
           .then(() => { toast('✅ Reimpresso com sucesso!', 'ok'); beep('ok'); })
           .catch(() => { toast('❌ Erro na impressora.', 'err'); beep('err'); });
       }
@@ -2808,7 +2835,7 @@
         const ok = await imprimirViaUSB(zpl);
         if (ok) { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); }
       } else {
-        fetch('http://' + ip + '/pstprnt', { method: 'POST', body: zpl, mode: 'no-cors' })
+        enviarZPLWifi(ip, zpl)
           .then(() => { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); })
           .catch(() => { toast('❌ Erro ao conectar na impressora.', 'err'); beep('err'); });
       }
