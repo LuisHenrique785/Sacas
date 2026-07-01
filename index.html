@@ -1360,10 +1360,9 @@
         st.innerHTML   = '✅ ' + _zbpPrinters.length + ' impressora(s) detectada(s)';
       } catch (_) {
         sel.innerHTML = '<option value="">Zebra Browser Print nao encontrado</option>';
-        st.innerHTML  = `<b>Para imprimir via USB no Windows:</b><br>
-          <b>1.</b> <a href="https://www.zebra.com/us/en/support-downloads/software/developer-tools/browser-print.html" target="_blank" style="color:#007aff">&#11015; Baixe e instale o Zebra Browser Print</a><br>
-          <b>2.</b> Abra o ZBP (icone na bandeja do sistema)<br>
-          <b>3.</b> <a href="${ZBP_URL}" target="_blank" style="color:#007aff">Aceite o certificado aqui</a> e clique &#128269; novamente`;
+        st.innerHTML  = `<b style="color:#c0392b">&#128274; No Windows, USB requer instalar software (precisa de ADM).</b><br>
+          <b style="color:#00a650">&#128161; Recomendado: use WiFi/Rede</b> — funciona sem instalar nada.<br>
+          <span style="color:var(--tx3)">Se tiver ADM: instale o Zebra Browser Print em <b>zebra.com</b> → Support → Downloads → Browser Print</span>`;
       }
     }
 
@@ -1468,7 +1467,9 @@
         } else if (e.message && (e.message.includes('Access denied') || e.message.includes('access denied') || e.name === 'SecurityError')) {
           // Windows bloqueia WebUSB quando o driver de impressora esta ativo
           st.style.color = '#c0392b';
-          st.innerHTML = '&#10060; <b>Windows:</b> Driver do sistema bloqueia o acesso USB direto.<br>Use o <b>Zebra Browser Print</b> abaixo.';
+          st.innerHTML = '&#10060; <b>Windows:</b> Driver do sistema bloqueia o acesso USB direto.<br>' +
+            '&#128161; <b style="color:#00a650">Use WiFi/Rede</b> — selecione a aba WiFi e configure o IP.<br>' +
+            '<span style="color:var(--tx3)">Se tiver ADM no PC: tente o Zebra Browser Print abaixo.</span>';
           // Abre automaticamente a secao ZBP
           const details = document.querySelector('#usbSection details');
           if (details) details.open = true;
