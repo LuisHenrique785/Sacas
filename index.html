@@ -310,9 +310,10 @@
       <span class="cfg-hint" id="cfgArrow">▼ expandir</span>
     </button>
     <div id="configBody" style="display:none;margin-top:14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;border-radius:var(--rs);overflow:hidden;border:1.5px solid var(--bdr);margin-bottom:10px">
-        <button id="btnModeWifi" onclick="setPrintMode('wifi')" style="padding:9px;border:none;background:var(--brand);color:var(--accent);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#127760; WiFi / Rede</button>
-        <button id="btnModeUsb"  onclick="setPrintMode('usb')"  style="padding:9px;border:none;background:var(--surf);color:var(--tx2);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#128268; USB / Cabo</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:var(--rs);overflow:hidden;border:1.5px solid var(--bdr);margin-bottom:10px">
+        <button id="btnModeWifi" onclick="setPrintMode('wifi')" style="padding:9px;border:none;background:var(--brand);color:var(--accent);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#127760; WiFi</button>
+        <button id="btnModeUsb"  onclick="setPrintMode('usb')"  style="padding:9px;border:none;background:var(--surf);color:var(--tx2);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#128268; USB</button>
+        <button id="btnModeBT"   onclick="setPrintMode('bt')"   style="padding:9px;border:none;background:var(--surf);color:var(--tx2);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#128309; Bluetooth</button>
       </div>
       <div id="wifiSection">
         <div id="mixedContentWarn" style="display:none;background:#fff8e1;border:1.5px solid #f59e0b;border-radius:var(--rs);padding:10px 12px;margin-bottom:8px;font-size:12px;line-height:1.6;color:#92400e">
@@ -349,6 +350,12 @@
             <div id="usbStatus" style="font-size:11px;color:var(--tx3);margin-top:5px;text-align:center;line-height:1.6"></div>
           </div>
         </details>
+      </div>
+      <div id="btSection" style="display:none;margin-bottom:8px">
+        <button onclick="conectarBluetooth()" id="btnBT" style="width:100%;padding:11px;background:var(--brand);color:var(--accent);border:none;border-radius:var(--rs);font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px">
+          &#128309; Conectar Impressora Bluetooth
+        </button>
+        <div id="btStatus" style="font-size:11px;color:var(--tx3);text-align:center;line-height:1.6"></div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
         <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()" style="flex:1;margin:0;min-width:0">
@@ -1301,6 +1308,9 @@
       if (mode === 'usb') {
         const ok = await imprimirViaUSB(zpl);
         if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
+      } else if (mode === 'bt') {
+        const ok = await imprimirViaBluetooth(zpl);
+        if (ok) { toast('✅ Reimpresso via Bluetooth!', 'ok'); beep('ok'); }
       } else {
         const ip = document.getElementById('ip').value.trim();
         if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
@@ -1319,6 +1329,9 @@
       if (mode === 'usb') {
         const ok = await imprimirViaUSB(zpl);
         ok ? onOk() : onErr();
+      } else if (mode === 'bt') {
+        const ok = await imprimirViaBluetooth(zpl);
+        ok ? onOk() : onErr();
       } else {
         const ip = document.getElementById('ip').value.trim();
         if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
@@ -1332,11 +1345,16 @@
 
     function setPrintMode(mode) {
       localStorage.setItem('printMode', mode);
-      const isUsb = mode === 'usb';
-      document.getElementById('wifiSection').style.display = isUsb ? 'none' : 'block';
-      document.getElementById('usbSection').style.display  = isUsb ? 'block' : 'none';
-      document.getElementById('btnModeWifi').style.cssText += ';background:' + (isUsb ? 'white' : '#1a1f63') + ';color:' + (isUsb ? '#555' : '#FFE600');
-      document.getElementById('btnModeUsb').style.cssText  += ';background:' + (isUsb ? '#1a1f63' : 'white') + ';color:' + (isUsb ? '#FFE600' : '#555');
+      document.getElementById('wifiSection').style.display = mode === 'wifi' ? 'block' : 'none';
+      document.getElementById('usbSection').style.display  = mode === 'usb'  ? 'block' : 'none';
+      document.getElementById('btSection').style.display   = mode === 'bt'   ? 'block' : 'none';
+      ['btnModeWifi','btnModeUsb','btnModeBT'].forEach(id => {
+        const b = document.getElementById(id);
+        b.style.background = 'var(--surf)'; b.style.color = 'var(--tx2)';
+      });
+      const activeId = mode === 'wifi' ? 'btnModeWifi' : mode === 'usb' ? 'btnModeUsb' : 'btnModeBT';
+      document.getElementById(activeId).style.background = '#1a1f63';
+      document.getElementById(activeId).style.color = '#FFE600';
       atualizarAvisoHTTPS();
     }
 
@@ -1508,6 +1526,75 @@
         _webUsbDevice = null; _webUsbEndpointNum = null;
         const btn = document.getElementById('btnWebUSB');
         if (btn) { btn.innerHTML = '&#128268; Conectar Impressora USB'; btn.style.background = 'var(--brand)'; btn.style.color = 'var(--accent)'; }
+        return false;
+      }
+    }
+
+    // ---- Bluetooth (BLE) ----
+    const BT_SERVICE = '38eb4a82-c570-11e3-9507-0002a5d5c51b';
+    const BT_CHAR    = '38eb4a83-c570-11e3-9507-0002a5d5c51b';
+    let _btDevice = null;
+    let _btChar   = null;
+
+    async function conectarBluetooth() {
+      const st  = document.getElementById('btStatus');
+      const btn = document.getElementById('btnBT');
+      if (_btDevice) {
+        try { _btDevice.gatt.disconnect(); } catch (_) {}
+        _btDevice = null; _btChar = null;
+        btn.innerHTML = '&#128309; Conectar Impressora Bluetooth';
+        btn.style.background = 'var(--brand)'; btn.style.color = 'var(--accent)';
+        st.innerHTML = ''; return;
+      }
+      if (!('bluetooth' in navigator)) {
+        st.style.color = '#c0392b';
+        st.innerHTML = '&#10060; Web Bluetooth nao disponivel. Use Chrome no Android ou PC.';
+        return;
+      }
+      st.style.color = 'var(--tx3)'; st.innerHTML = '&#9203; Procurando impressora...';
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'Zebra' }, { namePrefix: 'ZQ' }, { namePrefix: 'ZD' }, { namePrefix: 'ZT' }, { namePrefix: 'XX' }],
+          optionalServices: [BT_SERVICE]
+        });
+        st.innerHTML = '&#9203; Conectando...';
+        const server  = await device.gatt.connect();
+        const service = await server.getPrimaryService(BT_SERVICE);
+        const char    = await service.getCharacteristic(BT_CHAR);
+        _btDevice = device; _btChar = char;
+        device.addEventListener('gattserverdisconnected', () => {
+          _btDevice = null; _btChar = null;
+          btn.innerHTML = '&#128309; Conectar Impressora Bluetooth';
+          btn.style.background = 'var(--brand)'; btn.style.color = 'var(--accent)';
+          st.style.color = '#c0392b'; st.innerHTML = 'Desconectado.';
+        });
+        const nome = device.name || 'Impressora Bluetooth';
+        btn.innerHTML = '&#9989; ' + nome + ' &mdash; Desconectar';
+        btn.style.background = '#00a650'; btn.style.color = '#fff';
+        st.style.color = '#00a650'; st.innerHTML = '&#9989; Pronta para imprimir via Bluetooth!';
+        toast('✅ ' + nome + ' conectada!', 'ok');
+      } catch (e) {
+        if (e.name === 'NotFoundError') {
+          st.style.color = 'var(--tx3)'; st.innerHTML = 'Selecao cancelada.';
+        } else {
+          st.style.color = '#c0392b'; st.innerHTML = '&#10060; ' + e.message;
+        }
+      }
+    }
+
+    async function imprimirViaBluetooth(zpl) {
+      if (!_btChar) { toast('⚠️ Conecte a impressora Bluetooth primeiro.', 'warn'); return false; }
+      try {
+        const data  = new TextEncoder().encode(applyLabelShift(zpl));
+        const CHUNK = 512;
+        for (let i = 0; i < data.length; i += CHUNK) {
+          const chunk = data.slice(i, i + CHUNK);
+          try { await _btChar.writeValueWithoutResponse(chunk); }
+          catch (_) { await _btChar.writeValue(chunk); }
+        }
+        return true;
+      } catch (e) {
+        toast('❌ Erro Bluetooth: ' + e.message, 'err');
         return false;
       }
     }
@@ -1810,9 +1897,9 @@
     function atualizarAvisoHTTPS() {
       const warn = document.getElementById('httpsWarnMain');
       if (!warn) return;
-      const isWifi = (localStorage.getItem('printMode') || 'wifi') !== 'usb';
+      const mode = localStorage.getItem('printMode') || 'wifi';
       const ip = document.getElementById('ip').value.trim();
-      warn.style.display = (location.protocol === 'https:' && isWifi && ip) ? 'block' : 'none';
+      warn.style.display = (location.protocol === 'https:' && mode === 'wifi' && ip) ? 'block' : 'none';
     }
 
     // Salva tamanho vinculado ao IP da impressora
@@ -2261,19 +2348,25 @@
     }
 
     async function imprimirLivre() {
-      const ip  = document.getElementById('livreIP').value.trim();
-      const zpl = document.getElementById('zplContent').value.trim();
-      const st  = document.getElementById('livreStatus');
-      const btn = document.getElementById('btnImprimirLivre');
-      const modoUsb = localStorage.getItem('printMode') === 'usb';
-      if (!modoUsb && !ip) { st.style.color = '#c0392b'; st.innerText = '⚠️ Informe o IP da impressora.'; return; }
+      const ip   = document.getElementById('livreIP').value.trim();
+      const zpl  = document.getElementById('zplContent').value.trim();
+      const st   = document.getElementById('livreStatus');
+      const btn  = document.getElementById('btnImprimirLivre');
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      if (mode === 'wifi' && !ip) { st.style.color = '#c0392b'; st.innerText = '⚠️ Informe o IP da impressora.'; return; }
       if (!zpl) { st.style.color = '#c0392b'; st.innerText = '⚠️ Conteudo ZPL esta vazio.'; return; }
       btn.disabled = true;
       st.style.color = '#666'; st.innerText = '⏳ Enviando...';
-      if (modoUsb) {
+      if (mode === 'usb') {
         const ok = await imprimirViaUSB(zpl);
         st.style.color = ok ? '#00a650' : '#c0392b';
         st.innerText   = ok ? '✅ Enviado via USB!' : '❌ Erro ao imprimir via USB.';
+        if (ok) toast('✅ Enviado!', 'ok');
+        btn.disabled = false;
+      } else if (mode === 'bt') {
+        const ok = await imprimirViaBluetooth(zpl);
+        st.style.color = ok ? '#00a650' : '#c0392b';
+        st.innerText   = ok ? '✅ Enviado via Bluetooth!' : '❌ Erro ao imprimir via Bluetooth.';
         if (ok) toast('✅ Enviado!', 'ok');
         btn.disabled = false;
       } else {
@@ -2772,12 +2865,16 @@
         alert('Preencha Nº Saca e Quantidade.');
         return;
       }
-      if (mode !== 'usb' && !ip) {
+      if (mode === 'wifi' && !ip) {
         alert('Preencha o IP da impressora.');
         return;
       }
       if (mode === 'usb' && !getSelectedUSBPrinter() && !(_webUsbDevice && _webUsbEndpointNum !== null)) {
         toast('⚠️ Conecte a impressora USB primeiro (botao "Conectar Impressora USB").', 'warn');
+        return;
+      }
+      if (mode === 'bt' && !_btChar) {
+        toast('⚠️ Conecte a impressora Bluetooth primeiro.', 'warn');
         return;
       }
 
@@ -2934,8 +3031,10 @@
           btn.classList.remove('printing');
           btn.disabled = false;
         };
-        if (localStorage.getItem('printMode') === 'usb') {
+        if (mode === 'usb') {
           imprimirViaUSB(zpl).then(ok => ok ? _onOk() : _onErr());
+        } else if (mode === 'bt') {
+          imprimirViaBluetooth(zpl).then(ok => ok ? _onOk() : _onErr());
         } else {
           enviarZPLWifi(ip, zpl).then(_onOk).catch(_onErr);
         }
@@ -3095,6 +3194,9 @@
       if (mode === 'usb') {
         const ok = await imprimirViaUSB(ultimoZPL);
         if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
+      } else if (mode === 'bt') {
+        const ok = await imprimirViaBluetooth(ultimoZPL);
+        if (ok) { toast('✅ Reimpresso via Bluetooth!', 'ok'); beep('ok'); }
       } else {
         if (!ultimoIP) return;
         enviarZPLWifi(ultimoIP, ultimoZPL)
@@ -3202,10 +3304,11 @@
 
     // ---- Etiqueta de teste ----
     async function imprimirTeste() {
-      const modoUsb = localStorage.getItem('printMode') === 'usb';
+      const mode = localStorage.getItem('printMode') || 'wifi';
       const ip = document.getElementById('ip').value.trim();
-      if (!modoUsb && !ip) { toast('⚠️ Informe o IP da impressora primeiro.', 'warn'); return; }
-      if (modoUsb && !getSelectedUSBPrinter() && !(_webUsbDevice && _webUsbEndpointNum !== null)) { toast('⚠️ Conecte a impressora USB primeiro.', 'warn'); return; }
+      if (mode === 'wifi' && !ip) { toast('⚠️ Informe o IP da impressora primeiro.', 'warn'); return; }
+      if (mode === 'usb' && !getSelectedUSBPrinter() && !(_webUsbDevice && _webUsbEndpointNum !== null)) { toast('⚠️ Conecte a impressora USB primeiro.', 'warn'); return; }
+      if (mode === 'bt' && !_btChar) { toast('⚠️ Conecte a impressora Bluetooth primeiro.', 'warn'); return; }
 
       const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
       const dark  = document.getElementById('darkness').value || '30';
@@ -3251,8 +3354,11 @@
       }
 
       toast('🖨️ Enviando etiqueta de teste...', 'info', 2000);
-      if (modoUsb) {
+      if (mode === 'usb') {
         const ok = await imprimirViaUSB(zpl);
+        if (ok) { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); }
+      } else if (mode === 'bt') {
+        const ok = await imprimirViaBluetooth(zpl);
         if (ok) { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); }
       } else {
         enviarZPLWifi(ip, zpl)
