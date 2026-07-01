@@ -1359,10 +1359,11 @@
         st.style.color = '#00a650';
         st.innerHTML   = '✅ ' + _zbpPrinters.length + ' impressora(s) detectada(s)';
       } catch (_) {
-        sel.innerHTML = '<option value="">Erro ao conectar ao Zebra Browser Print</option>';
-        st.innerHTML  = `❌ Zebra Browser Print não encontrado.<br>
-          <b>1.</b> <a href="https://www.zebra.com/us/en/support-downloads/software/developer-tools/browser-print.html" target="_blank" style="color:#007aff">Instale o Zebra Browser Print</a><br>
-          <b>2.</b> <a href="${ZBP_URL}" target="_blank" style="color:#007aff">Clique aqui, aceite o certificado</a> e tente novamente`;
+        sel.innerHTML = '<option value="">Zebra Browser Print nao encontrado</option>';
+        st.innerHTML  = `<b>Para imprimir via USB no Windows:</b><br>
+          <b>1.</b> <a href="https://www.zebra.com/us/en/support-downloads/software/developer-tools/browser-print.html" target="_blank" style="color:#007aff">&#11015; Baixe e instale o Zebra Browser Print</a><br>
+          <b>2.</b> Abra o ZBP (icone na bandeja do sistema)<br>
+          <b>3.</b> <a href="${ZBP_URL}" target="_blank" style="color:#007aff">Aceite o certificado aqui</a> e clique &#128269; novamente`;
       }
     }
 
@@ -1462,10 +1463,20 @@
         toast('✅ ' + nome + ' conectada!', 'ok');
       } catch (e) {
         if (e.name === 'NotFoundError') {
+          st.style.color = 'var(--tx3)';
           st.innerHTML = 'Selecao cancelada.';
+        } else if (e.message && (e.message.includes('Access denied') || e.message.includes('access denied') || e.name === 'SecurityError')) {
+          // Windows bloqueia WebUSB quando o driver de impressora esta ativo
+          st.style.color = '#c0392b';
+          st.innerHTML = '&#10060; <b>Windows:</b> Driver do sistema bloqueia o acesso USB direto.<br>Use o <b>Zebra Browser Print</b> abaixo.';
+          // Abre automaticamente a secao ZBP
+          const details = document.querySelector('#usbSection details');
+          if (details) details.open = true;
+          // Inicia deteccao ZBP automaticamente
+          setTimeout(detectarImpressorasUSB, 300);
         } else {
           st.style.color = '#c0392b';
-          st.innerHTML = '&#10060; Erro: ' + e.message;
+          st.innerHTML = '&#10060; ' + e.message;
         }
       }
     }
