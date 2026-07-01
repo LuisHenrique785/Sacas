@@ -1511,6 +1511,27 @@
     }
 
     // ---- Descoberta automática de impressoras na rede ----
+    function getSVCSubnets() {
+      try {
+        const s = JSON.parse(localStorage.getItem('svcSubnets') || 'null') || {};
+        if (!s['SMG3']) s['SMG3'] = '10.29.180';
+        return s;
+      } catch (_) { return { 'SMG3': '10.29.180' }; }
+    }
+    function saveSVCSubnets(s) { localStorage.setItem('svcSubnets', JSON.stringify(s)); }
+
+    function getSubnetParaSVC(svc) {
+      if (!svc) return null;
+      return getSVCSubnets()[svc] || null;
+    }
+
+    function salvarSubnetParaSVC(svc, subnet) {
+      if (!svc || !subnet) return;
+      const s = getSVCSubnets();
+      s[svc] = subnet;
+      saveSVCSubnets(s);
+    }
+
     async function getLocalSubnet() {
       return new Promise((resolve) => {
         try {
@@ -1546,11 +1567,21 @@
       const row = document.getElementById('discoveryRow');
       btn.disabled = true;
       row.style.display = 'block';
-      row.innerHTML = '<span style="color:var(--tx2)">&#128269; Detectando rede...</span>';
 
+      const svc = getV('svc');
+      const subnetSVC = getSubnetParaSVC(svc);
+
+      if (subnetSVC) {
+        // Subnet ja conhecida para este SVC — escaneia direto
+        row.innerHTML = `<span style="color:var(--tx2)">&#128269; Usando subnet do <b>${svc}</b>: ${subnetSVC}</span>`;
+        await _executarScan(subnetSVC, row, btn);
+        return;
+      }
+
+      // Tenta detectar via WebRTC
+      row.innerHTML = '<span style="color:var(--tx2)">&#128269; Detectando rede...</span>';
       let subnet = await getLocalSubnet();
 
-      // Se nao detectou ou usuario quer outra subnet, mostrar campo manual
       if (!subnet) {
         btn.disabled = false;
         _mostrarInputSubnet(row, '');
@@ -1571,7 +1602,7 @@
             style="flex:1;padding:9px;border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:13px;font-weight:700;font-family:'Inter',sans-serif;background:var(--surf)">
           <button onclick="_iniciarScanManual()" style="padding:9px 14px;background:var(--brand);color:var(--accent);border:none;border-radius:var(--rs);font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">Escanear</button>
         </div>
-        <div style="font-size:10px;color:var(--tx3);margin-top:4px">Rede das impressoras Meli: 10.29.180</div>`;
+        <div style="font-size:10px;color:var(--tx3);margin-top:4px">Rede das impressoras Meli: 10.29.180${getV('svc') ? ' · Sera salva para ' + getV('svc') + ' apos escanear' : ''}</div>`;
     }
 
     async function _iniciarScanManual() {
@@ -1631,13 +1662,18 @@
         return;
       }
 
-      row.innerHTML = `<div style="font-weight:800;color:var(--brand);margin-bottom:6px">&#128247; ${found.length} impressora(s) em ${subnet}.x:</div>` +
+      // Scan bem-sucedido: salva subnet para este SVC
+      const svcAtual = getV('svc');
+      if (svcAtual) salvarSubnetParaSVC(svcAtual, subnet);
+
+      const svcTag = svcAtual ? ` <span style="background:var(--brand);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px">${svcAtual}</span>` : '';
+      row.innerHTML = `<div style="font-weight:800;color:var(--brand);margin-bottom:6px">&#128247; ${found.length} impressora(s) em ${subnet}.x${svcTag}:</div>` +
         found.map(ip =>
           `<span onclick="selecionarIPDescoberto('${ip}')" style="display:inline-flex;align-items:center;gap:5px;background:var(--ok);color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer;margin:2px 2px 2px 0">
             &#128247; ${ip}
           </span>`
         ).join('') +
-        `<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Toque para selecionar · <span onclick="_mostrarInputSubnet(document.getElementById('discoveryRow'), '${subnet}')" style="cursor:pointer;text-decoration:underline">Escanear outra subnet</span></div>`;
+        `<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Toque para selecionar · <span onclick="_mostrarInputSubnet(document.getElementById('discoveryRow'), '${subnet}')" style="cursor:pointer;text-decoration:underline">Outra subnet</span></div>`;
     }
 
     function atualizarAvisoHTTPS() {
