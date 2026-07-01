@@ -1548,13 +1548,47 @@
       row.style.display = 'block';
       row.innerHTML = '<span style="color:var(--tx2)">&#128269; Detectando rede...</span>';
 
-      const subnet = await getLocalSubnet();
+      let subnet = await getLocalSubnet();
+
+      // Se nao detectou ou usuario quer outra subnet, mostrar campo manual
       if (!subnet) {
-        row.innerHTML = '<span style="color:var(--err)">&#10060; Nao foi possivel detectar a rede automaticamente. Digite o IP manualmente.</span>';
         btn.disabled = false;
+        _mostrarInputSubnet(row, '');
         return;
       }
 
+      await _executarScan(subnet, row, btn);
+    }
+
+    function _mostrarInputSubnet(row, subnetDetectada) {
+      row.innerHTML = `
+        <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">
+          ${subnetDetectada ? '&#128269; Subnet detectada: <b>' + subnetDetectada + '</b>. Altere se necessario:' : '&#10060; Nao detectou automaticamente. Informe a subnet:'}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="subnetInput" type="text" inputmode="decimal" placeholder="ex: 10.29.180"
+            value="${subnetDetectada}"
+            style="flex:1;padding:9px;border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:13px;font-weight:700;font-family:'Inter',sans-serif;background:var(--surf)">
+          <button onclick="_iniciarScanManual()" style="padding:9px 14px;background:var(--brand);color:var(--accent);border:none;border-radius:var(--rs);font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">Escanear</button>
+        </div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:4px">Rede das impressoras Meli: 10.29.180</div>`;
+    }
+
+    async function _iniciarScanManual() {
+      const subnetInput = document.getElementById('subnetInput');
+      if (!subnetInput) return;
+      const subnet = subnetInput.value.trim().replace(/\.$/, '');
+      if (!subnet || subnet.split('.').length < 3) {
+        toast('Informe a subnet no formato X.X.X (ex: 10.29.180)', 'warn');
+        return;
+      }
+      const btn = document.getElementById('btnDiscover');
+      const row = document.getElementById('discoveryRow');
+      btn.disabled = true;
+      await _executarScan(subnet, row, btn);
+    }
+
+    async function _executarScan(subnet, row, btn) {
       const found = [];
       let completed = 0;
       const TOTAL = 254;
@@ -1570,12 +1604,13 @@
           .catch(() => { clearTimeout(tid); })
           .finally(() => {
             completed++;
-            if (completed % 30 === 0 || completed === TOTAL) {
+            if (completed % 20 === 0 || completed === TOTAL) {
               const pct = Math.round((completed / TOTAL) * 100);
-              row.innerHTML = `<div style="display:flex;align-items:center;gap:8px">
-                <div style="flex:1;height:6px;background:var(--bdr);border-radius:3px"><div style="width:${pct}%;height:6px;background:var(--brand);border-radius:3px;transition:width .2s"></div></div>
-                <span style="color:var(--tx2);white-space:nowrap">${pct}%</span>
-              </div>`;
+              row.innerHTML = `
+                <div style="font-size:11px;color:var(--tx2);margin-bottom:5px">&#128269; Escaneando ${subnet}.x — ${pct}%</div>
+                <div style="height:6px;background:var(--bdr);border-radius:3px">
+                  <div style="width:${pct}%;height:6px;background:var(--brand);border-radius:3px;transition:width .15s"></div>
+                </div>`;
             }
           });
       });
@@ -1583,26 +1618,26 @@
       await Promise.all(probes);
       btn.disabled = false;
 
-      // Se tudo falhou em < 200ms = mixed content bloqueado
       const elapsed = Date.now() - t0;
       if (!found.length && elapsed < 400 && location.protocol === 'https:') {
-        row.innerHTML = `<div style="color:#92400e;font-weight:700">&#9888; Bloqueado pelo Chrome (HTTPS)</div>
-          <div style="color:var(--tx2);margin-top:4px">Libere o conteudo nao seguro no &#128274; cadeado → Configuracoes do site → Conteudo nao seguro → Permitir, depois recarregue.</div>`;
+        row.innerHTML = `<div style="color:#92400e;font-weight:700;margin-bottom:4px">&#9888; Bloqueado pelo Chrome (HTTPS)</div>
+          <div style="color:var(--tx2)">Libere no &#128274; cadeado → Configuracoes do site → Conteudo nao seguro → Permitir → recarregue.</div>`;
         return;
       }
 
       if (!found.length) {
-        row.innerHTML = `<span style="color:var(--tx2)">Nenhuma impressora encontrada na sub-rede ${subnet}.x</span>`;
+        row.innerHTML = `<div style="color:var(--tx2);margin-bottom:6px">Nenhuma impressora respondeu em ${subnet}.x</div>`;
+        _mostrarInputSubnet(row, subnet);
         return;
       }
 
-      row.innerHTML = `<div style="font-weight:800;color:var(--brand);margin-bottom:6px">&#128247; ${found.length} impressora(s) encontrada(s):</div>` +
+      row.innerHTML = `<div style="font-weight:800;color:var(--brand);margin-bottom:6px">&#128247; ${found.length} impressora(s) em ${subnet}.x:</div>` +
         found.map(ip =>
-          `<span onclick="selecionarIPDescoberto('${ip}')" style="display:inline-flex;align-items:center;gap:5px;background:var(--ok);color:#fff;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:800;cursor:pointer;margin:2px 2px 2px 0">
+          `<span onclick="selecionarIPDescoberto('${ip}')" style="display:inline-flex;align-items:center;gap:5px;background:var(--ok);color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer;margin:2px 2px 2px 0">
             &#128247; ${ip}
           </span>`
         ).join('') +
-        `<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Toque para selecionar</div>`;
+        `<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Toque para selecionar · <span onclick="_mostrarInputSubnet(document.getElementById('discoveryRow'), '${subnet}')" style="cursor:pointer;text-decoration:underline">Escanear outra subnet</span></div>`;
     }
 
     function atualizarAvisoHTTPS() {
