@@ -1590,7 +1590,14 @@
         toast('✅ ' + nome + ' conectada!', 'ok');
       } catch (e) {
         if (e.name === 'NotFoundError') {
-          st.style.color = 'var(--tx3)'; st.innerHTML = 'Selecao cancelada.';
+          st.style.color = '#92400e';
+          st.innerHTML = `<b>Impressora nao encontrada via BLE.</b><br>
+            Verifique:<br>
+            1&#65039;&#8419; Permissao <b>Dispositivos proximos</b> concedida ao Chrome<br>
+            &nbsp;&nbsp;&nbsp;(Configuracoes do Android &rarr; Apps &rarr; Chrome &rarr; Permissoes)<br>
+            2&#65039;&#8419; BLE ativo na impressora: no Printer Setup,<br>
+            &nbsp;&nbsp;&nbsp;Settings &rarr; Bluetooth &rarr; <b>Bluetooth LE</b> &rarr; On<br>
+            3&#65039;&#8419; Se nao aparecer: <a href="#" onclick="setPrintMode('wifi');return false" style="color:var(--brand)">use WiFi</a> — verifique o IP atual na impressora`;
         } else {
           st.style.color = '#c0392b'; st.innerHTML = '&#10060; ' + e.message;
         }
