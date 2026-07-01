@@ -1,4 +1,4 @@
-const CACHE = 'sacas-v10';
+const CACHE = 'sacas-v11';
 const ASSETS = ['/Sacas/', '/Sacas/index.html'];
 
 self.addEventListener('install', e => {
@@ -20,6 +20,10 @@ self.addEventListener('message', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Nao intercepta HTTP puro (requests para impressoras locais) — o SW nao
+  // herda a permissao "Conteudo nao seguro" da pagina e bloquearia o acesso
+  if (e.request.url.startsWith('http://')) return;
+
   // Navegacao (HTML): sempre busca na rede sem cache — garante versao atual
   if (e.request.mode === 'navigate') {
     e.respondWith(
@@ -28,7 +32,7 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // Outros recursos: rede primeiro, cache como fallback
+  // Outros recursos HTTPS: rede primeiro, cache como fallback
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
