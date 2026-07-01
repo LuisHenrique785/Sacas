@@ -1530,7 +1530,12 @@
       const ip    = document.getElementById('ip').value.trim();
       const shift = parseInt(localStorage.getItem('lsx_' + ip) || '0');
       if (!shift) return zpl;
-      return zpl.replace(/\^XA/g, '^XA^LS' + shift);
+      // Desloca coordenadas ^FO diretamente em vez de ^LS.
+      // ^LS faz a impressora rejeitar o label quando conteudo passa de ^PW.
+      // Com ^FO ajustado, o label sempre imprime (clipa na borda se necessario).
+      return zpl.replace(/\^FO(-?\d+),(-?\d+)/g, (_, x, y) =>
+        '^FO' + Math.max(0, parseInt(x) + shift) + ',' + y
+      );
     }
 
     function isInvertido() {
