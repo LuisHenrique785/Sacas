@@ -1,4 +1,4 @@
-const CACHE = 'sacas-v4';
+const CACHE = 'sacas-v5';
 const ASSETS = ['/Sacas/', '/Sacas/index.html'];
 
 self.addEventListener('install', e => {
@@ -15,7 +15,16 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Navegacao (HTML): sempre busca na rede sem cache — garante versao atual no F5
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request, { cache: 'no-store' })
+        .catch(() => caches.match('/Sacas/index.html'))
+    );
+    return;
+  }
+  // Outros recursos: rede primeiro, cache como fallback
   e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request)).catch(() => caches.match('/Sacas/index.html'))
+    fetch(e.request).catch(() => caches.match(e.request))
   );
 });
