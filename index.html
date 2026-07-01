@@ -331,13 +331,24 @@
         <div id="printersRow" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"></div>
       </div>
       <div id="usbSection" style="display:none;margin-bottom:8px">
-        <div style="display:flex;gap:6px;align-items:center">
-          <select id="usbPrinterSel" style="flex:1;padding:10px;border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:14px;background:var(--surf);font-family:'Inter',sans-serif">
-            <option value="">-- Clique em &#128269; para detectar --</option>
-          </select>
-          <button onclick="detectarImpressorasUSB()" style="padding:10px 13px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:16px;flex-shrink:0">&#128269;</button>
-        </div>
-        <div id="usbStatus" style="font-size:11px;color:var(--tx3);margin-top:5px;text-align:center;line-height:1.6"></div>
+        <!-- WebUSB: conexão direta sem software extra -->
+        <button onclick="conectarWebUSB()" id="btnWebUSB" style="width:100%;padding:11px;background:var(--brand);color:var(--accent);border:none;border-radius:var(--rs);font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px">
+          &#128268; Conectar Impressora USB
+        </button>
+        <div id="webUsbStatus" style="font-size:11px;color:var(--tx3);margin-bottom:6px;text-align:center;line-height:1.6"></div>
+        <!-- ZBP fallback -->
+        <details style="margin-top:4px">
+          <summary style="font-size:11px;color:var(--tx3);cursor:pointer;user-select:none">&#9881; Usar Zebra Browser Print (avancado)</summary>
+          <div style="margin-top:6px">
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="usbPrinterSel" style="flex:1;padding:10px;border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:13px;background:var(--surf);font-family:'Inter',sans-serif">
+                <option value="">-- Clique em &#128269; para detectar --</option>
+              </select>
+              <button onclick="detectarImpressorasUSB()" style="padding:10px 13px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:16px;flex-shrink:0">&#128269;</button>
+            </div>
+            <div id="usbStatus" style="font-size:11px;color:var(--tx3);margin-top:5px;text-align:center;line-height:1.6"></div>
+          </div>
+        </details>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
         <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()" style="flex:1;margin:0;min-width:0">
@@ -1362,8 +1373,16 @@
     }
 
     async function imprimirViaUSB(zpl) {
+      // Tenta WebUSB primeiro (sem software extra)
+      if (_webUsbDevice && _webUsbEndpointNum !== null) {
+        return await imprimirViaWebUSB(zpl);
+      }
+      // Fallback: Zebra Browser Print
       const printer = getSelectedUSBPrinter();
-      if (!printer) { toast('⚠️ Selecione a impressora USB primeiro.', 'warn'); return false; }
+      if (!printer) {
+        toast('⚠️ Conecte a impressora USB (botao "Conectar Impressora USB").', 'warn');
+        return false;
+      }
       try {
         await fetch(ZBP_URL + '/write', {
           method: 'POST',
@@ -1379,6 +1398,95 @@
     function enviarZPLWifi(ip, zpl) {
       const ipLimpo = ip.replace(/,/g, '.').replace(/\s/g, '');
       return fetch('http://' + ipLimpo + '/pstprnt', { method: 'POST', body: applyLabelShift(zpl), mode: 'no-cors' });
+    }
+
+    // ---- WebUSB ----
+    let _webUsbDevice = null;
+    let _webUsbEndpointNum = null;
+
+    async function conectarWebUSB() {
+      const st = document.getElementById('webUsbStatus');
+      const btn = document.getElementById('btnWebUSB');
+      if (!('usb' in navigator)) {
+        st.style.color = '#c0392b';
+        st.innerHTML = '&#10060; WebUSB nao disponivel neste navegador. Use Chrome no PC ou Android.';
+        return;
+      }
+      // Se ja conectado, desconecta
+      if (_webUsbDevice) {
+        try { await _webUsbDevice.close(); } catch (_) {}
+        _webUsbDevice = null; _webUsbEndpointNum = null;
+        btn.textContent = '🔌 Conectar Impressora USB';
+        st.innerHTML = '';
+        return;
+      }
+      st.style.color = 'var(--tx3)';
+      st.innerHTML = '&#9203; Aguardando selecao...';
+      try {
+        const device = await navigator.usb.requestDevice({
+          filters: [
+            { vendorId: 0x0A5F }, // Zebra Technologies
+            { vendorId: 0x067B }, // Prolific (adaptadores)
+            { classCode: 0x07 }   // Printer class
+          ]
+        });
+        await device.open();
+        if (device.configuration === null) await device.selectConfiguration(1);
+        // Tenta cada interface ate encontrar endpoint bulk OUT
+        let endpointFound = false;
+        for (const iface of (device.configuration?.interfaces || [])) {
+          try {
+            await device.claimInterface(iface.interfaceNumber);
+            const ep = iface.alternates[0]?.endpoints?.find(e => e.direction === 'out' && e.type === 'bulk');
+            if (ep) {
+              _webUsbDevice = device;
+              _webUsbEndpointNum = ep.endpointNumber;
+              endpointFound = true;
+              break;
+            }
+            await device.releaseInterface(iface.interfaceNumber);
+          } catch (_) {}
+        }
+        if (!endpointFound) {
+          try { await device.close(); } catch (_) {}
+          st.style.color = '#c0392b';
+          st.innerHTML = '&#10060; Impressora conectada mas endpoint nao encontrado. Verifique o cabo e reconecte.';
+          return;
+        }
+        const nome = device.productName || device.manufacturerName || 'Impressora USB';
+        btn.innerHTML = '&#10004; ' + nome + ' — Desconectar';
+        btn.style.background = 'var(--ok)';
+        btn.style.color = '#fff';
+        st.style.color = '#00a650';
+        st.innerHTML = '&#9989; Pronta para imprimir via USB!';
+        toast('✅ ' + nome + ' conectada!', 'ok');
+      } catch (e) {
+        if (e.name === 'NotFoundError') {
+          st.innerHTML = 'Selecao cancelada.';
+        } else {
+          st.style.color = '#c0392b';
+          st.innerHTML = '&#10060; Erro: ' + e.message;
+        }
+      }
+    }
+
+    async function imprimirViaWebUSB(zpl) {
+      if (!_webUsbDevice || _webUsbEndpointNum === null) return false;
+      try {
+        const data = new TextEncoder().encode(applyLabelShift(zpl));
+        // Envia em chunks de 64 bytes para compatibilidade maxima
+        const CHUNK = 512;
+        for (let i = 0; i < data.length; i += CHUNK) {
+          await _webUsbDevice.transferOut(_webUsbEndpointNum, data.slice(i, i + CHUNK));
+        }
+        return true;
+      } catch (e) {
+        toast('❌ Erro WebUSB: ' + e.message, 'err');
+        _webUsbDevice = null; _webUsbEndpointNum = null;
+        const btn = document.getElementById('btnWebUSB');
+        if (btn) { btn.innerHTML = '&#128268; Conectar Impressora USB'; btn.style.background = 'var(--brand)'; btn.style.color = 'var(--accent)'; }
+        return false;
+      }
     }
 
     // ---- Geolocalização por SVC ----
@@ -2645,8 +2753,8 @@
         alert('Preencha o IP da impressora.');
         return;
       }
-      if (mode === 'usb' && !getSelectedUSBPrinter()) {
-        toast('⚠️ Selecione a impressora USB primeiro.', 'warn');
+      if (mode === 'usb' && !getSelectedUSBPrinter() && !(_webUsbDevice && _webUsbEndpointNum !== null)) {
+        toast('⚠️ Conecte a impressora USB primeiro (botao "Conectar Impressora USB").', 'warn');
         return;
       }
 
@@ -3074,7 +3182,7 @@
       const modoUsb = localStorage.getItem('printMode') === 'usb';
       const ip = document.getElementById('ip').value.trim();
       if (!modoUsb && !ip) { toast('⚠️ Informe o IP da impressora primeiro.', 'warn'); return; }
-      if (modoUsb && !getSelectedUSBPrinter()) { toast('⚠️ Selecione a impressora USB primeiro.', 'warn'); return; }
+      if (modoUsb && !getSelectedUSBPrinter() && !(_webUsbDevice && _webUsbEndpointNum !== null)) { toast('⚠️ Conecte a impressora USB primeiro.', 'warn'); return; }
 
       const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
       const dark  = document.getElementById('darkness').value || '30';
