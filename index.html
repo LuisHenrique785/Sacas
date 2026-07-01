@@ -3670,7 +3670,25 @@
 
     // ---- Service Worker ----
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/Sacas/sw.js').catch(() => {}));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/Sacas/sw.js').then(reg => {
+          // Quando nova versao instala, força ativacao imediata
+          reg.addEventListener('updatefound', () => {
+            const novo = reg.installing;
+            if (!novo) return;
+            novo.addEventListener('statechange', () => {
+              if (novo.state === 'installed' && navigator.serviceWorker.controller) {
+                // Novo SW pronto — recarrega para usar a versao nova
+                novo.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+        }).catch(() => {});
+        // Recarrega automaticamente quando novo SW assume o controle
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
+      });
     }
   </script>
 </body>

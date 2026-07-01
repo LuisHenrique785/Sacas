@@ -1,4 +1,4 @@
-const CACHE = 'sacas-v9';
+const CACHE = 'sacas-v10';
 const ASSETS = ['/Sacas/', '/Sacas/index.html'];
 
 self.addEventListener('install', e => {
@@ -14,8 +14,13 @@ self.addEventListener('activate', e => {
   );
 });
 
+// Permite que a pagina force ativacao imediata do novo SW
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', e => {
-  // Navegacao (HTML): sempre busca na rede sem cache — garante versao atual no F5
+  // Navegacao (HTML): sempre busca na rede sem cache — garante versao atual
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' })
