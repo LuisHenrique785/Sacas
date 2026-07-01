@@ -1,4 +1,4 @@
-const CACHE = 'sacas-v5';
+const CACHE = 'sacas-v6';
 const ASSETS = ['/Sacas/', '/Sacas/index.html'];
 
 self.addEventListener('install', e => {

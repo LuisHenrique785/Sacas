@@ -1397,7 +1397,18 @@
 
     function enviarZPLWifi(ip, zpl) {
       const ipLimpo = ip.replace(/,/g, '.').replace(/\s/g, '');
-      return fetch('http://' + ipLimpo + '/pstprnt', { method: 'POST', body: applyLabelShift(zpl), mode: 'no-cors' });
+      const zplFinal = applyLabelShift(zpl);
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 4000);
+      return fetch('http://' + ipLimpo + '/pstprnt', {
+        method: 'POST', body: zplFinal, mode: 'no-cors', signal: ctrl.signal
+      }).then(() => clearTimeout(tid))
+        .catch(() => {
+          clearTimeout(tid);
+          // Porta 80 inacessivel — tenta porta RAW 9100 (ZPL direto, sem HTTP)
+          fetch('http://' + ipLimpo + ':9100', { method: 'POST', body: zplFinal, mode: 'no-cors' }).catch(() => {});
+          return Promise.resolve(); // dados enviados via RAW
+        });
     }
 
     // ---- WebUSB ----
@@ -3269,7 +3280,24 @@
           const wm = document.getElementById('httpsWarnMain');
           if (wm) wm.style.display = 'none';
         })
-        .catch(() => { clearTimeout(tid); setColor('#c0392b'); });
+        .catch(e80 => {
+          clearTimeout(tid);
+          // Porta 80 falhou — testa porta RAW 9100 como fallback
+          const ctrl2 = new AbortController();
+          const t2 = setTimeout(() => ctrl2.abort(), 2000);
+          const t2start = Date.now();
+          fetch('http://' + ip + ':9100', { method: 'GET', mode: 'no-cors', signal: ctrl2.signal })
+            .catch(e90 => {
+              clearTimeout(t2);
+              // Se respondeu antes do abort (< 1800ms), impressora está online mas sem HTTP na 80
+              if (e90.name !== 'AbortError' && (Date.now() - t2start) < 1800) {
+                setColor('#f59e0b'); // amarelo = RAW disponivel
+              } else {
+                setColor('#c0392b'); // vermelho = sem resposta
+              }
+            })
+            .then(() => { clearTimeout(t2); }); // porta 9100 respondeu com HTTP (raro)
+        });
     }
 
     // ---- Relatório por operador ----
