@@ -1,9 +1,9 @@
-const CACHE = 'sacas-v11';
+const CACHE = 'sacas-v12';
 const ASSETS = ['/Sacas/', '/Sacas/index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
+  // Nao chama skipWaiting automaticamente — aguarda confirmacao da pagina
 });
 
 self.addEventListener('activate', e => {
