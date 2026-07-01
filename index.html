@@ -1554,13 +1554,28 @@
       st.style.color = 'var(--tx3)'; st.innerHTML = '&#9203; Procurando impressora...';
       try {
         const device = await navigator.bluetooth.requestDevice({
-          filters: [{ namePrefix: 'Zebra' }, { namePrefix: 'ZQ' }, { namePrefix: 'ZD' }, { namePrefix: 'ZT' }, { namePrefix: 'XX' }],
+          acceptAllDevices: true,
           optionalServices: [BT_SERVICE]
         });
-        st.innerHTML = '&#9203; Conectando...';
-        const server  = await device.gatt.connect();
-        const service = await server.getPrimaryService(BT_SERVICE);
-        const char    = await service.getCharacteristic(BT_CHAR);
+        st.innerHTML = '&#9203; Conectando via BLE...';
+        const server = await device.gatt.connect();
+        // Tenta servico Zebra Link-OS; fallback: descobre servicos automaticamente
+        let char = null;
+        try {
+          const svc = await server.getPrimaryService(BT_SERVICE);
+          char = await svc.getCharacteristic(BT_CHAR);
+        } catch (_) {
+          st.innerHTML = '&#9203; Buscando servico de impressao...';
+          const svcs = await server.getPrimaryServices();
+          for (const svc of svcs) {
+            try {
+              const chars = await svc.getCharacteristics();
+              const c = chars.find(x => x.properties.write || x.properties.writeWithoutResponse);
+              if (c) { char = c; break; }
+            } catch (_) {}
+          }
+        }
+        if (!char) throw new Error('Servico BLE de impressao nao encontrado. Verifique se BLE esta ativo na impressora (Link-OS).');
         _btDevice = device; _btChar = char;
         device.addEventListener('gattserverdisconnected', () => {
           _btDevice = null; _btChar = null;
