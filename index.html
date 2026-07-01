@@ -1572,6 +1572,9 @@
       const dk = localStorage.getItem('dk_' + ip) || '30';
       document.getElementById('darkness').value = dk;
       document.getElementById('darkVal').innerText = dk;
+      const savedShift = parseInt(localStorage.getItem('lsx_' + ip) || '0');
+      document.getElementById('labelShift').value = savedShift;
+      document.getElementById('shiftVal').innerText = savedShift;
       atualizarBotaoOrient();
       atualizarBadge();
       atualizarContador();
