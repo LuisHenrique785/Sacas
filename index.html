@@ -322,7 +322,7 @@
           3. Recarregue a página (F5)
         </div>
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-          <input type="text" id="ip" placeholder="IP da Impressora" onchange="sv();testarImpressora();renderPrinters();atualizarAvisoHTTPS()" style="flex:1;margin:0">
+          <input type="text" id="ip" placeholder="IP da Impressora" inputmode="decimal" oninput="sanitizarIP(this)" onchange="sv();testarImpressora();renderPrinters();atualizarAvisoHTTPS()" style="flex:1;margin:0">
           <button onclick="salvarImpressoraAtual()" style="padding:9px 11px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:14px;flex-shrink:0">&#128190;</button>
           <span id="printerDot" style="width:11px;height:11px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
         </div>
@@ -1375,7 +1375,8 @@
     }
 
     function enviarZPLWifi(ip, zpl) {
-      return fetch('http://' + ip + '/pstprnt', { method: 'POST', body: applyLabelShift(zpl), mode: 'no-cors' });
+      const ipLimpo = ip.replace(/,/g, '.').replace(/\s/g, '');
+      return fetch('http://' + ipLimpo + '/pstprnt', { method: 'POST', body: applyLabelShift(zpl), mode: 'no-cors' });
     }
 
     // ---- Geolocalização por SVC ----
@@ -1455,7 +1456,7 @@
       const _dk = localStorage.getItem('darkMode') === '1';
       if (_dk) { document.documentElement.setAttribute('data-dark',''); document.getElementById('darkBtn').textContent = '☀️'; }
 
-      const savedIp   = localStorage.getItem('ip')  || '';
+      const savedIp   = (localStorage.getItem('ip')  || '').replace(/,/g, '.').replace(/\s/g, '');
       const savedSvc  = localStorage.getItem('svc') || '';
       const savedResp = localStorage.getItem('rp')  || '';
       document.getElementById('ip').value   = savedIp;
@@ -1496,6 +1497,17 @@
       setPrintMode(localStorage.getItem('printMode') || 'wifi');
       atualizarAvisoHTTPS();
     };
+
+    function sanitizarIP(el) {
+      const pos = el.selectionStart;
+      const antes = el.value;
+      // Troca vírgulas por pontos (teclado pt-BR) e remove espaços
+      const depois = antes.replace(/,/g, '.').replace(/\s/g, '');
+      if (depois !== antes) {
+        el.value = depois;
+        try { el.setSelectionRange(pos, pos); } catch (_) {}
+      }
+    }
 
     function atualizarAvisoHTTPS() {
       const warn = document.getElementById('httpsWarnMain');
