@@ -2051,7 +2051,6 @@
       const { pw, ll, label } = getDims();
       document.getElementById('zplContent').value =
         '^XA\n' +
-        '^CI28\n' +
         '^PW' + pw + '\n' +
         '^LL' + ll + '\n' +
         '^MD25\n' +
@@ -2314,7 +2313,7 @@
         } else if (zpl.includes('^XA')) {
           zpl = zpl.replace(/(\^XZ)/i, campo + '\n$1');
         } else {
-          zpl = '^XA\n^CI28\n^PW'+pw+'\n^LL'+ll+'\n'+campo+'\n^XZ';
+          zpl = '^XA\n^PW'+pw+'\n^LL'+ll+'\n'+campo+'\n^XZ';
         }
         document.getElementById('zplContent').value = zpl;
         fecharModal('modalEditor');
@@ -2991,7 +2990,7 @@
             const _y2  = inv ? ll - ty2 - 42       : ty2;
             const _y3  = inv ? ll - ty3 - 24       : ty3;
             const _y4  = inv ? ll - ty4 - 24       : ty4;
-            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD' + dark +
+            zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
                    '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
@@ -3019,7 +3018,7 @@
           const _y4  = inv ? ll - y4  - fC   : y4;
           for (let k = 1; k <= qtdVal; k++) {
             const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
-            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD' + dark +
+            zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                    '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
@@ -3350,7 +3349,7 @@
         const _y2   = inv ? ll - (vOff + 65)  - 42 : vOff + 65;
         const _y3   = inv ? ll - (vOff + 112) - 24 : vOff + 112;
         const _y4   = inv ? ll - (vOff + 142) - 24 : vOff + 142;
-        zpl = `^XA^CI28^PW${pw}^LL${ll}^MD${dark}` +
+        zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
               `^FO10,${_qrY}^BQN,2,${qrMag}^FDQA,TESTE^FS` +
               `^FO${tX},${_y1}^A0${rot},50,50^FB${tW},1,0,L^FDTESTE IMPRESSAO^FS` +
               `^FO${tX},${_y2}^A0${rot},42,42^FB${tW},1,0,L^FD${svc}^FS` +
@@ -3367,7 +3366,7 @@
         const _y2  = inv ? ll - y2 - fB : y2;
         const _y3  = inv ? ll - y3 - fC : y3;
         const _y4  = inv ? ll - y4 - fC : y4;
-        zpl = `^XA^CI28^PW${pw}^LL${ll}^MD${dark}` +
+        zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
               `^FO${qrX},${_qrY}^BQN,2,5^FDQA,TESTE^FS` +
               `^FO0,${_y1}^A0${rot},${fA},${fA}^FB${pw},1,0,C^FDTESTE DE IMPRESSAO^FS` +
               `^FO0,${_y2}^A0${rot},${fB},${fB}^FB${pw},1,0,C^FD${svc}^FS` +
