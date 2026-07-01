@@ -580,6 +580,41 @@
     </div>
   </div>
 
+  <!-- Modal: Romaneio de Rota -->
+  <div id="modalRomaneio" class="modal-bg">
+    <div class="m-cont" style="max-width:460px">
+      <h3 style="margin-top:0">&#128203; Romaneio de Rota</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Período — De</label>
+          <input type="date" id="romDe" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Período — Até</label>
+          <input type="date" id="romAte" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Rota (opcional)</label>
+          <input type="text" id="romRota" placeholder="Todas" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Auditoria (opcional)</label>
+          <input type="text" id="romAudit" placeholder="Todas" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Transportadora <span style="color:#dc2626">*</span></label>
+        <input type="text" id="romTransp" placeholder="Nome da transportadora..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Motorista (opcional)</label>
+        <input type="text" id="romMotorista" placeholder="Nome do motorista..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+      </div>
+      <button onclick="gerarRomaneio()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:8px;font-family:inherit">&#128203; GERAR ROMANEIO</button>
+      <button onclick="fecharModal('modalRomaneio')" style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;font-family:inherit">Cancelar</button>
+    </div>
+  </div>
+
   <!-- Modal: Editor Visual de Etiqueta -->
   <div id="modalEditor" class="modal-bg">
     <div class="m-cont-editor">
@@ -741,6 +776,7 @@
         <h3 style="margin:0">&#128203; Consultas</h3>
         <button class="btn-export" id="btnExport" onclick="exportarAtivo()">&#11015;&#65039; Exportar CSV</button>
         <button class="btn-buscar" style="background:#5856d6;padding:8px 14px;width:auto" onclick="exportarPDF()">&#128196; EXPORTAR PDF</button>
+        <button class="btn-buscar" style="background:#059669;padding:8px 14px;width:auto" onclick="abrirRomaneio()">&#128203; ROMANEIO</button>
       </div>
 
       <!-- Abas -->
@@ -3665,6 +3701,131 @@
         <script>window.onload=()=>{window.print();}<\/script>
         </body></html>`);
       win.document.close();
+    }
+
+    // ---- Romaneio de Rota ----
+    function abrirRomaneio() {
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('romDe').value  = today;
+      document.getElementById('romAte').value = today;
+      document.getElementById('romRota').value      = '';
+      document.getElementById('romAudit').value     = '';
+      document.getElementById('romTransp').value    = '';
+      document.getElementById('romMotorista').value = '';
+      document.getElementById('modalRomaneio').style.display = 'flex';
+    }
+
+    async function gerarRomaneio() {
+      const transp   = document.getElementById('romTransp').value.trim();
+      const motorista = document.getElementById('romMotorista').value.trim();
+      if (!transp) { toast('Informe a transportadora', 'err'); return; }
+
+      const de    = document.getElementById('romDe').value;
+      const ate   = document.getElementById('romAte').value;
+      const rota  = document.getElementById('romRota').value.trim();
+      const audit = document.getElementById('romAudit').value.trim();
+
+      let q = db.from('log').select('*').order('rota', { ascending: true }).order('saca_id', { ascending: true }).limit(5000);
+      if (getV('svc')) q = q.eq('svc', getV('svc'));
+      if (rota)  q = q.ilike('rota',      '%' + rota  + '%');
+      if (audit) q = q.ilike('auditoria', '%' + audit + '%');
+
+      let rows = await sbCheck(await q) || [];
+
+      if (de || ate) {
+        const deDt  = de  ? new Date(de)  : null;
+        const ateDt = ate ? new Date(ate + 'T23:59:59') : null;
+        rows = rows.filter(r => {
+          const d = parseDateBR(r.data);
+          if (!d) return true;
+          if (deDt  && d < deDt)  return false;
+          if (ateDt && d > ateDt) return false;
+          return true;
+        });
+      }
+
+      if (!rows.length) { toast('Nenhum registro encontrado para os filtros informados', 'warn'); return; }
+
+      const totalSacas   = rows.length;
+      const totalVolumes = rows.reduce((s, r) => s + (r.qtd || 0), 0);
+      const svc          = getV('svc') || 'Todos';
+      const dataGeracao  = new Date().toLocaleString('pt-BR');
+      const rotasLista   = [...new Set(rows.map(r => r.rota).filter(Boolean))].join(', ') || 'Todas';
+      const periodoDe    = de  ? new Date(de  + 'T00:00').toLocaleDateString('pt-BR')  : '—';
+      const periodoAte   = ate ? new Date(ate + 'T00:00').toLocaleDateString('pt-BR')  : '—';
+
+      const tableRows = rows.map((r, i) =>
+        '<tr>' +
+        '<td style="text-align:center;color:#888;font-size:9px">' + (i + 1) + '</td>' +
+        '<td><b>' + (r.saca_id || '') + '</b></td>' +
+        '<td>' + (r.rota || '') + '</td>' +
+        '<td style="text-align:center;font-weight:800;font-size:13px">' + (r.qtd ?? '') + '</td>' +
+        '<td>' + (r.responsavel || '') + '</td>' +
+        '<td style="color:#888;font-size:9px;white-space:nowrap">' + (r.data || '') + '</td>' +
+        '</tr>'
+      ).join('');
+
+      const win = window.open('', '_blank');
+      win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+        '<title>Romaneio de Rota — ' + svc + '</title>' +
+        '<style>' +
+        '*{box-sizing:border-box;margin:0;padding:0}' +
+        'body{font-family:Arial,sans-serif;font-size:11px;color:#222;background:#fff;padding:24px}' +
+        '.header{display:flex;align-items:center;gap:16px;border-bottom:3px solid #1a1f63;padding-bottom:14px;margin-bottom:14px}' +
+        '.logo-box{background:#FFE600;border-radius:10px;padding:8px 14px;font-size:26px;font-weight:900;color:#1a1f63;letter-spacing:-1px;line-height:1;flex-shrink:0}' +
+        '.logo-name{font-size:13px;font-weight:700;color:#1a1f63;line-height:1.4}' +
+        '.title-block{margin-left:auto;text-align:right}' +
+        '.title-block h1{font-size:19px;font-weight:900;color:#1a1f63;text-transform:uppercase;letter-spacing:1px}' +
+        '.title-block p{font-size:9px;color:#888;margin-top:2px}' +
+        '.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}' +
+        '.ic{background:#f5f6fa;border-radius:7px;padding:7px 10px;border-left:3px solid #1a1f63}' +
+        '.ic .lb{font-size:8px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
+        '.ic .vl{font-size:12px;font-weight:700;color:#1a1f63;margin-top:2px}' +
+        '.ic .vl.ok{color:#059669;font-size:15px}' +
+        'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
+        'thead tr{background:#1a1f63}' +
+        'thead th{color:#FFE600;padding:7px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}' +
+        'tbody td{padding:5px 8px;border-bottom:1px solid #eee;font-size:10px;vertical-align:middle}' +
+        'tbody tr:nth-child(even) td{background:#f9faff}' +
+        '.tot td{background:#1a1f63!important;color:#FFE600!important;font-weight:700!important;font-size:11px!important;border:none!important;padding:7px 8px!important}' +
+        '.sign-section{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px;page-break-inside:avoid}' +
+        '.sign-box{text-align:center}' +
+        '.sign-line{border-top:1.5px solid #333;margin:44px 0 6px}' +
+        '.sign-label{font-size:10px;font-weight:700;color:#1a1f63;text-transform:uppercase;letter-spacing:.5px}' +
+        '.sign-sub{font-size:9px;color:#888;margin-top:3px}' +
+        '.footer{margin-top:14px;padding-top:8px;border-top:1px solid #ddd;font-size:8px;color:#aaa;text-align:center}' +
+        '@media print{body{padding:0}@page{size:A4;margin:12mm}.no-print{display:none!important}}' +
+        '</style></head><body>' +
+        '<div class="no-print" style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:999">' +
+        '<button onclick="window.print()" style="background:#1a1f63;color:#FFE600;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
+        '<button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer">✕ Fechar</button>' +
+        '</div>' +
+        '<div class="header">' +
+        '<div style="display:flex;align-items:center;gap:10px"><div class="logo-box">ML</div><div class="logo-name">Mercado<br>Livre</div></div>' +
+        '<div class="title-block"><h1>Romaneio de Rota</h1><p>Sistema de Auditoria de Sacas</p></div>' +
+        '</div>' +
+        '<div class="info-grid">' +
+        '<div class="ic"><div class="lb">SVC / Unidade</div><div class="vl">' + svc + '</div></div>' +
+        '<div class="ic"><div class="lb">Rota(s)</div><div class="vl">' + rotasLista + '</div></div>' +
+        '<div class="ic"><div class="lb">Período</div><div class="vl">' + periodoDe + ' a ' + periodoAte + '</div></div>' +
+        '<div class="ic"><div class="lb">Transportadora</div><div class="vl">' + transp + '</div></div>' +
+        '<div class="ic"><div class="lb">Total de Sacas</div><div class="vl ok">' + totalSacas + '</div></div>' +
+        '<div class="ic"><div class="lb">Total de Volumes</div><div class="vl ok">' + totalVolumes + '</div></div>' +
+        '</div>' +
+        '<table><thead><tr>' +
+        '<th>#</th><th>Saca ID</th><th>Rota</th><th style="text-align:center">Volumes</th><th>Responsável</th><th>Data / Hora</th>' +
+        '</tr></thead><tbody>' +
+        tableRows +
+        '<tr class="tot"><td colspan="3">TOTAIS</td><td style="text-align:center">' + totalVolumes + '</td><td colspan="2">' + totalSacas + ' sacas registradas</td></tr>' +
+        '</tbody></table>' +
+        '<div class="sign-section">' +
+        '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Separador / Responsável pela Auditoria</div><div class="sign-sub">Nome / Matrícula</div></div>' +
+        '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Motorista / Representante da Transportadora</div><div class="sign-sub">' + (motorista || 'Nome / CPF / RG') + '</div></div>' +
+        '</div>' +
+        '<div class="footer">Documento gerado em ' + dataGeracao + ' &nbsp;|&nbsp; Sistema Auditoria de Sacas &mdash; Mercado Livre &nbsp;|&nbsp; Este documento comprova a entrega das sacas relacionadas acima</div>' +
+        '</body></html>');
+      win.document.close();
+      fecharModal('modalRomaneio');
     }
 
     // ---- Service Worker ----
