@@ -323,9 +323,11 @@
         </div>
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
           <input type="text" id="ip" placeholder="IP da Impressora" inputmode="decimal" oninput="sanitizarIP(this)" onchange="sv();testarImpressora();renderPrinters();atualizarAvisoHTTPS()" style="flex:1;margin:0">
+          <button onclick="descobrirImpressoras()" id="btnDiscover" title="Descobrir impressoras na rede" style="padding:9px 11px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:14px;flex-shrink:0">&#128269;</button>
           <button onclick="salvarImpressoraAtual()" style="padding:9px 11px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:14px;flex-shrink:0">&#128190;</button>
           <span id="printerDot" style="width:11px;height:11px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
         </div>
+        <div id="discoveryRow" style="display:none;margin-bottom:8px;padding:10px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:12px"></div>
         <div id="printersRow" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"></div>
       </div>
       <div id="usbSection" style="display:none;margin-bottom:8px">
@@ -1501,12 +1503,106 @@
     function sanitizarIP(el) {
       const pos = el.selectionStart;
       const antes = el.value;
-      // Troca vírgulas por pontos (teclado pt-BR) e remove espaços
       const depois = antes.replace(/,/g, '.').replace(/\s/g, '');
       if (depois !== antes) {
         el.value = depois;
         try { el.setSelectionRange(pos, pos); } catch (_) {}
       }
+    }
+
+    // ---- Descoberta automática de impressoras na rede ----
+    async function getLocalSubnet() {
+      return new Promise((resolve) => {
+        try {
+          const pc = new RTCPeerConnection({ iceServers: [] });
+          pc.createDataChannel('');
+          pc.createOffer().then(o => pc.setLocalDescription(o)).catch(() => resolve(null));
+          const timer = setTimeout(() => { try { pc.close(); } catch (_) {} resolve(null); }, 3000);
+          pc.onicecandidate = (e) => {
+            if (!e?.candidate?.candidate) return;
+            const m = e.candidate.candidate.match(/(\d+)\.(\d+)\.(\d+)\.\d+/);
+            if (!m) return;
+            const [, a, b] = m;
+            const isPrivate = +a === 10 || (+a === 172 && +b >= 16 && +b <= 31) || (+a === 192 && +b === 168);
+            if (isPrivate) {
+              clearTimeout(timer);
+              try { pc.close(); } catch (_) {}
+              resolve(m[1] + '.' + m[2] + '.' + m[3]);
+            }
+          };
+        } catch (_) { resolve(null); }
+      });
+    }
+
+    function selecionarIPDescoberto(ip) {
+      document.getElementById('ip').value = ip;
+      sv(); testarImpressora(); renderPrinters(); atualizarAvisoHTTPS();
+      document.getElementById('discoveryRow').style.display = 'none';
+      toast('✅ ' + ip + ' selecionado!', 'ok');
+    }
+
+    async function descobrirImpressoras() {
+      const btn = document.getElementById('btnDiscover');
+      const row = document.getElementById('discoveryRow');
+      btn.disabled = true;
+      row.style.display = 'block';
+      row.innerHTML = '<span style="color:var(--tx2)">&#128269; Detectando rede...</span>';
+
+      const subnet = await getLocalSubnet();
+      if (!subnet) {
+        row.innerHTML = '<span style="color:var(--err)">&#10060; Nao foi possivel detectar a rede automaticamente. Digite o IP manualmente.</span>';
+        btn.disabled = false;
+        return;
+      }
+
+      const found = [];
+      let completed = 0;
+      const TOTAL = 254;
+      const TIMEOUT = 2000;
+      const t0 = Date.now();
+
+      const probes = Array.from({ length: TOTAL }, (_, i) => {
+        const ip = subnet + '.' + (i + 1);
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), TIMEOUT);
+        return fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
+          .then(() => { clearTimeout(tid); found.push(ip); })
+          .catch(() => { clearTimeout(tid); })
+          .finally(() => {
+            completed++;
+            if (completed % 30 === 0 || completed === TOTAL) {
+              const pct = Math.round((completed / TOTAL) * 100);
+              row.innerHTML = `<div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1;height:6px;background:var(--bdr);border-radius:3px"><div style="width:${pct}%;height:6px;background:var(--brand);border-radius:3px;transition:width .2s"></div></div>
+                <span style="color:var(--tx2);white-space:nowrap">${pct}%</span>
+              </div>`;
+            }
+          });
+      });
+
+      await Promise.all(probes);
+      btn.disabled = false;
+
+      // Se tudo falhou em < 200ms = mixed content bloqueado
+      const elapsed = Date.now() - t0;
+      if (!found.length && elapsed < 400 && location.protocol === 'https:') {
+        row.innerHTML = `<div style="color:#92400e;font-weight:700">&#9888; Bloqueado pelo Chrome (HTTPS)</div>
+          <div style="color:var(--tx2);margin-top:4px">Libere o conteudo nao seguro no &#128274; cadeado → Configuracoes do site → Conteudo nao seguro → Permitir, depois recarregue.</div>`;
+        return;
+      }
+
+      if (!found.length) {
+        row.innerHTML = `<span style="color:var(--tx2)">Nenhuma impressora encontrada na sub-rede ${subnet}.x</span>`;
+        return;
+      }
+
+      row.innerHTML = `<div style="font-weight:800;color:var(--brand);margin-bottom:6px">&#128247; ${found.length} impressora(s) encontrada(s):</div>` +
+        found.map(ip =>
+          `<span onclick="selecionarIPDescoberto('${ip}')" style="display:inline-flex;align-items:center;gap:5px;background:var(--ok);color:#fff;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:800;cursor:pointer;margin:2px 2px 2px 0">
+            &#128247; ${ip}
+          </span>`
+        ).join('') +
+        `<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Toque para selecionar</div>`;
     }
 
     function atualizarAvisoHTTPS() {
