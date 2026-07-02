@@ -3852,6 +3852,7 @@
         '<td style="text-align:center;font-weight:700;font-size:10px">' + extrairSaca(r) + '</td>' +
         '<td>' + (r.rota || r.auditoria || '') + '</td>' +
         '<td style="color:#888;font-size:9px;white-space:nowrap">' + (r.data || '') + '</td>' +
+        '<td style="text-align:center;font-weight:700">' + (r.qtd || 1) + '</td>' +
         '</tr>'
       ).join('');
 
@@ -3862,8 +3863,7 @@
         '*{box-sizing:border-box;margin:0;padding:0}' +
         'body{font-family:Arial,sans-serif;font-size:10px;color:#222;background:#fff;padding:16px}' +
         '.header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1a1f63;padding-bottom:8px;margin-bottom:10px}' +
-        '.logo-box{background:#FFE600;border-radius:8px;padding:5px 10px;font-size:20px;font-weight:900;color:#1a1f63;letter-spacing:-1px;line-height:1;flex-shrink:0}' +
-        '.logo-name{font-size:13px;font-weight:700;color:#1a1f63;line-height:1.4}' +
+        '.logo-svg{flex-shrink:0}' +
         '.title-block{margin-left:auto;text-align:right}' +
         '.title-block h1{font-size:19px;font-weight:900;color:#1a1f63;text-transform:uppercase;letter-spacing:1px}' +
         '.title-block p{font-size:9px;color:#888;margin-top:2px}' +
@@ -3891,7 +3891,17 @@
         '<button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer">✕ Fechar</button>' +
         '</div>' +
         '<div class="header">' +
-        '<div style="display:flex;align-items:center;gap:10px"><div class="logo-box">ML</div><div class="logo-name">Mercado<br>Livre</div></div>' +
+        '<svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 56" width="72" height="45">' +
+        '<rect width="90" height="56" rx="8" fill="#FFE600"/>' +
+        '<circle cx="23" cy="9" r="5.5" fill="#1a1f63"/>' +
+        '<path d="M14,41 L17,23 C18,19 20.5,17.5 23,17.5 C25.5,17.5 28,19 29,23 L32,41 Z" fill="#1a1f63"/>' +
+        '<path d="M17,27 L7,15" stroke="#1a1f63" stroke-width="4.5" stroke-linecap="round"/>' +
+        '<circle cx="67" cy="9" r="5.5" fill="#1a1f63"/>' +
+        '<path d="M58,41 L61,23 C62,19 64.5,17.5 67,17.5 C69.5,17.5 72,19 73,23 L76,41 Z" fill="#1a1f63"/>' +
+        '<path d="M73,27 L83,15" stroke="#1a1f63" stroke-width="4.5" stroke-linecap="round"/>' +
+        '<ellipse cx="45" cy="27" rx="11" ry="8.5" fill="#1a1f63"/>' +
+        '<text x="45" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-size="8.5" font-weight="800" fill="#1a1f63">mercado livre</text>' +
+        '</svg>' +
         '<div class="title-block"><h1>Romaneio de Rota</h1><p>Sistema de Auditoria de Sacas</p></div>' +
         '</div>' +
         '<div class="info-grid">' +
@@ -3904,10 +3914,10 @@
         '<div class="ic"><div class="lb">Total de Sacas</div><div class="vl ok">' + totalSacas + '</div></div>' +
         '</div>' +
         '<table><thead><tr>' +
-        '<th>#</th><th style="text-align:center">Nº Saca</th><th>Rota</th><th>Data / Hora</th>' +
+        '<th>#</th><th style="text-align:center">Nº Saca</th><th>Rota</th><th>Data / Hora</th><th style="text-align:center">Vol.</th>' +
         '</tr></thead><tbody>' +
         tableRows +
-        '<tr class="tot"><td colspan="4" style="text-align:center">' + totalSacas + ' sacas entregues</td></tr>' +
+        '<tr class="tot"><td colspan="5" style="text-align:center">' + totalSacas + ' sacas entregues</td></tr>' +
         '</tbody></table>' +
         '<div class="sign-section">' +
         '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Separador / Responsável pela Auditoria</div><div class="sign-sub">Nome / Matrícula</div></div>' +
