@@ -212,6 +212,38 @@
       .col-main>.card,.col-side>.card,.col-main>.btn-erros{max-width:none;}
     }
 
+    /* ═══ CONFIG DRAWER ═══ */
+    /* Mobile: expande inline */
+    #configBody{display:none;margin-top:14px;}
+    #configBody.cfg-open{display:block;}
+    #cfgDrawerOverlay{display:none;}
+    /* Desktop: gaveta deslizante pela esquerda */
+    @media(min-width:700px){
+      #configBody{
+        display:block !important;
+        position:fixed;left:0;top:0;width:320px;height:100vh;
+        background:var(--surf);border-right:2px solid var(--bdr);
+        box-shadow:4px 0 32px rgba(0,0,0,.18);
+        z-index:300;padding:20px 16px;overflow-y:auto;margin-top:0 !important;
+        transform:translateX(-110%);
+        transition:transform .28s cubic-bezier(.4,0,.2,1);
+      }
+      #configBody.cfg-open{transform:translateX(0);}
+      #cfgDrawerOverlay{
+        display:none;position:fixed;inset:0;
+        background:rgba(0,0,0,.35);backdrop-filter:blur(2px);
+        z-index:299;cursor:pointer;
+      }
+      #cfgDrawerOverlay.cfg-open{display:block;}
+      .cfg-drawer-close{
+        display:flex;width:100%;justify-content:space-between;align-items:center;
+        margin-bottom:14px;padding-bottom:12px;border-bottom:1.5px solid var(--bdr);
+      }
+      .cfg-drawer-title{font-size:14px;font-weight:800;color:var(--brand)}
+      [data-dark] .cfg-drawer-title{color:var(--accent)}
+    }
+    @media(max-width:699px){.cfg-drawer-close{display:none;}}
+
     /* ═══ SETUP BANNER ═══ */
     #setupBanner{background:#fff3cd;border:1px solid #ffc107;padding:14px;border-radius:12px;margin-bottom:12px;font-size:13px;width:100%;max-width:400px;line-height:1.6;display:none;}
     #status{margin-top:10px;font-size:14px;text-align:center;padding:10px;border-radius:8px;display:none;}
@@ -321,7 +353,11 @@
       <span class="cfg-lbl">&#9881;&#65039; Configurações da Impressora</span>
       <span class="cfg-hint" id="cfgArrow">▼ expandir</span>
     </button>
-    <div id="configBody" style="display:none;margin-top:14px">
+    <div id="configBody">
+      <div class="cfg-drawer-close">
+        <span class="cfg-drawer-title">&#9881;&#65039; Configurações da Impressora</span>
+        <button onclick="toggleConfig()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--tx2);line-height:1">&#10005;</button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:var(--rs);overflow:hidden;border:1.5px solid var(--bdr);margin-bottom:10px">
         <button id="btnModeWifi" onclick="setPrintMode('wifi')" style="padding:9px;border:none;background:var(--brand);color:var(--accent);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#127760; WiFi</button>
         <button id="btnModeUsb"  onclick="setPrintMode('usb')"  style="padding:9px;border:none;background:var(--surf);color:var(--tx2);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#128268; USB</button>
@@ -1735,11 +1771,13 @@
     }
 
     function toggleConfig() {
-      const body  = document.getElementById('configBody');
-      const arrow = document.getElementById('cfgArrow');
-      const open  = body.style.display !== 'none';
-      body.style.display = open ? 'none' : 'block';
-      arrow.textContent  = open ? '▼ expandir' : '▲ recolher';
+      const body    = document.getElementById('configBody');
+      const arrow   = document.getElementById('cfgArrow');
+      const overlay = document.getElementById('cfgDrawerOverlay');
+      const isOpen  = body.classList.contains('cfg-open');
+      body.classList.toggle('cfg-open', !isOpen);
+      if (overlay) overlay.classList.toggle('cfg-open', !isOpen);
+      arrow.textContent = isOpen ? '▼ expandir' : '▲ recolher';
     }
 
     function toggleDark() {
@@ -1777,11 +1815,12 @@
       atualizarBotaoOrient();
       populateSvcDatalist();
       // Auto-collapse config se ja configurado
+      const cfgBody = document.getElementById('configBody');
       if (savedIp || savedSvc || savedResp) {
-        document.getElementById('configBody').style.display = 'none';
+        cfgBody.classList.remove('cfg-open');
         document.getElementById('cfgArrow').textContent = '▼ expandir';
       } else {
-        document.getElementById('configBody').style.display = 'block';
+        cfgBody.classList.add('cfg-open');
         document.getElementById('cfgArrow').textContent = '▲ recolher';
       }
       // Garante coordenadas iniciais do SMG3
@@ -3729,25 +3768,6 @@
       win.document.close();
     }
 
-    // ---- Reposicionamento responsivo do card de config ----
-    function reposicionarConfig() {
-      const cfg     = document.getElementById('cfgCard');
-      const colSide = document.querySelector('.col-side');
-      const colMain = document.querySelector('.col-main');
-      if (!cfg || !colSide || !colMain) return;
-      if (window.innerWidth >= 700) {
-        if (cfg.parentElement !== colSide)
-          colSide.insertBefore(cfg, colSide.firstElementChild);
-      } else {
-        if (cfg.parentElement !== colMain) {
-          const erros = document.getElementById('btnErrosHoje');
-          colMain.insertBefore(cfg, erros ? erros.nextSibling : colMain.firstElementChild);
-        }
-      }
-    }
-    window.addEventListener('DOMContentLoaded', reposicionarConfig);
-    window.addEventListener('resize', reposicionarConfig);
-
     // ---- Romaneio de Rota ----
     function abrirRomaneio() {
       const today = new Date().toISOString().slice(0, 10);
@@ -3928,6 +3948,7 @@
       });
     }
   </script>
+  <div id="cfgDrawerOverlay" onclick="toggleConfig()"></div>
   <div id="swUpdateBanner" onclick="aplicarAtualizacao()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1f63;color:#FFE600;padding:14px 16px;text-align:center;z-index:99999;cursor:pointer;font-weight:800;font-size:14px;font-family:'Inter',sans-serif;align-items:center;justify-content:center;gap:8px;box-shadow:0 -2px 12px rgba(0,0,0,.3)">
     &#128260; Nova versao disponivel &mdash; toque aqui para atualizar
   </div>
