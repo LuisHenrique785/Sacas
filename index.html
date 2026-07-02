@@ -3815,8 +3815,8 @@
 
       if (!rows.length) { toast('Nenhum registro encontrado para os filtros informados', 'warn'); return; }
 
-      const totalSacas   = rows.length;
-      const totalVolumes = rows.reduce((s, r) => s + (Number(r.qtd) || 0), 0);
+      let totalSacas   = rows.length;   // recalculado após dedup
+      let totalVolumes = 0;            // recalculado após dedup
       const svc          = getV('svc') || 'Todos';
       const dataGeracao  = new Date().toLocaleString('pt-BR');
       const rotasLista   = [...new Set(rows.map(r => r.rota || r.auditoria).filter(Boolean))].join(', ') || 'Todas';
@@ -3834,7 +3834,21 @@
         return r.saca_id || '—';
       }
 
-      const tableRows = rows.map((r, i) =>
+      // Deduplica: mantém apenas a última impressão de cada saca (maior id)
+      const sacaMap = new Map();
+      for (const r of rows) {
+        const key = String(extrairSaca(r)).toLowerCase();
+        if (!sacaMap.has(key) || (r.id > sacaMap.get(key).id)) sacaMap.set(key, r);
+      }
+      const rowsDedup = Array.from(sacaMap.values()).sort((a, b) => {
+        const ra = a.rota || a.auditoria || '', rb = b.rota || b.auditoria || '';
+        if (ra !== rb) return ra.localeCompare(rb);
+        return String(extrairSaca(a)).localeCompare(String(extrairSaca(b)), undefined, { numeric: true });
+      });
+      totalSacas   = rowsDedup.length;
+      totalVolumes = rowsDedup.reduce((s, r) => s + (Number(r.qtd) || 0), 0);
+
+      const tableRows = rowsDedup.map((r, i) =>
         '<tr>' +
         '<td style="text-align:center;color:#888;font-size:9px">' + (i + 1) + '</td>' +
         '<td style="text-align:center;font-weight:700;font-size:10px">' + extrairSaca(r) + '</td>' +
