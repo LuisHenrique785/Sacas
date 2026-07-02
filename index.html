@@ -3835,7 +3835,7 @@
       const tableRows = rows.map((r, i) =>
         '<tr>' +
         '<td style="text-align:center;color:#888;font-size:9px">' + (i + 1) + '</td>' +
-        '<td style="text-align:center;font-weight:800;font-size:13px">' + extrairSaca(r) + '</td>' +
+        '<td style="text-align:center;font-weight:700;font-size:10px">' + extrairSaca(r) + '</td>' +
         '<td style="text-align:center">' + (r.qtd ?? '') + '</td>' +
         '<td>' + (r.rota || r.auditoria || '') + '</td>' +
         '<td style="color:#888;font-size:9px;white-space:nowrap">' + (r.data || '') + '</td>' +
@@ -3847,31 +3847,31 @@
         '<title>Romaneio de Rota — ' + svc + '</title>' +
         '<style>' +
         '*{box-sizing:border-box;margin:0;padding:0}' +
-        'body{font-family:Arial,sans-serif;font-size:11px;color:#222;background:#fff;padding:24px}' +
-        '.header{display:flex;align-items:center;gap:16px;border-bottom:3px solid #1a1f63;padding-bottom:14px;margin-bottom:14px}' +
-        '.logo-box{background:#FFE600;border-radius:10px;padding:8px 14px;font-size:26px;font-weight:900;color:#1a1f63;letter-spacing:-1px;line-height:1;flex-shrink:0}' +
+        'body{font-family:Arial,sans-serif;font-size:10px;color:#222;background:#fff;padding:16px}' +
+        '.header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1a1f63;padding-bottom:8px;margin-bottom:10px}' +
+        '.logo-box{background:#FFE600;border-radius:8px;padding:5px 10px;font-size:20px;font-weight:900;color:#1a1f63;letter-spacing:-1px;line-height:1;flex-shrink:0}' +
         '.logo-name{font-size:13px;font-weight:700;color:#1a1f63;line-height:1.4}' +
         '.title-block{margin-left:auto;text-align:right}' +
         '.title-block h1{font-size:19px;font-weight:900;color:#1a1f63;text-transform:uppercase;letter-spacing:1px}' +
         '.title-block p{font-size:9px;color:#888;margin-top:2px}' +
-        '.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}' +
-        '.ic{background:#f5f6fa;border-radius:7px;padding:7px 10px;border-left:3px solid #1a1f63}' +
-        '.ic .lb{font-size:8px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
+        '.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}' +
+        '.ic{background:#f5f6fa;border-radius:5px;padding:4px 8px;border-left:2px solid #1a1f63}' +
+        '.ic .lb{font-size:7px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
         '.ic .vl{font-size:12px;font-weight:700;color:#1a1f63;margin-top:2px}' +
         '.ic .vl.ok{color:#059669;font-size:15px}' +
         'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
         'thead tr{background:#1a1f63}' +
-        'thead th{color:#FFE600;padding:7px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}' +
-        'tbody td{padding:5px 8px;border-bottom:1px solid #eee;font-size:10px;vertical-align:middle}' +
+        'thead th{color:#FFE600;padding:5px 6px;text-align:left;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}' +
+        'tbody td{padding:3px 6px;border-bottom:1px solid #eee;font-size:9px;vertical-align:middle}' +
         'tbody tr:nth-child(even) td{background:#f9faff}' +
         '.tot td{background:#1a1f63!important;color:#FFE600!important;font-weight:700!important;font-size:11px!important;border:none!important;padding:7px 8px!important}' +
         '.sign-section{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px;page-break-inside:avoid}' +
         '.sign-box{text-align:center}' +
-        '.sign-line{border-top:1.5px solid #333;margin:44px 0 6px}' +
-        '.sign-label{font-size:10px;font-weight:700;color:#1a1f63;text-transform:uppercase;letter-spacing:.5px}' +
+        '.sign-line{border-top:1.5px solid #333;margin:30px 0 5px}' +
+        '.sign-label{font-size:9px;font-weight:700;color:#1a1f63;text-transform:uppercase;letter-spacing:.5px}' +
         '.sign-sub{font-size:9px;color:#888;margin-top:3px}' +
         '.footer{margin-top:14px;padding-top:8px;border-top:1px solid #ddd;font-size:8px;color:#aaa;text-align:center}' +
-        '@media print{body{padding:0}@page{size:A4;margin:12mm}.no-print{display:none!important}}' +
+        '@media print{body{padding:0}@page{size:A4;margin:8mm}.no-print{display:none!important}}' +
         '</style></head><body>' +
         '<div class="no-print" style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:999">' +
         '<button onclick="window.print()" style="background:#1a1f63;color:#FFE600;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
