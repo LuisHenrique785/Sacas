@@ -624,9 +624,15 @@
         <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Transportadora <span style="color:#dc2626">*</span></label>
         <input type="text" id="romTransp" placeholder="Nome da transportadora..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
       </div>
-      <div style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Motorista (opcional)</label>
-        <input type="text" id="romMotorista" placeholder="Nome do motorista..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Motorista (opcional)</label>
+          <input type="text" id="romMotorista" placeholder="Nome do motorista..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Placa do Veículo (opcional)</label>
+          <input type="text" id="romPlaca" placeholder="ABC-1234" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit;text-transform:uppercase">
+        </div>
       </div>
       <button onclick="gerarRomaneio()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:8px;font-family:inherit">&#128203; GERAR ROMANEIO</button>
       <button onclick="fecharModal('modalRomaneio')" style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;font-family:inherit">Cancelar</button>
@@ -3730,12 +3736,14 @@
       document.getElementById('romAudit').value     = '';
       document.getElementById('romTransp').value    = '';
       document.getElementById('romMotorista').value = '';
+      document.getElementById('romPlaca').value     = '';
       document.getElementById('modalRomaneio').style.display = 'flex';
     }
 
     async function gerarRomaneio() {
-      const transp   = document.getElementById('romTransp').value.trim();
+      const transp    = document.getElementById('romTransp').value.trim();
       const motorista = document.getElementById('romMotorista').value.trim();
+      const placa     = document.getElementById('romPlaca').value.trim().toUpperCase();
       if (!transp) { toast('Informe a transportadora', 'err'); return; }
 
       const de    = document.getElementById('romDe').value;
@@ -3764,18 +3772,31 @@
 
       if (!rows.length) { toast('Nenhum registro encontrado para os filtros informados', 'warn'); return; }
 
-      const totalSacas  = rows.length;
-      const svc         = getV('svc') || 'Todos';
-      const dataGeracao = new Date().toLocaleString('pt-BR');
-      const rotasLista  = [...new Set(rows.map(r => r.rota).filter(Boolean))].join(', ') || 'Todas';
-      const periodoDe   = de  ? new Date(de  + 'T00:00').toLocaleDateString('pt-BR') : '—';
-      const periodoAte  = ate ? new Date(ate + 'T00:00').toLocaleDateString('pt-BR') : '—';
+      const totalSacas   = rows.length;
+      const totalVolumes = rows.reduce((s, r) => s + (Number(r.qtd) || 0), 0);
+      const svc          = getV('svc') || 'Todos';
+      const dataGeracao  = new Date().toLocaleString('pt-BR');
+      const rotasLista   = [...new Set(rows.map(r => r.rota || r.auditoria).filter(Boolean))].join(', ') || 'Todas';
+      const periodoDe    = de  ? new Date(de  + 'T00:00').toLocaleDateString('pt-BR') : '—';
+      const periodoAte   = ate ? new Date(ate + 'T00:00').toLocaleDateString('pt-BR') : '—';
+
+      function extrairSaca(r) {
+        if (r.qr_mae) {
+          try {
+            const q = typeof r.qr_mae === 'string' ? JSON.parse(r.qr_mae) : r.qr_mae;
+            if (q.assignment) return q.assignment;
+            if (q.container_id) return q.container_id;
+          } catch(_) {}
+        }
+        return r.saca_id || '—';
+      }
 
       const tableRows = rows.map((r, i) =>
         '<tr>' +
         '<td style="text-align:center;color:#888;font-size:9px">' + (i + 1) + '</td>' +
-        '<td style="text-align:center;font-weight:800;font-size:13px">' + (r.qtd ?? '') + '</td>' +
-        '<td>' + (r.rota || '') + '</td>' +
+        '<td style="text-align:center;font-weight:800;font-size:13px">' + extrairSaca(r) + '</td>' +
+        '<td style="text-align:center">' + (r.qtd ?? '') + '</td>' +
+        '<td>' + (r.rota || r.auditoria || '') + '</td>' +
         '<td style="color:#888;font-size:9px;white-space:nowrap">' + (r.data || '') + '</td>' +
         '</tr>'
       ).join('');
@@ -3825,13 +3846,15 @@
         '<div class="ic"><div class="lb">Período</div><div class="vl">' + periodoDe + ' a ' + periodoAte + '</div></div>' +
         '<div class="ic"><div class="lb">Transportadora</div><div class="vl">' + transp + '</div></div>' +
         '<div class="ic"><div class="lb">Motorista</div><div class="vl">' + (motorista || '—') + '</div></div>' +
+        '<div class="ic"><div class="lb">Placa</div><div class="vl">' + (placa || '—') + '</div></div>' +
         '<div class="ic"><div class="lb">Total de Sacas</div><div class="vl ok">' + totalSacas + '</div></div>' +
+        '<div class="ic"><div class="lb">Total de Volumes</div><div class="vl ok">' + totalVolumes + '</div></div>' +
         '</div>' +
         '<table><thead><tr>' +
-        '<th>#</th><th style="text-align:center">Nº Saca</th><th>Rota</th><th>Data / Hora</th>' +
+        '<th>#</th><th style="text-align:center">Nº Saca</th><th style="text-align:center">Volumes</th><th>Rota</th><th>Data / Hora</th>' +
         '</tr></thead><tbody>' +
         tableRows +
-        '<tr class="tot"><td colspan="2" style="text-align:center">' + totalSacas + ' sacas</td><td colspan="2">Auditoria: ' + (audit || rotasLista) + '</td></tr>' +
+        '<tr class="tot"><td colspan="2" style="text-align:center">' + totalSacas + ' sacas</td><td style="text-align:center">' + totalVolumes + '</td><td colspan="2">Total de volumes entregues</td></tr>' +
         '</tbody></table>' +
         '<div class="sign-section">' +
         '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Separador / Responsável pela Auditoria</div><div class="sign-sub">Nome / Matrícula</div></div>' +
