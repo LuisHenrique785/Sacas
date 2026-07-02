@@ -40,6 +40,8 @@
       --s2:0 4px 18px rgba(0,0,0,.4),0 1px 4px rgba(0,0,0,.2);
       --s3:0 8px 32px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.2);
     }
+    [data-dark] input,[data-dark] select,[data-dark] textarea{color-scheme:dark;}
+    [data-dark] option{background:var(--surf);color:var(--tx);}
     body{transition:background .25s,color .25s;}
     .card{transition:background .25s,box-shadow .25s;}
     input[type=text],input[type=number],select{transition:background .25s,border-color .25s,color .25s;}
@@ -314,7 +316,7 @@
   <button id="btnErrosHoje" onclick="abrirErrosHoje()" class="btn-erros">&#128680; <span id="errosHojeCount">0</span> erros registrados hoje &mdash; ver detalhes</button>
 
   <!-- ── CONFIGURAÇÕES ── -->
-  <div class="card">
+  <div class="card" id="cfgCard">
     <button class="cfg-btn" onclick="toggleConfig()">
       <span class="cfg-lbl">&#9881;&#65039; Configurações da Impressora</span>
       <span class="cfg-hint" id="cfgArrow">▼ expandir</span>
@@ -3726,6 +3728,25 @@
         </body></html>`);
       win.document.close();
     }
+
+    // ---- Reposicionamento responsivo do card de config ----
+    function reposicionarConfig() {
+      const cfg     = document.getElementById('cfgCard');
+      const colSide = document.querySelector('.col-side');
+      const colMain = document.querySelector('.col-main');
+      if (!cfg || !colSide || !colMain) return;
+      if (window.innerWidth >= 700) {
+        if (cfg.parentElement !== colSide)
+          colSide.insertBefore(cfg, colSide.firstElementChild);
+      } else {
+        if (cfg.parentElement !== colMain) {
+          const erros = document.getElementById('btnErrosHoje');
+          colMain.insertBefore(cfg, erros ? erros.nextSibling : colMain.firstElementChild);
+        }
+      }
+    }
+    window.addEventListener('DOMContentLoaded', reposicionarConfig);
+    window.addEventListener('resize', reposicionarConfig);
 
     // ---- Romaneio de Rota ----
     function abrirRomaneio() {
