@@ -3856,17 +3856,27 @@
         '</tr>'
       ).join('');
 
+      const sacaKeys = rowsDedup.map(r => String(extrairSaca(r))).sort().join(',');
+      let _qh = 5381;
+      for (let i = 0; i < sacaKeys.length; i++) _qh = (_qh * 33 ^ sacaKeys.charCodeAt(i)) >>> 0;
+      const checkHash = _qh.toString(16).slice(0, 6).toUpperCase();
+      const qrText = 'SACAS-MELI | ' + svc + ' | ' + new Date().toLocaleDateString('pt-BR') +
+        '\nTransp: ' + transp + (placa ? ' | Placa: ' + placa : '') +
+        '\nSacas: ' + totalSacas + ' | Rotas: ' + rotasLista +
+        '\nHash: ' + checkHash;
+
       const win = window.open('', '_blank');
       win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
         '<title>Romaneio de Rota — ' + svc + '</title>' +
         '<style>' +
         '*{box-sizing:border-box;margin:0;padding:0}' +
         'body{font-family:Arial,sans-serif;font-size:10px;color:#222;background:#fff;padding:16px}' +
-        '.header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #1a1f63;padding-bottom:8px;margin-bottom:10px}' +
+        '.header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:2px solid #1a1f63;padding-bottom:8px;margin-bottom:10px}' +
         '.logo-svg{flex-shrink:0}' +
-        '.title-block{margin-left:auto;text-align:right}' +
+        '.title-block{text-align:center;flex:1}' +
         '.title-block h1{font-size:19px;font-weight:900;color:#1a1f63;text-transform:uppercase;letter-spacing:1px}' +
         '.title-block p{font-size:9px;color:#888;margin-top:2px}' +
+        '.qr-wrap{flex-shrink:0;width:70px;height:70px}' +
         '.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}' +
         '.ic{background:#f5f6fa;border-radius:5px;padding:4px 8px;border-left:2px solid #1a1f63}' +
         '.ic .lb{font-size:7px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
@@ -3885,7 +3895,9 @@
         '.sign-sub{font-size:9px;color:#888;margin-top:3px}' +
         '.footer{margin-top:14px;padding-top:8px;border-top:1px solid #ddd;font-size:8px;color:#aaa;text-align:center}' +
         '@media print{body{padding:0}@page{size:A4;margin:8mm}.no-print{display:none!important}}' +
-        '</style></head><body>' +
+        '</style>' +
+        '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>' +
+        '</head><body>' +
         '<div class="no-print" style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:999">' +
         '<button onclick="window.print()" style="background:#1a1f63;color:#FFE600;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
         '<button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer">✕ Fechar</button>' +
@@ -3903,6 +3915,7 @@
         '<text x="45" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-size="8.5" font-weight="800" fill="#1a1f63">mercado livre</text>' +
         '</svg>' +
         '<div class="title-block"><h1>Romaneio de Rota</h1><p>Sistema de Auditoria de Sacas</p></div>' +
+        '<div class="qr-wrap" id="qr"></div>' +
         '</div>' +
         '<div class="info-grid">' +
         '<div class="ic"><div class="lb">SVC / Unidade</div><div class="vl">' + svc + '</div></div>' +
@@ -3924,6 +3937,7 @@
         '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Motorista / Representante da Transportadora</div><div class="sign-sub">' + (motorista || 'Nome / CPF / RG') + '</div></div>' +
         '</div>' +
         '<div class="footer">Documento gerado em ' + dataGeracao + ' &nbsp;|&nbsp; Sistema Auditoria de Sacas &mdash; Mercado Livre &nbsp;|&nbsp; Este documento comprova a entrega das sacas relacionadas acima</div>' +
+        '<script>try{new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(qrText) + ',width:70,height:70,correctLevel:QRCode.CorrectLevel.M});}catch(e){}<\/script>' +
         '</body></html>');
       win.document.close();
       fecharModal('modalRomaneio');
