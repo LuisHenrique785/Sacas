@@ -40,6 +40,8 @@
       --s2:0 4px 18px rgba(0,0,0,.4),0 1px 4px rgba(0,0,0,.2);
       --s3:0 8px 32px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.2);
     }
+    [data-dark] input,[data-dark] select,[data-dark] textarea{color-scheme:dark;}
+    [data-dark] option{background:var(--surf);color:var(--tx);}
     body{transition:background .25s,color .25s;}
     .card{transition:background .25s,box-shadow .25s;}
     input[type=text],input[type=number],select{transition:background .25s,border-color .25s,color .25s;}
@@ -201,6 +203,46 @@
     .a-purple .act-ico{background:linear-gradient(135deg,#c084fc,#7c3aed);}
     .a-navy   .act-ico{background:linear-gradient(135deg,var(--brand-l),var(--brand-d));}
     .a-meli   .act-ico{background:linear-gradient(135deg,#fbbf24,#1a1f63);}
+    .a-teal   .act-ico{background:linear-gradient(135deg,#2dd4bf,#0d9488);}
+
+    /* ═══ LAYOUT RESPONSIVO ═══ */
+    .app-layout{width:100%;max-width:400px;}
+    @media(min-width:700px){
+      .app-layout{display:grid;grid-template-columns:1fr 380px;gap:16px;max-width:900px;align-items:start;}
+      .col-main>.card,.col-side>.card,.col-main>.btn-erros{max-width:none;}
+    }
+
+    /* ═══ CONFIG DRAWER ═══ */
+    /* Mobile: expande inline */
+    #configBody{display:none;margin-top:14px;}
+    #configBody.cfg-open{display:block;}
+    #cfgDrawerOverlay{display:none;}
+    /* Desktop: gaveta deslizante pela esquerda */
+    @media(min-width:700px){
+      #configBody{
+        display:block !important;
+        position:fixed;left:0;top:0;width:320px;height:100vh;
+        background:var(--surf);border-right:2px solid var(--bdr);
+        box-shadow:4px 0 32px rgba(0,0,0,.18);
+        z-index:300;padding:20px 16px;overflow-y:auto;margin-top:0 !important;
+        transform:translateX(-110%);
+        transition:transform .28s cubic-bezier(.4,0,.2,1);
+      }
+      #configBody.cfg-open{transform:translateX(0);}
+      #cfgDrawerOverlay{
+        display:none;position:fixed;inset:0;
+        background:rgba(0,0,0,.35);backdrop-filter:blur(2px);
+        z-index:299;cursor:pointer;
+      }
+      #cfgDrawerOverlay.cfg-open{display:block;}
+      .cfg-drawer-close{
+        display:flex;width:100%;justify-content:space-between;align-items:center;
+        margin-bottom:14px;padding-bottom:12px;border-bottom:1.5px solid var(--bdr);
+      }
+      .cfg-drawer-title{font-size:14px;font-weight:800;color:var(--brand)}
+      [data-dark] .cfg-drawer-title{color:var(--accent)}
+    }
+    @media(max-width:699px){.cfg-drawer-close{display:none;}}
 
     /* ═══ SETUP BANNER ═══ */
     #setupBanner{background:#fff3cd;border:1px solid #ffc107;padding:14px;border-radius:12px;margin-bottom:12px;font-size:13px;width:100%;max-width:400px;line-height:1.6;display:none;}
@@ -300,16 +342,22 @@
     </div>
   </header>
 
+  <div class="app-layout">
+  <div class="col-main">
   <!-- ── ERROS HOJE ── -->
   <button id="btnErrosHoje" onclick="abrirErrosHoje()" class="btn-erros">&#128680; <span id="errosHojeCount">0</span> erros registrados hoje &mdash; ver detalhes</button>
 
   <!-- ── CONFIGURAÇÕES ── -->
-  <div class="card">
+  <div class="card" id="cfgCard">
     <button class="cfg-btn" onclick="toggleConfig()">
       <span class="cfg-lbl">&#9881;&#65039; Configurações da Impressora</span>
       <span class="cfg-hint" id="cfgArrow">▼ expandir</span>
     </button>
-    <div id="configBody" style="display:none;margin-top:14px">
+    <div id="configBody">
+      <div class="cfg-drawer-close">
+        <span class="cfg-drawer-title">&#9881;&#65039; Configurações da Impressora</span>
+        <button onclick="toggleConfig()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--tx2);line-height:1">&#10005;</button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:var(--rs);overflow:hidden;border:1.5px solid var(--bdr);margin-bottom:10px">
         <button id="btnModeWifi" onclick="setPrintMode('wifi')" style="padding:9px;border:none;background:var(--brand);color:var(--accent);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#127760; WiFi</button>
         <button id="btnModeUsb"  onclick="setPrintMode('usb')"  style="padding:9px;border:none;background:var(--surf);color:var(--tx2);font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif">&#128268; USB</button>
@@ -438,6 +486,8 @@
     <div id="status"></div>
   </div>
 
+  </div><!-- /col-main -->
+  <div class="col-side">
   <!-- ── AÇÕES ── -->
   <div class="card">
     <div class="sec-lbl" style="margin-bottom:12px">AÇÕES</div>
@@ -466,12 +516,16 @@
         <span class="act-ico">&#128230;</span>
         <span class="act-lbl">Etiq. Meli</span>
       </button>
+      <button class="act-btn a-teal" onclick="abrirRomaneio()">
+        <span class="act-ico">&#128203;</span>
+        <span class="act-lbl">Romaneio</span>
+      </button>
     </div>
     <button class="btn-atualizar" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
   </div>
 
   <!-- ── BUSCA RÁPIDA ── -->
-  <div class="card" style="margin-bottom:24px">
+  <div class="card">
     <div class="sec-lbl" style="margin-bottom:10px">&#128269; BUSCA RÁPIDA</div>
     <div style="display:flex;gap:8px">
       <input type="text" id="buscaInput" placeholder="N&#186; Saca ou Nome da Rota" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')buscarRapido()">
@@ -479,6 +533,8 @@
     </div>
     <div id="buscaResult" style="margin-top:10px;font-size:13px;min-height:18px;font-weight:600"></div>
   </div>
+  </div><!-- /col-side -->
+  </div><!-- /app-layout -->
 
   <!-- Modal: Etiqueta Meli -->
   <div id="modalMeli" class="modal-bg">
@@ -577,6 +633,47 @@
       </div>
       <div id="dashContent" style="font-size:13px;color:#555">Carregando...</div>
       <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharDashboard()">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Romaneio de Rota -->
+  <div id="modalRomaneio" class="modal-bg">
+    <div class="m-cont" style="max-width:460px">
+      <h3 style="margin-top:0">&#128203; Romaneio de Rota</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Período — De</label>
+          <input type="date" id="romDe" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Período — Até</label>
+          <input type="date" id="romAte" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Rota (opcional)</label>
+          <input type="text" id="romRota" placeholder="Todas" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Auditoria (opcional)</label>
+          <input type="text" id="romAudit" placeholder="Todas" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Transportadora <span style="color:#dc2626">*</span></label>
+        <input type="text" id="romTransp" placeholder="Nome da transportadora..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Motorista (opcional)</label>
+          <input type="text" id="romMotorista" placeholder="Nome do motorista..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Placa do Veículo (opcional)</label>
+          <input type="text" id="romPlaca" placeholder="ABC-1234" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit;text-transform:uppercase">
+        </div>
+      </div>
+      <button onclick="gerarRomaneio()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:14px;font-weight:800;cursor:pointer;margin-bottom:8px;font-family:inherit">&#128203; GERAR ROMANEIO</button>
+      <button onclick="fecharModal('modalRomaneio')" style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;font-family:inherit">Cancelar</button>
     </div>
   </div>
 
@@ -741,6 +838,7 @@
         <h3 style="margin:0">&#128203; Consultas</h3>
         <button class="btn-export" id="btnExport" onclick="exportarAtivo()">&#11015;&#65039; Exportar CSV</button>
         <button class="btn-buscar" style="background:#5856d6;padding:8px 14px;width:auto" onclick="exportarPDF()">&#128196; EXPORTAR PDF</button>
+        <button class="btn-buscar" style="background:#059669;padding:8px 14px;width:auto" onclick="abrirRomaneio()">&#128203; ROMANEIO</button>
       </div>
 
       <!-- Abas -->
@@ -889,6 +987,8 @@
 
     let dadosBase = null;  // rows parsed do CSV Base
     let dadosRota = null;  // rows parsed do CSV Rota
+    let _rotaMetaTemp    = null; // {rota → {minEta, nodos[]}} aguardando import
+    let _sacaNodoMapTemp = null; // {saca_id → nodo} aguardando import
     let ultimoZPL = null, ultimoIP = null;
     let historicoSessao = [];
 
@@ -1673,11 +1773,13 @@
     }
 
     function toggleConfig() {
-      const body  = document.getElementById('configBody');
-      const arrow = document.getElementById('cfgArrow');
-      const open  = body.style.display !== 'none';
-      body.style.display = open ? 'none' : 'block';
-      arrow.textContent  = open ? '▼ expandir' : '▲ recolher';
+      const body    = document.getElementById('configBody');
+      const arrow   = document.getElementById('cfgArrow');
+      const overlay = document.getElementById('cfgDrawerOverlay');
+      const isOpen  = body.classList.contains('cfg-open');
+      body.classList.toggle('cfg-open', !isOpen);
+      if (overlay) overlay.classList.toggle('cfg-open', !isOpen);
+      arrow.textContent = isOpen ? '▼ expandir' : '▲ recolher';
     }
 
     function toggleDark() {
@@ -1715,11 +1817,12 @@
       atualizarBotaoOrient();
       populateSvcDatalist();
       // Auto-collapse config se ja configurado
+      const cfgBody = document.getElementById('configBody');
       if (savedIp || savedSvc || savedResp) {
-        document.getElementById('configBody').style.display = 'none';
+        cfgBody.classList.remove('cfg-open');
         document.getElementById('cfgArrow').textContent = '▼ expandir';
       } else {
-        document.getElementById('configBody').style.display = 'block';
+        cfgBody.classList.add('cfg-open');
         document.getElementById('cfgArrow').textContent = '▲ recolher';
       }
       // Garante coordenadas iniciais do SMG3
@@ -2051,7 +2154,6 @@
       const { pw, ll, label } = getDims();
       document.getElementById('zplContent').value =
         '^XA\n' +
-        '^CI28\n' +
         '^PW' + pw + '\n' +
         '^LL' + ll + '\n' +
         '^MD25\n' +
@@ -2314,7 +2416,7 @@
         } else if (zpl.includes('^XA')) {
           zpl = zpl.replace(/(\^XZ)/i, campo + '\n$1');
         } else {
-          zpl = '^XA\n^CI28\n^PW'+pw+'\n^LL'+ll+'\n'+campo+'\n^XZ';
+          zpl = '^XA\n^PW'+pw+'\n^LL'+ll+'\n'+campo+'\n^XZ';
         }
         document.getElementById('zplContent').value = zpl;
         fecharModal('modalEditor');
@@ -2648,8 +2750,18 @@
           document.getElementById('boxBase').classList.add('has-file');
         } else {
           dadosRota = dados
-            .map(r => ({ saca_id: (r[0]||'').trim(), rota: r[1]||'' }))
+            .map(r => ({ saca_id: (r[0]||'').trim(), rota: r[1]||'', nodo: (r[2]||'').trim(), eta: (r[3]||'').trim() }))
             .filter(r => r.saca_id);
+          _rotaMetaTemp = {}; _sacaNodoMapTemp = {};
+          dadosRota.forEach(r => {
+            if (!_rotaMetaTemp[r.rota]) _rotaMetaTemp[r.rota] = { minEta: '', nodos: [] };
+            const eta = (r.eta || '').trim();
+            if (eta && !/^0+[:h]?0*[:h]?0*$/.test(eta) && (!_rotaMetaTemp[r.rota].minEta || eta < _rotaMetaTemp[r.rota].minEta))
+              _rotaMetaTemp[r.rota].minEta = eta;
+            if (r.nodo && !_rotaMetaTemp[r.rota].nodos.includes(r.nodo))
+              _rotaMetaTemp[r.rota].nodos.push(r.nodo);
+            if (r.saca_id && r.nodo) _sacaNodoMapTemp[r.saca_id] = r.nodo;
+          });
           document.getElementById('labelRota').innerText   = '✓ ' + file.name;
           document.getElementById('previewRota').innerText = dadosRota.length + ' sacas carregadas';
           document.getElementById('boxRota').classList.add('has-file');
@@ -2711,9 +2823,11 @@
           (dadosBase ? dadosBase.length + ' sacas' : 'nao alterada') + ' | Rota: ' +
           (dadosRota ? dadosRota.length + ' sacas' : 'nao alterada');
 
+        if (_rotaMetaTemp)    localStorage.setItem('rotaMeta_'    + svcSel, JSON.stringify(_rotaMetaTemp));
+        if (_sacaNodoMapTemp) localStorage.setItem('sacaNodoMap_' + svcSel, JSON.stringify(_sacaNodoMapTemp));
         const _baseCount = dadosBase ? dadosBase.length : null;
         const _rotaCount = dadosRota ? dadosRota.length : null;
-        dadosBase = dadosRota = null;
+        dadosBase = dadosRota = _rotaMetaTemp = _sacaNodoMapTemp = null;
 
         const _hist = getImportHistory();
         _hist.unshift({ svc: svcSel, data: dataHoraAtual(), base: _baseCount, rota: _rotaCount });
@@ -2792,7 +2906,7 @@
       try {
         const hoje = dataHoje();
         const svcAtual = getV('svc');
-        let rotaQ = db.from('rota').select('saca_id,rota');
+        let rotaQ = db.from('rota').select('saca_id,rota,nodo,eta');
         if (svcAtual) rotaQ = rotaQ.eq('svc', svcAtual);
         let logHojeQ = db.from('log').select('saca_id').like('data', hoje + '%');
         if (svcAtual) logHojeQ = logHojeQ.eq('svc', svcAtual);
@@ -2803,6 +2917,18 @@
 
         _rankingRotaRows = rotaRows;
         _rankingSacasHoje = new Set(logRows.map(r => (r.saca_id || '').trim()));
+
+        // Monta rotaMeta com ETA mínimo por rota direto do banco
+        // ETA "00:00:00" ou vazio = sem prioridade de horário (vai pro fim)
+        const rotaMeta = {};
+        for (const r of rotaRows) {
+          if (!r.rota) continue;
+          if (!rotaMeta[r.rota]) rotaMeta[r.rota] = { minEta: '' };
+          const eta = (r.eta || '').trim();
+          if (!eta || /^0+[:h]?0*[:h]?0*$/.test(eta)) continue; // ignora 00:00:00 / 0h / vazio
+          if (!rotaMeta[r.rota].minEta || eta < rotaMeta[r.rota].minEta)
+            rotaMeta[r.rota].minEta = eta;
+        }
 
         let totalPorRota = {};
         for (const r of rotaRows) {
@@ -2822,7 +2948,14 @@
           const tot = totalPorRota[r], feitas = progresso[r] || 0;
           ranking.push({ rota: r, pronta: feitas, total: tot, porc: (feitas / tot) * 100 });
         }
-        ranking.sort((a, b) => b.porc - a.porc);
+        ranking.sort((a, b) => {
+          const ea = (rotaMeta[a.rota] || {}).minEta || '';
+          const eb = (rotaMeta[b.rota] || {}).minEta || '';
+          if (ea && eb) return ea.localeCompare(eb);
+          if (ea) return -1;
+          if (eb) return 1;
+          return b.porc - a.porc;
+        });
 
         if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados.'; return; }
 
@@ -2831,8 +2964,12 @@
           const pct = Math.round(d.porc);
           const cor = pct === 100 ? '#34c759' : pct >= 50 ? '#ff9500' : '#ff3b30';
           const rotaEsc = d.rota.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const etaStr  = (rotaMeta[d.rota] || {}).minEta || '';
+          const etaChip = etaStr
+            ? `<span style="font-size:10px;font-weight:700;color:#e67e22;background:#fff3e0;border-radius:3px;padding:1px 5px;margin-right:4px;flex-shrink:0">⏰ ${etaStr}</span>`
+            : '';
           h += `<div class="ranking-item" style="cursor:pointer" onclick="verPendentesRota('${rotaEsc}')">` +
-               `<span style="min-width:80px"><b>${d.rota}</b></span>` +
+               `${etaChip}<span style="min-width:80px"><b>${d.rota}</b></span>` +
                `<div class="barra-fundo"><div class="barra-fill" style="width:${pct}%;background:${cor}"></div></div>` +
                `<span style="min-width:75px;text-align:right;color:${cor}">${d.pronta}/${d.total} (${pct}%)</span>` +
                `<span style="font-size:10px;color:#bbb;margin-left:4px">&#9656;</span>` +
@@ -2966,6 +3103,8 @@
         const rot  = inv ? 'I' : 'N';
         const dark = document.getElementById('darkness').value || '30';
         const svcResp = (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp');
+        const _sacaNodoMap = JSON.parse(localStorage.getItem('sacaNodoMap_' + (getV('svc') || '')) || '{}');
+        const nodoSaca = zplEscape(_sacaNodoMap[(sacaId || '').trim()] || '');
         let zpl = '';
 
         if (pw === 640 && ll === 320) {
@@ -2991,12 +3130,12 @@
             const _y2  = inv ? ll - ty2 - 42       : ty2;
             const _y3  = inv ? ll - ty3 - 24       : ty3;
             const _y4  = inv ? ll - ty4 - 24       : ty4;
-            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD' + dark +
+            zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
                    '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + svcResp + '^FS' +
-                   '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
+                   '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
           }
         } else {
           // Layout proporcional para 100×100, 100×150, 150×100
@@ -3019,12 +3158,12 @@
           const _y4  = inv ? ll - y4  - fC   : y4;
           for (let k = 1; k <= qtdVal; k++) {
             const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
-            zpl += '^XA^CI28^PW' + pw + '^LL' + ll + '^MD' + dark +
+            zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                    '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + svcResp + '^FS' +
-                   '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+                   '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
+                   '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
           }
         }
 
@@ -3350,7 +3489,7 @@
         const _y2   = inv ? ll - (vOff + 65)  - 42 : vOff + 65;
         const _y3   = inv ? ll - (vOff + 112) - 24 : vOff + 112;
         const _y4   = inv ? ll - (vOff + 142) - 24 : vOff + 142;
-        zpl = `^XA^CI28^PW${pw}^LL${ll}^MD${dark}` +
+        zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
               `^FO10,${_qrY}^BQN,2,${qrMag}^FDQA,TESTE^FS` +
               `^FO${tX},${_y1}^A0${rot},50,50^FB${tW},1,0,L^FDTESTE IMPRESSAO^FS` +
               `^FO${tX},${_y2}^A0${rot},42,42^FB${tW},1,0,L^FD${svc}^FS` +
@@ -3367,7 +3506,7 @@
         const _y2  = inv ? ll - y2 - fB : y2;
         const _y3  = inv ? ll - y3 - fC : y3;
         const _y4  = inv ? ll - y4 - fC : y4;
-        zpl = `^XA^CI28^PW${pw}^LL${ll}^MD${dark}` +
+        zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
               `^FO${qrX},${_qrY}^BQN,2,5^FDQA,TESTE^FS` +
               `^FO0,${_y1}^A0${rot},${fA},${fA}^FB${pw},1,0,C^FDTESTE DE IMPRESSAO^FS` +
               `^FO0,${_y2}^A0${rot},${fB},${fB}^FB${pw},1,0,C^FD${svc}^FS` +
@@ -3451,12 +3590,14 @@
 
         const byOp = {};
         for (const r of rows) {
-          const op = r.responsavel || '—';
-          if (!byOp[op]) byOp[op] = { total: 0, dias: {} };
+          const opRaw = (r.responsavel || '—').trim();
+          const key   = opRaw.toLowerCase(); // agrupa sem distinção de maiúsculas
+          if (!byOp[key]) byOp[key] = { total: 0, dias: {}, label: opRaw };
+          else if (opRaw.length > byOp[key].label.length) byOp[key].label = opRaw; // usa versão mais completa
           const dia = (r.data || '').slice(0, 10); // DD/MM/YYYY
           if (datas.includes(dia)) {
-            byOp[op].total++;
-            byOp[op].dias[dia] = (byOp[op].dias[dia] || 0) + 1;
+            byOp[key].total++;
+            byOp[key].dias[dia] = (byOp[key].dias[dia] || 0) + 1;
           }
         }
 
@@ -3470,7 +3611,7 @@
         }
 
         const maxTotal = ops[0][1].total || 1;
-        cont.innerHTML = ops.map(([op, v]) => {
+        cont.innerHTML = ops.map(([, v]) => {
           const pct = Math.round(v.total / maxTotal * 100);
           const media = (v.total / dias).toFixed(1);
           const diasAtivos = Object.keys(v.dias).length;
@@ -3481,7 +3622,7 @@
           }).join('');
           return `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f0f0f0">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <span style="font-weight:800;color:#1a1f63;font-size:13px">👤 ${op}</span>
+              <span style="font-weight:800;color:#1a1f63;font-size:13px">👤 ${v.label}</span>
               <span style="font-size:12px;color:#555">${v.total} total · ${media}/dia · ${diasAtivos}d ativo</span>
             </div>
             <div style="background:#e5e5ea;border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px">
@@ -3668,6 +3809,179 @@
       win.document.close();
     }
 
+    // ---- Romaneio de Rota ----
+    function abrirRomaneio() {
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('romDe').value  = today;
+      document.getElementById('romAte').value = today;
+      document.getElementById('romRota').value      = '';
+      document.getElementById('romAudit').value     = '';
+      document.getElementById('romTransp').value    = '';
+      document.getElementById('romMotorista').value = '';
+      document.getElementById('romPlaca').value     = '';
+      document.getElementById('modalRomaneio').style.display = 'flex';
+    }
+
+    async function gerarRomaneio() {
+      const transp    = document.getElementById('romTransp').value.trim();
+      const motorista = document.getElementById('romMotorista').value.trim();
+      const placa     = document.getElementById('romPlaca').value.trim().toUpperCase();
+      if (!transp) { toast('Informe a transportadora', 'err'); return; }
+
+      const de    = document.getElementById('romDe').value;
+      const ate   = document.getElementById('romAte').value;
+      const rota  = document.getElementById('romRota').value.trim();
+      const audit = document.getElementById('romAudit').value.trim();
+
+      let q = db.from('log').select('*').order('rota', { ascending: true }).order('saca_id', { ascending: true }).limit(5000);
+      if (getV('svc')) q = q.eq('svc', getV('svc'));
+      if (rota)  q = q.ilike('rota',      '%' + rota  + '%');
+      if (audit) q = q.ilike('auditoria', '%' + audit + '%');
+
+      let rows = await sbCheck(await q) || [];
+
+      if (de || ate) {
+        const deDt  = de  ? new Date(de)  : null;
+        const ateDt = ate ? new Date(ate + 'T23:59:59') : null;
+        rows = rows.filter(r => {
+          const d = parseDateBR(r.data);
+          if (!d) return true;
+          if (deDt  && d < deDt)  return false;
+          if (ateDt && d > ateDt) return false;
+          return true;
+        });
+      }
+
+      if (!rows.length) { toast('Nenhum registro encontrado para os filtros informados', 'warn'); return; }
+
+      let totalSacas = rows.length;
+      const svc          = getV('svc') || 'Todos';
+      const dataGeracao  = new Date().toLocaleString('pt-BR');
+      const rotasLista   = [...new Set(rows.map(r => r.rota || r.auditoria).filter(Boolean))].join(', ') || 'Todas';
+      const periodoDe    = de  ? new Date(de  + 'T00:00').toLocaleDateString('pt-BR') : '—';
+      const periodoAte   = ate ? new Date(ate + 'T00:00').toLocaleDateString('pt-BR') : '—';
+
+      function extrairSaca(r) {
+        if (r.qr_mae) {
+          try {
+            const q = typeof r.qr_mae === 'string' ? JSON.parse(r.qr_mae) : r.qr_mae;
+            if (q.assignment) return q.assignment;
+            if (q.container_id) return q.container_id;
+          } catch(_) {}
+        }
+        return r.saca_id || '—';
+      }
+
+      // Deduplica: mantém apenas a primeira impressão de cada saca (menor id)
+      const sacaMap = new Map();
+      for (const r of rows) {
+        const key = String(extrairSaca(r)).toLowerCase();
+        if (!sacaMap.has(key) || (r.id < sacaMap.get(key).id)) sacaMap.set(key, r);
+      }
+      const rowsDedup = Array.from(sacaMap.values()).sort((a, b) => {
+        const ra = a.rota || a.auditoria || '', rb = b.rota || b.auditoria || '';
+        if (ra !== rb) return ra.localeCompare(rb);
+        return String(extrairSaca(a)).localeCompare(String(extrairSaca(b)), undefined, { numeric: true });
+      });
+      totalSacas = rowsDedup.length;
+
+      const tableRows = rowsDedup.map((r, i) =>
+        '<tr>' +
+        '<td style="text-align:center;color:#888;font-size:9px">' + (i + 1) + '</td>' +
+        '<td style="text-align:center;font-weight:700;font-size:10px">' + extrairSaca(r) + '</td>' +
+        '<td>' + (r.rota || r.auditoria || '') + '</td>' +
+        '<td style="color:#888;font-size:9px;white-space:nowrap">' + (r.data || '') + '</td>' +
+        '<td style="text-align:center;font-weight:700">' + (r.qtd || 1) + '</td>' +
+        '</tr>'
+      ).join('');
+
+      const sacaKeys = rowsDedup.map(r => String(extrairSaca(r))).sort().join(',');
+      let _qh = 5381;
+      for (let i = 0; i < sacaKeys.length; i++) _qh = (_qh * 33 ^ sacaKeys.charCodeAt(i)) >>> 0;
+      const checkHash = _qh.toString(16).slice(0, 6).toUpperCase();
+      const qrText = 'SACAS-MELI | ' + svc + ' | ' + new Date().toLocaleDateString('pt-BR') +
+        '\nTransp: ' + transp + (placa ? ' | Placa: ' + placa : '') +
+        '\nSacas: ' + totalSacas + ' | Rotas: ' + rotasLista +
+        '\nHash: ' + checkHash;
+
+      const win = window.open('', '_blank');
+      win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+        '<title>Romaneio de Rota — ' + svc + '</title>' +
+        '<style>' +
+        '*{box-sizing:border-box;margin:0;padding:0}' +
+        'body{font-family:Arial,sans-serif;font-size:10px;color:#222;background:#fff;padding:16px}' +
+        '.header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:2px solid #1a1f63;padding-bottom:8px;margin-bottom:10px}' +
+        '.logo-svg{flex-shrink:0}' +
+        '.title-block{text-align:center;flex:1}' +
+        '.title-block h1{font-size:19px;font-weight:900;color:#1a1f63;text-transform:uppercase;letter-spacing:1px}' +
+        '.title-block p{font-size:9px;color:#888;margin-top:2px}' +
+        '.qr-wrap{flex-shrink:0;width:70px;height:70px}' +
+        '.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}' +
+        '.ic{background:#f5f6fa;border-radius:5px;padding:4px 8px;border-left:2px solid #1a1f63}' +
+        '.ic .lb{font-size:7px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
+        '.ic .vl{font-size:12px;font-weight:700;color:#1a1f63;margin-top:2px}' +
+        '.ic .vl.ok{color:#059669;font-size:15px}' +
+        'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
+        'thead tr{background:#1a1f63}' +
+        'thead th{color:#FFE600;padding:5px 6px;text-align:left;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}' +
+        'tbody td{padding:3px 6px;border-bottom:1px solid #eee;font-size:9px;vertical-align:middle}' +
+        'tbody tr:nth-child(even) td{background:#f9faff}' +
+        '.tot td{background:#1a1f63!important;color:#FFE600!important;font-weight:700!important;font-size:11px!important;border:none!important;padding:7px 8px!important}' +
+        '.sign-section{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px;page-break-inside:avoid}' +
+        '.sign-box{text-align:center}' +
+        '.sign-line{border-top:1.5px solid #333;margin:30px 0 5px}' +
+        '.sign-label{font-size:9px;font-weight:700;color:#1a1f63;text-transform:uppercase;letter-spacing:.5px}' +
+        '.sign-sub{font-size:9px;color:#888;margin-top:3px}' +
+        '.footer{margin-top:14px;padding-top:8px;border-top:1px solid #ddd;font-size:8px;color:#aaa;text-align:center}' +
+        '@media print{body{padding:0}@page{size:A4;margin:8mm}.no-print{display:none!important}}' +
+        '</style>' +
+        '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>' +
+        '</head><body>' +
+        '<div class="no-print" style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:999">' +
+        '<button onclick="window.print()" style="background:#1a1f63;color:#FFE600;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
+        '<button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer">✕ Fechar</button>' +
+        '</div>' +
+        '<div class="header">' +
+        '<svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 56" width="72" height="45">' +
+        '<rect width="90" height="56" rx="8" fill="#FFE600"/>' +
+        '<circle cx="23" cy="9" r="5.5" fill="#1a1f63"/>' +
+        '<path d="M14,41 L17,23 C18,19 20.5,17.5 23,17.5 C25.5,17.5 28,19 29,23 L32,41 Z" fill="#1a1f63"/>' +
+        '<path d="M17,27 L7,15" stroke="#1a1f63" stroke-width="4.5" stroke-linecap="round"/>' +
+        '<circle cx="67" cy="9" r="5.5" fill="#1a1f63"/>' +
+        '<path d="M58,41 L61,23 C62,19 64.5,17.5 67,17.5 C69.5,17.5 72,19 73,23 L76,41 Z" fill="#1a1f63"/>' +
+        '<path d="M73,27 L83,15" stroke="#1a1f63" stroke-width="4.5" stroke-linecap="round"/>' +
+        '<ellipse cx="45" cy="27" rx="11" ry="8.5" fill="#1a1f63"/>' +
+        '<text x="45" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-size="8.5" font-weight="800" fill="#1a1f63">mercado livre</text>' +
+        '</svg>' +
+        '<div class="title-block"><h1>Romaneio de Rota</h1><p>Sistema de Auditoria de Sacas</p></div>' +
+        '<div class="qr-wrap" id="qr"></div>' +
+        '</div>' +
+        '<div class="info-grid">' +
+        '<div class="ic"><div class="lb">SVC / Unidade</div><div class="vl">' + svc + '</div></div>' +
+        '<div class="ic"><div class="lb">Rota(s)</div><div class="vl">' + rotasLista + '</div></div>' +
+        '<div class="ic"><div class="lb">Período</div><div class="vl">' + periodoDe + ' a ' + periodoAte + '</div></div>' +
+        '<div class="ic"><div class="lb">Transportadora</div><div class="vl">' + transp + '</div></div>' +
+        '<div class="ic"><div class="lb">Motorista</div><div class="vl">' + (motorista || '—') + '</div></div>' +
+        '<div class="ic"><div class="lb">Placa</div><div class="vl">' + (placa || '—') + '</div></div>' +
+        '<div class="ic"><div class="lb">Total de Sacas</div><div class="vl ok">' + totalSacas + '</div></div>' +
+        '</div>' +
+        '<table><thead><tr>' +
+        '<th>#</th><th style="text-align:center">Nº Saca</th><th>Rota</th><th>Data / Hora</th><th style="text-align:center">Vol.</th>' +
+        '</tr></thead><tbody>' +
+        tableRows +
+        '<tr class="tot"><td colspan="5" style="text-align:center">' + totalSacas + ' sacas entregues</td></tr>' +
+        '</tbody></table>' +
+        '<div class="sign-section">' +
+        '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Separador / Responsável pela Auditoria</div><div class="sign-sub">Nome / Matrícula</div></div>' +
+        '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Motorista / Representante da Transportadora</div><div class="sign-sub">' + (motorista || 'Nome / CPF / RG') + '</div></div>' +
+        '</div>' +
+        '<div class="footer">Documento gerado em ' + dataGeracao + ' &nbsp;|&nbsp; Sistema Auditoria de Sacas &mdash; Mercado Livre &nbsp;|&nbsp; Este documento comprova a entrega das sacas relacionadas acima</div>' +
+        '<script>try{new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(qrText) + ',width:70,height:70,correctLevel:QRCode.CorrectLevel.M});}catch(e){}<\/script>' +
+        '</body></html>');
+      win.document.close();
+      fecharModal('modalRomaneio');
+    }
+
     // ---- Service Worker ----
     let _swWaiting = null;
     function aplicarAtualizacao() {
@@ -3680,20 +3994,36 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/Sacas/sw.js').then(reg => {
+
+          function mostrarBanner(sw) {
+            _swWaiting = sw;
+            document.getElementById('swUpdateBanner').style.display = 'flex';
+          }
+
+          // Caso 1: já havia um SW esperando quando a página carregou
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            mostrarBanner(reg.waiting);
+          }
+
+          // Caso 2: novo SW encontrado enquanto a página está aberta
           reg.addEventListener('updatefound', () => {
             const novo = reg.installing;
             if (!novo) return;
             novo.addEventListener('statechange', () => {
               if (novo.state === 'installed' && navigator.serviceWorker.controller) {
-                _swWaiting = novo;
-                document.getElementById('swUpdateBanner').style.display = 'flex';
+                mostrarBanner(novo);
               }
             });
           });
+
+          // Verifica atualização a cada 2 minutos (garante detecção mesmo sem recarregar)
+          setInterval(() => reg.update(), 120000);
+
         }).catch(() => {});
       });
     }
   </script>
+  <div id="cfgDrawerOverlay" onclick="toggleConfig()"></div>
   <div id="swUpdateBanner" onclick="aplicarAtualizacao()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1f63;color:#FFE600;padding:14px 16px;text-align:center;z-index:99999;cursor:pointer;font-weight:800;font-size:14px;font-family:'Inter',sans-serif;align-items:center;justify-content:center;gap:8px;box-shadow:0 -2px 12px rgba(0,0,0,.3)">
     &#128260; Nova versao disponivel &mdash; toque aqui para atualizar
   </div>
