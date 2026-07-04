@@ -2755,8 +2755,9 @@
           _rotaMetaTemp = {}; _sacaNodoMapTemp = {};
           dadosRota.forEach(r => {
             if (!_rotaMetaTemp[r.rota]) _rotaMetaTemp[r.rota] = { minEta: '', nodos: [] };
-            if (r.eta && (!_rotaMetaTemp[r.rota].minEta || r.eta < _rotaMetaTemp[r.rota].minEta))
-              _rotaMetaTemp[r.rota].minEta = r.eta;
+            const eta = (r.eta || '').trim();
+            if (eta && !/^0+[:h]?0*[:h]?0*$/.test(eta) && (!_rotaMetaTemp[r.rota].minEta || eta < _rotaMetaTemp[r.rota].minEta))
+              _rotaMetaTemp[r.rota].minEta = eta;
             if (r.nodo && !_rotaMetaTemp[r.rota].nodos.includes(r.nodo))
               _rotaMetaTemp[r.rota].nodos.push(r.nodo);
             if (r.saca_id && r.nodo) _sacaNodoMapTemp[r.saca_id] = r.nodo;
@@ -2808,11 +2809,7 @@
 
           const total = dados.length;
           for (let i = 0; i < total; i += batchSize) {
-            const lote = dados.slice(i, i + batchSize).map(r =>
-              tabela === 'rota'
-                ? { saca_id: r.saca_id, rota: r.rota, svc: svcSel }
-                : { ...r, svc: svcSel }
-            );
+            const lote = dados.slice(i, i + batchSize).map(r => ({ ...r, svc: svcSel }));
             st.innerText = 'Gravando ' + tabela + ' [' + svcSel + ']: ' + Math.min(i + batchSize, total) + '/' + total;
             await sbCheck(await db.from(tabela).insert(lote));
             atualizarBarra();
@@ -2909,8 +2906,7 @@
       try {
         const hoje = dataHoje();
         const svcAtual = getV('svc');
-        const rotaMeta = JSON.parse(localStorage.getItem('rotaMeta_' + (svcAtual || '')) || '{}');
-        let rotaQ = db.from('rota').select('saca_id,rota');
+        let rotaQ = db.from('rota').select('saca_id,rota,nodo,eta');
         if (svcAtual) rotaQ = rotaQ.eq('svc', svcAtual);
         let logHojeQ = db.from('log').select('saca_id').like('data', hoje + '%');
         if (svcAtual) logHojeQ = logHojeQ.eq('svc', svcAtual);
@@ -2921,6 +2917,18 @@
 
         _rankingRotaRows = rotaRows;
         _rankingSacasHoje = new Set(logRows.map(r => (r.saca_id || '').trim()));
+
+        // Monta rotaMeta com ETA mínimo por rota direto do banco
+        // ETA "00:00:00" ou vazio = sem prioridade de horário (vai pro fim)
+        const rotaMeta = {};
+        for (const r of rotaRows) {
+          if (!r.rota) continue;
+          if (!rotaMeta[r.rota]) rotaMeta[r.rota] = { minEta: '' };
+          const eta = (r.eta || '').trim();
+          if (!eta || /^0+[:h]?0*[:h]?0*$/.test(eta)) continue; // ignora 00:00:00 / 0h / vazio
+          if (!rotaMeta[r.rota].minEta || eta < rotaMeta[r.rota].minEta)
+            rotaMeta[r.rota].minEta = eta;
+        }
 
         let totalPorRota = {};
         for (const r of rotaRows) {
@@ -3126,8 +3134,8 @@
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
                    '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + dataStr + '^FS' +
-                   '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
+                   '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + '^FS^XZ';
           }
         } else {
           // Layout proporcional para 100×100, 100×150, 150×100
@@ -3154,8 +3162,8 @@
                    '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                    '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + dataStr + '^FS' +
-                   '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
+                   '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
+                   '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + '^FS^XZ';
           }
         }
 
