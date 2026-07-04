@@ -987,6 +987,8 @@
 
     let dadosBase = null;  // rows parsed do CSV Base
     let dadosRota = null;  // rows parsed do CSV Rota
+    let _rotaMetaTemp    = null; // {rota → {minEta, nodos[]}} aguardando import
+    let _sacaNodoMapTemp = null; // {saca_id → nodo} aguardando import
     let ultimoZPL = null, ultimoIP = null;
     let historicoSessao = [];
 
@@ -2748,8 +2750,17 @@
           document.getElementById('boxBase').classList.add('has-file');
         } else {
           dadosRota = dados
-            .map(r => ({ saca_id: (r[0]||'').trim(), rota: r[1]||'' }))
+            .map(r => ({ saca_id: (r[0]||'').trim(), rota: r[1]||'', nodo: (r[2]||'').trim(), eta: (r[3]||'').trim() }))
             .filter(r => r.saca_id);
+          _rotaMetaTemp = {}; _sacaNodoMapTemp = {};
+          dadosRota.forEach(r => {
+            if (!_rotaMetaTemp[r.rota]) _rotaMetaTemp[r.rota] = { minEta: '', nodos: [] };
+            if (r.eta && (!_rotaMetaTemp[r.rota].minEta || r.eta < _rotaMetaTemp[r.rota].minEta))
+              _rotaMetaTemp[r.rota].minEta = r.eta;
+            if (r.nodo && !_rotaMetaTemp[r.rota].nodos.includes(r.nodo))
+              _rotaMetaTemp[r.rota].nodos.push(r.nodo);
+            if (r.saca_id && r.nodo) _sacaNodoMapTemp[r.saca_id] = r.nodo;
+          });
           document.getElementById('labelRota').innerText   = '✓ ' + file.name;
           document.getElementById('previewRota').innerText = dadosRota.length + ' sacas carregadas';
           document.getElementById('boxRota').classList.add('has-file');
@@ -2797,7 +2808,11 @@
 
           const total = dados.length;
           for (let i = 0; i < total; i += batchSize) {
-            const lote = dados.slice(i, i + batchSize).map(r => ({ ...r, svc: svcSel }));
+            const lote = dados.slice(i, i + batchSize).map(r =>
+              tabela === 'rota'
+                ? { saca_id: r.saca_id, rota: r.rota, svc: svcSel }
+                : { ...r, svc: svcSel }
+            );
             st.innerText = 'Gravando ' + tabela + ' [' + svcSel + ']: ' + Math.min(i + batchSize, total) + '/' + total;
             await sbCheck(await db.from(tabela).insert(lote));
             atualizarBarra();
@@ -2811,9 +2826,11 @@
           (dadosBase ? dadosBase.length + ' sacas' : 'nao alterada') + ' | Rota: ' +
           (dadosRota ? dadosRota.length + ' sacas' : 'nao alterada');
 
+        if (_rotaMetaTemp)    localStorage.setItem('rotaMeta_'    + svcSel, JSON.stringify(_rotaMetaTemp));
+        if (_sacaNodoMapTemp) localStorage.setItem('sacaNodoMap_' + svcSel, JSON.stringify(_sacaNodoMapTemp));
         const _baseCount = dadosBase ? dadosBase.length : null;
         const _rotaCount = dadosRota ? dadosRota.length : null;
-        dadosBase = dadosRota = null;
+        dadosBase = dadosRota = _rotaMetaTemp = _sacaNodoMapTemp = null;
 
         const _hist = getImportHistory();
         _hist.unshift({ svc: svcSel, data: dataHoraAtual(), base: _baseCount, rota: _rotaCount });
@@ -2892,6 +2909,7 @@
       try {
         const hoje = dataHoje();
         const svcAtual = getV('svc');
+        const rotaMeta = JSON.parse(localStorage.getItem('rotaMeta_' + (svcAtual || '')) || '{}');
         let rotaQ = db.from('rota').select('saca_id,rota');
         if (svcAtual) rotaQ = rotaQ.eq('svc', svcAtual);
         let logHojeQ = db.from('log').select('saca_id').like('data', hoje + '%');
@@ -2922,7 +2940,14 @@
           const tot = totalPorRota[r], feitas = progresso[r] || 0;
           ranking.push({ rota: r, pronta: feitas, total: tot, porc: (feitas / tot) * 100 });
         }
-        ranking.sort((a, b) => b.porc - a.porc);
+        ranking.sort((a, b) => {
+          const ea = (rotaMeta[a.rota] || {}).minEta || '';
+          const eb = (rotaMeta[b.rota] || {}).minEta || '';
+          if (ea && eb) return ea.localeCompare(eb);
+          if (ea) return -1;
+          if (eb) return 1;
+          return b.porc - a.porc;
+        });
 
         if (!ranking.length) { document.getElementById('lista').innerHTML = 'Sem dados.'; return; }
 
@@ -2931,8 +2956,12 @@
           const pct = Math.round(d.porc);
           const cor = pct === 100 ? '#34c759' : pct >= 50 ? '#ff9500' : '#ff3b30';
           const rotaEsc = d.rota.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const etaStr  = (rotaMeta[d.rota] || {}).minEta || '';
+          const etaChip = etaStr
+            ? `<span style="font-size:10px;font-weight:700;color:#e67e22;background:#fff3e0;border-radius:3px;padding:1px 5px;margin-right:4px;flex-shrink:0">⏰ ${etaStr}</span>`
+            : '';
           h += `<div class="ranking-item" style="cursor:pointer" onclick="verPendentesRota('${rotaEsc}')">` +
-               `<span style="min-width:80px"><b>${d.rota}</b></span>` +
+               `${etaChip}<span style="min-width:80px"><b>${d.rota}</b></span>` +
                `<div class="barra-fundo"><div class="barra-fill" style="width:${pct}%;background:${cor}"></div></div>` +
                `<span style="min-width:75px;text-align:right;color:${cor}">${d.pronta}/${d.total} (${pct}%)</span>` +
                `<span style="font-size:10px;color:#bbb;margin-left:4px">&#9656;</span>` +
@@ -3066,6 +3095,8 @@
         const rot  = inv ? 'I' : 'N';
         const dark = document.getElementById('darkness').value || '30';
         const svcResp = (getV('svc') ? getV('svc') + ' - ' : '') + getV('resp');
+        const _sacaNodoMap = JSON.parse(localStorage.getItem('sacaNodoMap_' + (getV('svc') || '')) || '{}');
+        const nodoSaca = zplEscape(_sacaNodoMap[(sacaId || '').trim()] || '');
         let zpl = '';
 
         if (pw === 640 && ll === 320) {
@@ -3095,7 +3126,7 @@
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
                    '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + svcResp + '^FS' +
+                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + dataStr + '^FS' +
                    '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
           }
         } else {
@@ -3123,7 +3154,7 @@
                    '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                    '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
                    '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + svcResp + '^FS' +
+                   '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + dataStr + '^FS' +
                    '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FDAUDITORIA: ' + getV('log') + '^FS^XZ';
           }
         }
