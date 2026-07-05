@@ -3141,16 +3141,23 @@
           // Layout proporcional para 100×100, 100×150, 150×100
           const sx = pw / 800;
           const sy = ll / 800;
-          const qrX  = Math.round(250 * sx);
-          const qrY  = Math.round(30  * sy);
-          const y1   = Math.round(360 * sy);
-          const y2   = Math.round(480 * sy);
-          const y3   = Math.round(620 * sy);
-          const y4   = Math.round(660 * sy);
           const fA   = Math.round(70  * sy);
           const fB   = Math.round(60  * sy);
           const fC   = Math.round(25  * sy);
-          const qrSz = 7 * 29;
+          const qrSz = 7 * 29; // ~203 dots (mag 7, versão ~2-3)
+          const qrX  = Math.round((pw - qrSz) / 2); // centralizado horizontalmente
+          // Calcula posições base e centraliza verticalmente o bloco todo
+          const _qrYb = Math.round(30  * sy);
+          const _y1b  = Math.round(360 * sy);
+          const _y2b  = Math.round(480 * sy);
+          const _y3b  = Math.round(620 * sy);
+          const _y4b  = Math.round(660 * sy);
+          const vOff  = Math.round((ll - (_y4b + fC - _qrYb)) / 2) - _qrYb;
+          const qrY = _qrYb + vOff;
+          const y1  = _y1b  + vOff;
+          const y2  = _y2b  + vOff;
+          const y3  = _y3b  + vOff;
+          const y4  = _y4b  + vOff;
           const _qrY = inv ? ll - qrY - qrSz : qrY;
           const _y1  = inv ? ll - y1  - fA   : y1;
           const _y2  = inv ? ll - y2  - fB   : y2;
