@@ -465,6 +465,13 @@
       </div>
       <input type="range" id="labelShift" min="-200" max="200" value="0" oninput="svShift()" style="width:100%;accent-color:var(--brand)">
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9664; Esquerda</span><span>Direita &#9654;</span></div>
+      <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8597; Ajuste Vertical</span>
+        <span id="vshiftVal" style="font-size:12px;font-weight:900;color:var(--brand)">0</span>
+      </div>
+      <input type="range" id="labelVShift" min="-300" max="300" value="0" oninput="svVShift()" style="width:100%;accent-color:var(--brand)">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9650; Para cima</span><span>Para baixo &#9660;</span></div>
     </div>
     <div id="httpsWarnMain" style="display:none;background:#fff3cd;border:2px solid #f59e0b;border-radius:var(--rs);padding:12px 14px;margin-bottom:10px;font-size:12px;line-height:1.7;color:#78350f">
       <div style="font-weight:900;font-size:13px;margin-bottom:4px">&#128274; Impressao WiFi bloqueada pelo Chrome</div>
@@ -1814,6 +1821,9 @@
       const savedShift = savedIp ? (localStorage.getItem('lsx_' + savedIp) || '0') : '0';
       document.getElementById('labelShift').value = savedShift;
       document.getElementById('shiftVal').innerText = savedShift;
+      const savedVShift = savedIp ? (localStorage.getItem('lsv_' + savedIp) || '0') : '0';
+      document.getElementById('labelVShift').value = savedVShift;
+      document.getElementById('vshiftVal').innerText = savedVShift;
       atualizarBotaoOrient();
       populateSvcDatalist();
       // Auto-collapse config se ja configurado
@@ -2048,15 +2058,20 @@
       if (ip) localStorage.setItem('lsx_' + ip, val);
     };
 
+    const svVShift = () => {
+      const val = document.getElementById('labelVShift').value;
+      document.getElementById('vshiftVal').innerText = val;
+      const ip = document.getElementById('ip').value.trim();
+      if (ip) localStorage.setItem('lsv_' + ip, val);
+    };
+
     function applyLabelShift(zpl) {
-      const ip    = document.getElementById('ip').value.trim();
-      const shift = parseInt(localStorage.getItem('lsx_' + ip) || '0');
-      if (!shift) return zpl;
-      // Desloca coordenadas ^FO diretamente em vez de ^LS.
-      // ^LS faz a impressora rejeitar o label quando conteudo passa de ^PW.
-      // Com ^FO ajustado, o label sempre imprime (clipa na borda se necessario).
+      const ip     = document.getElementById('ip').value.trim();
+      const shift  = parseInt(localStorage.getItem('lsx_' + ip) || '0');
+      const vshift = parseInt(localStorage.getItem('lsv_' + ip) || '0');
+      if (!shift && !vshift) return zpl;
       return zpl.replace(/\^FO(-?\d+),(-?\d+)/g, (_, x, y) =>
-        '^FO' + Math.max(0, parseInt(x) + shift) + ',' + y
+        '^FO' + Math.max(0, parseInt(x) + shift) + ',' + Math.max(0, parseInt(y) + vshift)
       );
     }
 
@@ -2097,6 +2112,9 @@
       const savedShift = parseInt(localStorage.getItem('lsx_' + ip) || '0');
       document.getElementById('labelShift').value = savedShift;
       document.getElementById('shiftVal').innerText = savedShift;
+      const savedVShift = parseInt(localStorage.getItem('lsv_' + ip) || '0');
+      document.getElementById('labelVShift').value = savedVShift;
+      document.getElementById('vshiftVal').innerText = savedVShift;
       atualizarBotaoOrient();
       atualizarBadge();
       atualizarContador();
@@ -3139,31 +3157,26 @@
           }
         } else {
           // Layout proporcional para 100×100, 100×150, 150×100
-          const sx = pw / 800;
-          const sy = ll / 800;
+          // Sem lógica de orientação — posições fixas, ajuste via slider Vertical
+          const sy  = ll / 800;
           const qrSz = 7 * 29;
-          const qrX  = Math.round((pw - qrSz) / 2); // centralizado horizontalmente
+          const qrX  = Math.round((pw - qrSz) / 2);
           const qrY  = Math.round(30  * sy);
-          const y1   = Math.round(360 * sy);
-          const y2   = Math.round(480 * sy);
-          const y3   = Math.round(620 * sy);
-          const y4   = Math.round(660 * sy);
-          const fA   = Math.round(70  * sy);
-          const fB   = Math.round(60  * sy);
-          const fC   = Math.round(25  * sy);
-          const _qrY = inv ? ll - qrY - qrSz : qrY;
-          const _y1  = inv ? ll - y1  - fA   : y1;
-          const _y2  = inv ? ll - y2  - fB   : y2;
-          const _y3  = inv ? ll - y3  - fC   : y3;
-          const _y4  = inv ? ll - y4  - fC   : y4;
+          const y1   = Math.round(260 * sy);
+          const y2   = Math.round(350 * sy);
+          const y3   = Math.round(430 * sy);
+          const y4   = Math.round(480 * sy);
+          const fA   = Math.round(75  * sy);
+          const fB   = Math.round(65  * sy);
+          const fC   = Math.round(38  * sy);
           for (let k = 1; k <= qtdVal; k++) {
             const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
             zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
-                   '^FO' + qrX + ',' + _qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
-                   '^FO0,' + _y1 + '^A0' + rot + ',' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
-                   '^FO0,' + _y2 + '^A0' + rot + ',' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO0,' + _y3 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
-                   '^FO0,' + _y4 + '^A0' + rot + ',' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
+                   '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
+                   '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                   '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                   '^FO0,' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
+                   '^FO0,' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
           }
         }
 
@@ -3496,22 +3509,18 @@
               `^FO${tX},${_y3}^A0${rot},24,24^FB${tW},1,0,L^FD${dataStr}^FS` +
               `^FO${tX},${_y4}^A0${rot},24,24^FB${tW},1,0,L^FDIP: ${ip}^FS^XZ`;
       } else {
-        const sx = pw / 800, sy = ll / 800;
-        const qrX = Math.round(250 * sx), qrY = Math.round(30 * sy);
-        const y1 = Math.round(360 * sy), y2 = Math.round(480 * sy);
-        const y3 = Math.round(620 * sy), y4 = Math.round(660 * sy);
-        const fA = Math.round(70 * sy), fB = Math.round(60 * sy), fC = Math.round(25 * sy);
-        const _qrY = inv ? ll - qrY - 5 * 21 : qrY;
-        const _y1  = inv ? ll - y1 - fA : y1;
-        const _y2  = inv ? ll - y2 - fB : y2;
-        const _y3  = inv ? ll - y3 - fC : y3;
-        const _y4  = inv ? ll - y4 - fC : y4;
+        const sy   = ll / 800;
+        const qrSz = 5 * 21;
+        const qrX  = Math.round((pw - qrSz) / 2), qrY = Math.round(30 * sy);
+        const y1   = Math.round(260 * sy), y2 = Math.round(350 * sy);
+        const y3   = Math.round(430 * sy), y4 = Math.round(480 * sy);
+        const fA   = Math.round(75 * sy), fB = Math.round(65 * sy), fC = Math.round(38 * sy);
         zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
-              `^FO${qrX},${_qrY}^BQN,2,5^FDQA,TESTE^FS` +
-              `^FO0,${_y1}^A0${rot},${fA},${fA}^FB${pw},1,0,C^FDTESTE DE IMPRESSAO^FS` +
-              `^FO0,${_y2}^A0${rot},${fB},${fB}^FB${pw},1,0,C^FD${svc}^FS` +
-              `^FO0,${_y3}^A0${rot},${fC},${fC}^FB${pw},1,0,C^FD${dataStr}^FS` +
-              `^FO0,${_y4}^A0${rot},${fC},${fC}^FB${pw},1,0,C^FDIP: ${ip}^FS^XZ`;
+              `^FO${qrX},${qrY}^BQN,2,5^FDQA,TESTE^FS` +
+              `^FO0,${y1}^A0N,${fA},${fA}^FB${pw},1,0,C^FDTESTE DE IMPRESSAO^FS` +
+              `^FO0,${y2}^A0N,${fB},${fB}^FB${pw},1,0,C^FD${svc}^FS` +
+              `^FO0,${y3}^A0N,${fC},${fC}^FB${pw},1,0,C^FD${dataStr}^FS` +
+              `^FO0,${y4}^A0N,${fC},${fC}^FB${pw},1,0,C^FDIP: ${ip}^FS^XZ`;
       }
 
       toast('🖨️ Enviando etiqueta de teste...', 'info', 2000);
