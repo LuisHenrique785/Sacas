@@ -538,6 +538,7 @@
       <p style="font-size:12px;color:var(--tx2);margin:0 0 10px;line-height:1.6">
         Imprime sacas individualmente em tempo real e atualiza o banco a cada saca. Gere o romaneio ao encerrar.
       </p>
+      <button id="btnOpTeste" onclick="opToggleTeste()" style="width:100%;padding:8px;border:1.5px dashed var(--bdr);border-radius:var(--rs);background:var(--surf);font-size:12px;font-weight:700;cursor:pointer;color:var(--tx2);font-family:'Inter',sans-serif;margin-bottom:8px">&#129514; Modo Teste: OFF</button>
       <button onclick="opIniciar()" style="width:100%;padding:11px;border:none;border-radius:var(--rs);background:var(--ok);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">&#9654; Iniciar Operação</button>
     </div>
     <div id="opPainelAtivo" style="display:none">
@@ -4071,14 +4072,39 @@
       try { return JSON.parse(localStorage.getItem('opAtiva') || 'null'); } catch(e) { return null; }
     })();
 
+    function opIsTeste() { return localStorage.getItem('opTestMode') === 'true'; }
+
+    function opToggleTeste() {
+      const next = !opIsTeste();
+      localStorage.setItem('opTestMode', next ? 'true' : 'false');
+      const btn = document.getElementById('btnOpTeste');
+      if (btn) {
+        btn.textContent = '🧪 Modo Teste: ' + (next ? 'ON' : 'OFF');
+        btn.style.background = next ? '#fff3cd' : 'var(--surf)';
+        btn.style.color      = next ? '#78350f' : 'var(--tx2)';
+        btn.style.borderColor = next ? '#f59e0b' : 'var(--bdr)';
+      }
+    }
+
     function opRenderUI() {
       const ativo = !!_opAtiva;
       document.getElementById('opPainelInativo').style.display = ativo ? 'none' : '';
       document.getElementById('opPainelAtivo').style.display   = ativo ? ''     : 'none';
+      // Atualiza botão de teste (pode ter mudado no localStorage)
+      opToggleTeste(); opToggleTeste(); // idempotente — só garante sincronismo visual
+      const btn = document.getElementById('btnOpTeste');
+      if (btn) { // restaura estado sem double-toggle
+        const t = opIsTeste();
+        btn.textContent   = '🧪 Modo Teste: ' + (t ? 'ON' : 'OFF');
+        btn.style.background  = t ? '#fff3cd' : 'var(--surf)';
+        btn.style.color       = t ? '#78350f' : 'var(--tx2)';
+        btn.style.borderColor = t ? '#f59e0b' : 'var(--bdr)';
+      }
       if (!ativo) return;
       const totalSacas = _opAtiva.sacas.reduce((s, e) => s + e.qtd, 0);
+      const testeTag = _opAtiva.teste ? '  🧪 TESTE' : '';
       document.getElementById('opIdLabel').textContent =
-        _opAtiva.id + '  ·  ' + _opAtiva.sacas.length + ' container(s)  ·  ' + totalSacas + ' saca(s)';
+        _opAtiva.id + testeTag + '  ·  ' + _opAtiva.sacas.length + ' container(s)  ·  ' + totalSacas + ' saca(s)';
       const lista = document.getElementById('opLista');
       if (!_opAtiva.sacas.length) {
         lista.innerHTML = '<span style="color:var(--tx3);font-size:12px">Nenhuma saca adicionada ainda.</span>';
@@ -4108,10 +4134,11 @@
       const p = n => String(n).padStart(2,'0');
       const id = 'OP-' + now.getFullYear() + p(now.getMonth()+1) + p(now.getDate()) +
                  '-' + p(now.getHours()) + p(now.getMinutes());
-      _opAtiva = { id, inicio: now.toISOString(), sacas: [] };
+      const teste = opIsTeste();
+      _opAtiva = { id, inicio: now.toISOString(), teste, sacas: [] };
       localStorage.setItem('opAtiva', JSON.stringify(_opAtiva));
       opRenderUI();
-      toast('Operação ' + id + ' iniciada!', 'ok');
+      toast((teste ? '🧪 [TESTE] ' : '') + 'Operação ' + id + ' iniciada!', 'ok');
       setTimeout(() => document.getElementById('opSacaId').focus(), 150);
     }
 
@@ -4143,52 +4170,56 @@
 
       let entry = _opAtiva.sacas.find(s => s.saca_id === input);
 
+      const modoTeste = !!_opAtiva.teste;
+
       if (!entry) {
         setOpStatus('Buscando saca ' + input + '...', '#fff3cd');
-        let q = db.from('base').select('qr_mae,rota,svc').eq('saca_id', input);
-        if (svc) q = q.eq('svc', svc);
-        const { data: baseRows, error: baseErr } = await q.limit(1);
-        if (baseErr || !baseRows || !baseRows.length || !baseRows[0].qr_mae) {
-          setOpStatus('Saca ' + input + ' não encontrada na base.', '#ffdce0'); return;
+        if (modoTeste) {
+          // Teste: simula registro sem consultar o banco
+          entry = { saca_id: input, qr_mae: input, rota: 'TESTE', svc: svc || 'SVC', qtd: 0, log_id: null };
+        } else {
+          let q = db.from('base').select('qr_mae,rota,svc').eq('saca_id', input);
+          if (svc) q = q.eq('svc', svc);
+          const { data: baseRows, error: baseErr } = await q.limit(1);
+          if (baseErr || !baseRows || !baseRows.length || !baseRows[0].qr_mae) {
+            setOpStatus('Saca ' + input + ' não encontrada na base.', '#ffdce0'); return;
+          }
+          const br = baseRows[0];
+          entry = { saca_id: input, qr_mae: br.qr_mae, rota: br.rota || '', svc: svc || br.svc || '', qtd: 0, log_id: null };
         }
-        const br = baseRows[0];
-        entry = {
-          saca_id: input,
-          qr_mae:  br.qr_mae,
-          rota:    br.rota || '',
-          svc:     svc || br.svc || '',
-          qtd:     0,
-          log_id:  null
-        };
         _opAtiva.sacas.push(entry);
       }
 
       entry.qtd++;
       const k = entry.qtd;
-      setOpStatus('Registrando saca ' + k + ' — ' + input + '...', '#fff3cd');
 
-      if (k === 1) {
-        const dataStr = dataHoraAtual();
-        const { data: ins, error: insErr } = await db.from('log').insert({
-          data:        dataStr,
-          svc:         entry.svc,
-          responsavel: (entry.svc ? entry.svc + ' - ' : '') + resp,
-          auditoria:   audit,
-          saca_id:     input,
-          qtd:         1,
-          qr_mae:      entry.qr_mae,
-          rota:        entry.rota
-        }).select('id');
-        if (insErr || !ins || !ins.length) {
-          setOpStatus('Erro ao inserir: ' + (insErr ? insErr.message : '?'), '#ffdce0');
-          entry.qtd--; if (!entry.qtd) _opAtiva.sacas.pop(); return;
-        }
-        entry.log_id = ins[0].id;
+      if (modoTeste) {
+        setOpStatus('🧪 [TESTE] Saca ' + k + ' — ' + input + ' (sem banco)', '#fff3cd');
       } else {
-        const { error: updErr } = await db.from('log').update({ qtd: k }).eq('id', entry.log_id);
-        if (updErr) {
-          setOpStatus('Erro ao atualizar: ' + updErr.message, '#ffdce0');
-          entry.qtd--; return;
+        setOpStatus('Registrando saca ' + k + ' — ' + input + '...', '#fff3cd');
+        if (k === 1) {
+          const dataStr = dataHoraAtual();
+          const { data: ins, error: insErr } = await db.from('log').insert({
+            data:        dataStr,
+            svc:         entry.svc,
+            responsavel: (entry.svc ? entry.svc + ' - ' : '') + resp,
+            auditoria:   audit,
+            saca_id:     input,
+            qtd:         1,
+            qr_mae:      entry.qr_mae,
+            rota:        entry.rota
+          }).select('id');
+          if (insErr || !ins || !ins.length) {
+            setOpStatus('Erro ao inserir: ' + (insErr ? insErr.message : '?'), '#ffdce0');
+            entry.qtd--; if (!entry.qtd) _opAtiva.sacas.pop(); return;
+          }
+          entry.log_id = ins[0].id;
+        } else {
+          const { error: updErr } = await db.from('log').update({ qtd: k }).eq('id', entry.log_id);
+          if (updErr) {
+            setOpStatus('Erro ao atualizar: ' + updErr.message, '#ffdce0');
+            entry.qtd--; return;
+          }
         }
       }
 
@@ -4205,8 +4236,9 @@
         else { await enviarZPLWifi(ip, zpl); ok = true; }
       } catch(e) { ok = false; }
 
-      if (ok) { setOpStatus('✅ ' + input + ' · Saca ' + k + ' impressa', '#d4edda'); beep('ok'); }
-      else    { setOpStatus('⚠️ ' + input + ' · Saca ' + k + ' registrada — erro na impressora', '#fff3cd'); beep('err'); }
+      const pfx = modoTeste ? '🧪 [TESTE] ' : '';
+      if (ok) { setOpStatus(pfx + '✅ ' + input + ' · Saca ' + k + ' impressa', '#d4edda'); beep('ok'); }
+      else    { setOpStatus(pfx + '⚠️ ' + input + ' · Saca ' + k + (modoTeste ? ' — erro na impressora' : ' registrada — erro na impressora'), '#fff3cd'); beep('err'); }
 
       document.getElementById('opSacaId').value = '';
       document.getElementById('opSacaId').focus();
