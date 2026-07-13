@@ -4174,16 +4174,18 @@
 
       if (!entry) {
         setOpStatus('Buscando saca ' + input + '...', '#fff3cd');
-        if (modoTeste) {
-          // Teste: simula registro sem consultar o banco
-          entry = { saca_id: input, qr_mae: input, rota: 'TESTE', svc: svc || 'SVC', qtd: 0, log_id: null };
-        } else {
-          let q = db.from('base').select('qr_mae,rota,svc').eq('saca_id', input);
-          if (svc) q = q.eq('svc', svc);
-          const { data: baseRows, error: baseErr } = await q.limit(1);
-          if (baseErr || !baseRows || !baseRows.length || !baseRows[0].qr_mae) {
+        // Leitura da base sempre acontece (não grava nada) — só o log é pulado no modo teste
+        let q = db.from('base').select('qr_mae,rota,svc').eq('saca_id', input);
+        if (svc) q = q.eq('svc', svc);
+        const { data: baseRows, error: baseErr } = await q.limit(1);
+        if (baseErr || !baseRows || !baseRows.length || !baseRows[0].qr_mae) {
+          if (modoTeste) {
+            // Fallback de teste: saca não está na base, usa dados sintéticos
+            entry = { saca_id: input, qr_mae: 'TESTE-' + input, rota: 'TESTE', svc: svc || 'SVC', qtd: 0, log_id: null };
+          } else {
             setOpStatus('Saca ' + input + ' não encontrada na base.', '#ffdce0'); return;
           }
+        } else {
           const br = baseRows[0];
           entry = { saca_id: input, qr_mae: br.qr_mae, rota: br.rota || '', svc: svc || br.svc || '', qtd: 0, log_id: null };
         }
