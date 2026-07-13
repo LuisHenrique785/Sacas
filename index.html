@@ -531,6 +531,40 @@
     <button class="btn-atualizar" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
   </div>
 
+  <!-- ── MODO OPERAÇÃO ── -->
+  <div class="card" id="opCard" style="border-top:3px solid var(--ok)">
+    <div class="sec-lbl" style="margin-bottom:10px;color:var(--ok)">&#9889; MODO OPERAÇÃO</div>
+    <div id="opPainelInativo">
+      <p style="font-size:12px;color:var(--tx2);margin:0 0 10px;line-height:1.6">
+        Imprime sacas individualmente em tempo real e atualiza o banco a cada saca. Gere o romaneio ao encerrar.
+      </p>
+      <button onclick="opIniciar()" style="width:100%;padding:11px;border:none;border-radius:var(--rs);background:var(--ok);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">&#9654; Iniciar Operação</button>
+    </div>
+    <div id="opPainelAtivo" style="display:none">
+      <div id="opIdLabel" style="font-size:11px;font-weight:700;color:var(--tx2);text-align:center;background:var(--surf2);border-radius:var(--rs);padding:5px 8px;margin-bottom:8px">-</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input type="text" id="opSacaId" placeholder="Nº Saca" inputmode="numeric" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')opAdicionarSaca()">
+        <button onclick="opAdicionarSaca()" style="padding:9px 16px;border:none;border-radius:var(--rs);background:var(--ok);color:#fff;font-weight:900;cursor:pointer;font-size:18px;font-family:'Inter',sans-serif;line-height:1">+</button>
+      </div>
+      <div id="opStatus" style="font-size:11px;font-weight:600;min-height:16px;padding:4px 6px;border-radius:4px;background:var(--surf2);color:var(--tx2);margin-bottom:8px"></div>
+      <div id="opLista" style="margin-bottom:10px;max-height:180px;overflow-y:auto"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <button onclick="opRomaneio()" style="padding:9px;border:none;border-radius:var(--rs);background:var(--brand);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">&#128203; Romaneio</button>
+        <button onclick="opLimpar()" style="padding:9px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);font-size:12px;font-weight:700;cursor:pointer;color:var(--tx2);font-family:'Inter',sans-serif">&#10006; Encerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONSULTAR SACA ── -->
+  <div class="card">
+    <div class="sec-lbl" style="margin-bottom:10px">&#128269; CONSULTAR SACA</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="text" id="consultaInput" placeholder="Nº Saca ou conteúdo do QR" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')consultarSaca()">
+      <button onclick="consultarSaca()" class="btn-verificar">Ver</button>
+    </div>
+    <div id="consultaResult" style="font-size:13px;min-height:18px"></div>
+  </div>
+
   <!-- ── BUSCA RÁPIDA ── -->
   <div class="card">
     <div class="sec-lbl" style="margin-bottom:10px">&#128269; BUSCA RÁPIDA</div>
@@ -4031,6 +4065,244 @@
         }).catch(() => {});
       });
     }
+
+    // ─── MODO OPERAÇÃO ────────────────────────────────────────────────────────
+    let _opAtiva = (() => {
+      try { return JSON.parse(localStorage.getItem('opAtiva') || 'null'); } catch(e) { return null; }
+    })();
+
+    function opRenderUI() {
+      const ativo = !!_opAtiva;
+      document.getElementById('opPainelInativo').style.display = ativo ? 'none' : '';
+      document.getElementById('opPainelAtivo').style.display   = ativo ? ''     : 'none';
+      if (!ativo) return;
+      const totalSacas = _opAtiva.sacas.reduce((s, e) => s + e.qtd, 0);
+      document.getElementById('opIdLabel').textContent =
+        _opAtiva.id + '  ·  ' + _opAtiva.sacas.length + ' container(s)  ·  ' + totalSacas + ' saca(s)';
+      const lista = document.getElementById('opLista');
+      if (!_opAtiva.sacas.length) {
+        lista.innerHTML = '<span style="color:var(--tx3);font-size:12px">Nenhuma saca adicionada ainda.</span>';
+        return;
+      }
+      lista.innerHTML = _opAtiva.sacas.map(s =>
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 7px;' +
+        'border-radius:4px;background:var(--surf2);margin-bottom:3px;font-size:12px">' +
+        '<span style="font-weight:700">' + s.saca_id + '</span>' +
+        '<span style="color:var(--tx2)">' + (s.rota || '—') + '</span>' +
+        '<span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-weight:700">' +
+        s.qtd + ' saca(s)</span></div>'
+      ).join('');
+    }
+
+    function setOpStatus(msg, bg) {
+      const el = document.getElementById('opStatus');
+      if (!el) return;
+      el.textContent = msg;
+      if (bg === '#d4edda') { el.style.background = bg; el.style.color = '#155724'; }
+      else if (bg === '#ffdce0') { el.style.background = bg; el.style.color = '#721c24'; }
+      else { el.style.background = bg || 'var(--surf2)'; el.style.color = 'var(--tx2)'; }
+    }
+
+    function opIniciar() {
+      const now = new Date();
+      const p = n => String(n).padStart(2,'0');
+      const id = 'OP-' + now.getFullYear() + p(now.getMonth()+1) + p(now.getDate()) +
+                 '-' + p(now.getHours()) + p(now.getMinutes());
+      _opAtiva = { id, inicio: now.toISOString(), sacas: [] };
+      localStorage.setItem('opAtiva', JSON.stringify(_opAtiva));
+      opRenderUI();
+      toast('Operação ' + id + ' iniciada!', 'ok');
+      setTimeout(() => document.getElementById('opSacaId').focus(), 150);
+    }
+
+    function opRomaneio() {
+      if (_opAtiva && _opAtiva.sacas.length) abrirRomaneio();
+      else toast('Nenhuma saca na operação.', 'warn');
+    }
+
+    function opLimpar() {
+      if (_opAtiva && _opAtiva.sacas.length &&
+          !confirm('Encerrar operação ' + _opAtiva.id + '?\n' + _opAtiva.sacas.length + ' container(s) já registrados no banco.')) return;
+      _opAtiva = null;
+      localStorage.removeItem('opAtiva');
+      opRenderUI();
+    }
+
+    async function opAdicionarSaca() {
+      if (!_opAtiva) return;
+      const input = (document.getElementById('opSacaId').value || '').trim();
+      if (!input) return;
+
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      const ip   = (document.getElementById('ip').value || '').trim();
+      if (mode === 'wifi' && !ip) { toast('Configure o IP da impressora.', 'warn'); return; }
+
+      const svc   = getV('svc');
+      const resp  = getV('resp');
+      const audit = getV('log');
+
+      let entry = _opAtiva.sacas.find(s => s.saca_id === input);
+
+      if (!entry) {
+        setOpStatus('Buscando saca ' + input + '...', '#fff3cd');
+        let q = db.from('base').select('qr_mae,rota,svc').eq('saca_id', input);
+        if (svc) q = q.eq('svc', svc);
+        const { data: baseRows, error: baseErr } = await q.limit(1);
+        if (baseErr || !baseRows || !baseRows.length || !baseRows[0].qr_mae) {
+          setOpStatus('Saca ' + input + ' não encontrada na base.', '#ffdce0'); return;
+        }
+        const br = baseRows[0];
+        entry = {
+          saca_id: input,
+          qr_mae:  br.qr_mae,
+          rota:    br.rota || '',
+          svc:     svc || br.svc || '',
+          qtd:     0,
+          log_id:  null
+        };
+        _opAtiva.sacas.push(entry);
+      }
+
+      entry.qtd++;
+      const k = entry.qtd;
+      setOpStatus('Registrando saca ' + k + ' — ' + input + '...', '#fff3cd');
+
+      if (k === 1) {
+        const dataStr = dataHoraAtual();
+        const { data: ins, error: insErr } = await db.from('log').insert({
+          data:        dataStr,
+          svc:         entry.svc,
+          responsavel: (entry.svc ? entry.svc + ' - ' : '') + resp,
+          auditoria:   audit,
+          saca_id:     input,
+          qtd:         1,
+          qr_mae:      entry.qr_mae,
+          rota:        entry.rota
+        }).select('id');
+        if (insErr || !ins || !ins.length) {
+          setOpStatus('Erro ao inserir: ' + (insErr ? insErr.message : '?'), '#ffdce0');
+          entry.qtd--; if (!entry.qtd) _opAtiva.sacas.pop(); return;
+        }
+        entry.log_id = ins[0].id;
+      } else {
+        const { error: updErr } = await db.from('log').update({ qtd: k }).eq('id', entry.log_id);
+        if (updErr) {
+          setOpStatus('Erro ao atualizar: ' + updErr.message, '#ffdce0');
+          entry.qtd--; return;
+        }
+      }
+
+      localStorage.setItem('opAtiva', JSON.stringify(_opAtiva));
+      opRenderUI();
+
+      // Imprimir etiqueta
+      setOpStatus('Imprimindo etiqueta ' + k + ' — ' + input + '...', '#fff3cd');
+      const zpl = opGerarZPL(entry, k);
+      let ok = false;
+      try {
+        if (mode === 'usb')      ok = await imprimirViaUSB(zpl);
+        else if (mode === 'bt')  ok = await imprimirViaBluetooth(zpl);
+        else { await enviarZPLWifi(ip, zpl); ok = true; }
+      } catch(e) { ok = false; }
+
+      if (ok) { setOpStatus('✅ ' + input + ' · Saca ' + k + ' impressa', '#d4edda'); beep('ok'); }
+      else    { setOpStatus('⚠️ ' + input + ' · Saca ' + k + ' registrada — erro na impressora', '#fff3cd'); beep('err'); }
+
+      document.getElementById('opSacaId').value = '';
+      document.getElementById('opSacaId').focus();
+    }
+
+    function opGerarZPL(entry, k) {
+      const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
+      const dark    = document.getElementById('darkness').value || '30';
+      const svc     = entry.svc;
+      const resp    = getV('resp');
+      const svcResp = zplEscape((svc ? svc + ' - ' : '') + resp);
+      const nMap    = JSON.parse(localStorage.getItem('sacaNodoMap_' + (svc || '')) || '{}');
+      const nodo    = zplEscape(nMap[(entry.saca_id || '').trim()] || '');
+      const rota    = zplEscape(entry.rota || '');
+      const sacaId  = zplEscape(entry.saca_id || '');
+      const audit   = zplEscape(getV('log'));
+      const dataStr = dataHoraAtual();
+      const qr      = k === 1 ? entry.qr_mae : entry.saca_id + ' Saca ' + k;
+      let zpl = '';
+
+      if (pw === 640 && ll === 320) {
+        const inv = isInvertido(), rot = inv ? 'I' : 'N';
+        const qrMag = 3, qrDots = qrMag * 45;
+        const tW = pw - 150 - 5, tX = inv ? pw - 5 : 150;
+        const vOff = Math.round((ll - 166) / 2);
+        const qrY0 = vOff + 10, ty1 = vOff + 10, ty2 = vOff + 65, ty3 = vOff + 112, ty4 = vOff + 142;
+        const _qrY = inv ? ll - qrY0 - qrDots : qrY0;
+        const _y1 = inv ? ll - ty1 - 50 : ty1, _y2 = inv ? ll - ty2 - 42 : ty2;
+        const _y3 = inv ? ll - ty3 - 24 : ty3, _y4 = inv ? ll - ty4 - 24 : ty4;
+        zpl = '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
+          '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
+          '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rota + ' - ' + sacaId + '^FS' +
+          '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + '^FS' +
+          '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
+          '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + audit + '^FS^XZ';
+      } else {
+        const sy = ll / 800, qrSz = 7 * 29;
+        const qrX = Math.round((pw - qrSz) / 2), qrY = Math.round(20 * sy);
+        const y1 = Math.round(350 * sy), y2 = Math.round(440 * sy);
+        const y3 = Math.round(520 * sy), y4 = Math.round(565 * sy);
+        const fA = Math.round(75 * sy), fB = Math.round(65 * sy), fC = Math.round(38 * sy);
+        zpl = '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
+          '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
+          '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rota + ' - ' + sacaId + '^FS' +
+          '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + '^FS' +
+          '^FO0,' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
+          '^FO0,' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + audit + '^FS^XZ';
+      }
+      return applyLabelShift(zpl);
+    }
+
+    // ─── CONSULTAR SACA ───────────────────────────────────────────────────────
+    async function consultarSaca() {
+      const raw = (document.getElementById('consultaInput').value || '').trim();
+      if (!raw) return;
+      // "SACAID Saca N" ou "SACAID Saca N-M" → extrai SACAID
+      const m = raw.match(/^(.+?)\s+[Ss]aca\s+\d/);
+      const sacaId = m ? m[1].trim() : raw;
+      const el = document.getElementById('consultaResult');
+      el.innerHTML = '<span style="color:var(--tx2)">Buscando...</span>';
+
+      const [logRes, rotaRes] = await Promise.all([
+        db.from('log').select('svc,rota,qtd,data,responsavel')
+          .eq('saca_id', sacaId).order('data', {ascending: false}).limit(1),
+        db.from('rota').select('eta').eq('saca_id', sacaId).limit(1)
+      ]);
+
+      const logRows  = logRes.data  || [];
+      const rotaRows = rotaRes.data || [];
+
+      if (!logRows.length) {
+        el.innerHTML = '<span style="color:var(--err)">Saca <b>' + sacaId + '</b> não encontrada no log.</span>';
+        return;
+      }
+      const lg  = logRows[0];
+      const eta = rotaRows.length ? (rotaRows[0].eta || '—') : '—';
+      const sacas = Array.from({length: lg.qtd}, (_, i) =>
+        '<span style="background:var(--ok);color:#fff;border-radius:10px;padding:2px 9px;font-weight:700;font-size:12px;margin:2px;display:inline-block">&#10003; Saca ' + (i+1) + '</span>'
+      ).join('');
+
+      el.innerHTML =
+        '<div style="background:var(--surf2);border-radius:var(--rs);padding:12px;border:1.5px solid var(--bdr)">' +
+        '<div style="font-size:17px;font-weight:900;margin-bottom:8px">' + sacaId + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:12px;margin-bottom:10px">' +
+        '<span><b>Rota:</b> ' + (lg.rota || '—') + '</span>' +
+        '<span><b>SVC:</b> ' + (lg.svc || '—') + '</span>' +
+        '<span><b>ETA:</b> ' + eta + '</span>' +
+        '<span><b>Total:</b> ' + lg.qtd + ' saca(s)</span>' +
+        '<span style="grid-column:1/-1"><b>Resp:</b> ' + (lg.responsavel || '—') + '</span>' +
+        '</div>' +
+        '<div style="line-height:1.8">' + sacas + '</div>' +
+        '</div>';
+    }
+
+    // Restaurar UI da operação ao carregar
+    opRenderUI();
   </script>
   <div id="cfgDrawerOverlay" onclick="toggleConfig()"></div>
   <div id="swUpdateBanner" onclick="aplicarAtualizacao()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1f63;color:#FFE600;padding:14px 16px;text-align:center;z-index:99999;cursor:pointer;font-weight:800;font-size:14px;font-family:'Inter',sans-serif;align-items:center;justify-content:center;gap:8px;box-shadow:0 -2px 12px rgba(0,0,0,.3)">
