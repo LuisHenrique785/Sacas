@@ -249,43 +249,7 @@
     #status{margin-top:10px;font-size:14px;text-align:center;padding:10px;border-radius:8px;display:none;}
 
     /* ═══ MODALS (unchanged) ═══ */
-    .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:10;}
-    #modalEditor{z-index:20;}
-    .m-cont{background:#fff;margin:8% auto;padding:20px;width:88%;max-width:380px;border-radius:15px;max-height:80vh;overflow-y:auto;}
-    .ranking-item{padding:8px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:8px;}
-    .barra-fundo{background:#e5e5ea;border-radius:4px;height:8px;flex:1;}
-    .barra-fill{height:8px;border-radius:4px;}
-    .upload-box{border:2px dashed #ccc;border-radius:10px;padding:14px;margin:8px 0;text-align:center;cursor:pointer;position:relative;transition:border-color .2s;}
-    .upload-box:hover,.upload-box.has-file{border-color:#007aff;background:#f0f6ff;}
-    .upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-    .upload-label{font-size:13px;color:#555;pointer-events:none;}
-    .upload-preview{font-size:12px;color:#00a650;margin-top:4px;font-weight:bold;pointer-events:none;}
-    .progress-bar{height:6px;background:#e5e5ea;border-radius:3px;margin:8px 0;overflow:hidden;}
-    .progress-fill{height:6px;background:#007aff;border-radius:3px;transition:width .3s;}
-    .m-cont-log{background:#fff;margin:4% auto;padding:20px;width:95%;max-width:720px;border-radius:15px;max-height:90vh;overflow-y:auto;}
-    .filter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px;}
-    .filter-grid label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#888;display:block;margin-bottom:3px;}
-    .filter-grid input{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;}
-    .log-table{width:100%;border-collapse:collapse;font-size:12px;}
-    .log-table th{background:#1a1f63;color:#FFE600;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;white-space:nowrap;position:sticky;top:0;}
-    .log-table td{padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;color:#333;}
-    .log-table tr:nth-child(even) td{background:#fafafa;}
-    .log-table tr:hover td{background:#f0f2ff;}
-    .log-table-wrap{overflow-x:auto;max-height:400px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;margin-top:10px;}
-    .log-info{font-size:12px;color:#666;margin:6px 0;min-height:16px;}
-    .log-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
-    .btn-export{padding:8px 14px;background:#00a650;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
-    .btn-buscar{width:100%;padding:11px;background:#6c3dd3;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:6px;}
-    .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e0e0e0;}
-    .tab-btn{flex:1;padding:10px 8px;border:none;background:#f2f2f7;color:#666;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-2px;}
-    .tab-btn.tab-active{background:#fff;color:#6c3dd3;border-bottom-color:#6c3dd3;}
-    .tab-sec{display:none;}.tab-sec.tab-vis{display:block;}
-    .motivo-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
-    .motivo-badge.nf{background:#ffdce0;color:#c0392b;}.motivo-badge.imp{background:#fff3cd;color:#856404;}
-    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-    .m-cont-livre{background:#fff;margin:3% auto;padding:22px;width:95%;max-width:600px;border-radius:15px;max-height:94vh;overflow-y:auto;}
-    .libre-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+
     .libre-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
     .lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#888;display:block;margin-bottom:4px;}
     .lbl-input{width:100%;padding:9px 11px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px;}
@@ -595,55 +559,7 @@
 
       <!-- Colar dados Meli -->
       <div style="margin-bottom:10px">
-        <button onclick="toggleMeliPaste()" style="width:100%;padding:8px;background:#f0f0f5;color:#1a1f63;border:1.5px dashed #aab;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">&#128203; Colar dados da página do Meli</button>
-        <div id="meliPasteArea" style="display:none;margin-top:6px">
-          <textarea id="meliPasteText" rows="5" placeholder="Copie tudo da página do pedido Meli (Ctrl+A, Ctrl+C) e cole aqui..." style="width:100%;box-sizing:border-box;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;resize:vertical;font-family:inherit"></textarea>
-          <button onclick="parseMeliPaste()" style="width:100%;padding:8px;background:#1a1f63;color:#FFE600;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">&#10003; PREENCHER CAMPOS AUTOMATICAMENTE</button>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div>
-          <label style="font-size:12px;color:#888;font-weight:600">ID / CÓDIGO DE BARRAS</label>
-          <input id="meliId" type="text" placeholder="Ex: BR012345678901" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:1px">
-        </div>
-        <div>
-          <label style="font-size:12px;color:#888;font-weight:600">ROTA</label>
-          <input id="meliRota" type="text" placeholder="Ex: XSP5" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:15px">
-        </div>
-        <div>
-          <label style="font-size:12px;color:#888;font-weight:600">TIPO DE ENTREGA</label>
-          <div style="display:flex;gap:0;border:1.5px solid #ddd;border-radius:8px;overflow:hidden;margin-top:3px">
-            <button id="meliTipoR" onclick="setMeliTipo('R')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#1a1f63;color:#FFE600">R<br><span style="font-size:10px;font-weight:400">Residencial</span></button>
-            <button id="meliTipoC" onclick="setMeliTipo('C')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#f5f5f7;color:#555">C<br><span style="font-size:10px;font-weight:400">Comercial</span></button>
-            <button id="meliTipoA" onclick="setMeliTipo('A')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#f5f5f7;color:#555">A<br><span style="font-size:10px;font-weight:400">Agência</span></button>
-          </div>
-        </div>
-        <div>
-          <label style="font-size:12px;color:#888;font-weight:600">NOME DO COMPRADOR</label>
-          <input id="meliNome" type="text" placeholder="Nome completo" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
-        </div>
-        <div>
-          <label style="font-size:12px;color:#888;font-weight:600">ENDEREÇO</label>
-          <input id="meliEndereco" type="text" placeholder="Rua, número" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
-        </div>
-        <div style="display:flex;gap:8px">
-          <div style="flex:1">
-            <label style="font-size:12px;color:#888;font-weight:600">CEP</label>
-            <input id="meliCep" type="text" placeholder="00000-000" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
-          </div>
-          <div style="flex:2">
-            <label style="font-size:12px;color:#888;font-weight:600">CIDADE / ESTADO</label>
-            <input id="meliCidade" type="text" placeholder="São Paulo / SP" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
-          </div>
-        </div>
-        <div>
-          <label style="font-size:12px;color:#888;font-weight:600">COMPLEMENTO</label>
-          <input id="meliComp" type="text" placeholder="Apto, bloco, referência..." style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
-        </div>
-      </div>
-
-      <div style="display:flex;gap:8px;margin-top:14px">
+        <button o
         <button onclick="imprimirMeli()" style="flex:1;padding:11px;background:#FFE600;color:#1a1f63;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer">&#128438; IMPRIMIR</button>
         <button onclick="fecharModal('modalMeli')" style="flex:1;padding:11px;background:#f2f2f7;color:#333;border:none;border-radius:10px;font-size:14px;cursor:pointer">FECHAR</button>
       </div>
@@ -837,22 +753,7 @@
           ^CI28 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ encoding UTF-8<br>
           ^PW<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ largura em dots (mm × 8)<br>
           ^LL<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ altura em dots (mm × 8)<br>
-          ^FO<i>x</i>,<i>y</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ posicao do campo<br>
-          ^A0N,<i>h</i>,<i>w</i> &nbsp;&nbsp;&nbsp;→ fonte (h=altura, w=largura)<br>
-          ^FB<i>w</i>,1,0,C &nbsp;&nbsp;→ texto centralizado (largura w)<br>
-          ^FD<i>texto</i>^FS &nbsp;→ conteudo do campo<br>
-          ^BQN,2,<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;→ QR Code (n=tamanho 1-10)<br>
-          ^FDQA,<i>dado</i>^FS → dado do QR Code<br>
-          ^XZ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ fim do label
-        </div>
-      </details>
-
-      <!-- Area ZPL -->
-      <span class="lbl">Conteudo ZPL</span>
-      <textarea class="zpl-area" id="zplContent"
-        placeholder="^XA&#10;^CI28&#10;^PW640&#10;^LL320&#10;^FO20,20^A0N,40,40^FDSeu texto^FS&#10;^XZ"></textarea>
-
-      <!-- Preview da etiqueta -->
+          ^FO<
       <div id="zplPreview" style="display:none;margin:12px 0;border-radius:10px;overflow:hidden;border:1px solid #d1d1d6">
         <div style="background:#1a1f63;color:#FFE600;padding:8px 14px;display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:12px;font-weight:800;letter-spacing:.5px">&#128065; PREVIEW DA ETIQUETA</span>
@@ -1028,46 +929,7 @@
     // ================================================================
 
     let dadosBase = null;  // rows parsed do CSV Base
-    let dadosRota = null;  // rows parsed do CSV Rota
-    let _rotaMetaTemp    = null; // {rota → {minEta, nodos[]}} aguardando import
-    let _sacaNodoMapTemp = null; // {saca_id → nodo} aguardando import
-    let ultimoZPL = null, ultimoIP = null;
-    let historicoSessao = [];
-
-    // ---- Gerenciamento de SVCs ----
-    function getSVCAll() {
-      try {
-        const stored = JSON.parse(localStorage.getItem('svcOptions') || 'null');
-        if (Array.isArray(stored) && stored.length) return stored;
-      } catch (_) {}
-      return ['SMG3', 'SSP14', 'SSP11'];
-    }
-    function saveSVCOptions(list) { localStorage.setItem('svcOptions', JSON.stringify(list)); }
-
-    function populateSvcDatalist() {
-      const list = getSVCAll();
-      document.getElementById('svcList').innerHTML = list.map(v => `<option value="${v}">`).join('');
-    }
-    function populateSvcUpload() {
-      const list = getSVCAll();
-      const sel = document.getElementById('svcUpload');
-      sel.innerHTML = '<option value="">-- Selecione o SVC --</option>' +
-        list.map(v => `<option value="${v}">${v}</option>`).join('');
-    }
-    function checkImportBtn() {
-      const svc = document.getElementById('svcUpload').value;
-      document.getElementById('btnImportar').disabled = !svc || (!dadosBase && !dadosRota);
-    }
-    function toggleManageSVC() {
-      const p = document.getElementById('svcManagePanel');
-      p.style.display = p.style.display === 'none' ? 'block' : 'none';
-      if (p.style.display === 'block') renderManageSVC();
-    }
-    function renderManageSVC() {
-      const list   = getSVCAll();
-      const coords = getSVCCoords();
-      document.getElementById('svcManageList').innerHTML = list.map((v, i) => {
-        const c = coords[v];
+    let dadosRota = null; 
         const coordTxt = c
           ? `<span style="font-size:10px;color:#888;font-weight:400">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}</span>`
           : `<span style="font-size:10px;color:#bbb;font-weight:400">sem coord</span>`;
@@ -1440,29 +1302,6 @@
           <button onclick="reimprimirMeli(${i})" style="padding:5px 10px;background:#1a1f63;color:#FFE600;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px">↩ Reimpr.</button>
         </div>`
       ).join('');
-    }
-
-    async function reimprimirMeli(idx) {
-      const h = getMeliHistory();
-      if (!h[idx]) return;
-      const zpl  = h[idx].zpl;
-      const mode = localStorage.getItem('printMode') || 'wifi';
-      if (mode === 'usb') {
-        const ok = await imprimirViaUSB(zpl);
-        if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
-      } else if (mode === 'bt') {
-        const ok = await imprimirViaBluetooth(zpl);
-        if (ok) { toast('✅ Reimpresso via Bluetooth!', 'ok'); beep('ok'); }
-      } else {
-        const ip = document.getElementById('ip').value.trim();
-        if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
-        enviarZPLWifi(ip, zpl)
-          .then(() => { toast('✅ Etiqueta reimprimida!', 'ok'); beep('ok'); })
-          .catch(() => { toast('❌ Erro ao reimprimir.', 'err'); beep('err'); });
-      }
-    }
-
-    async function imprimirMeli() {
       const zpl = gerarZPLMeli();
       if (!zpl) return;
       const mode = localStorage.getItem('printMode') || 'wifi';
@@ -1734,16 +1573,7 @@
         if (e.name === 'NotFoundError') {
           st.style.color = '#92400e';
           st.innerHTML = `<b>Impressora nao encontrada via BLE.</b><br>
-            Verifique:<br>
-            1&#65039;&#8419; Permissao <b>Dispositivos proximos</b> concedida ao Chrome<br>
-            &nbsp;&nbsp;&nbsp;(Configuracoes do Android &rarr; Apps &rarr; Chrome &rarr; Permissoes)<br>
-            2&#65039;&#8419; BLE ativo na impressora: no Printer Setup,<br>
-            &nbsp;&nbsp;&nbsp;Settings &rarr; Bluetooth &rarr; <b>Bluetooth LE</b> &rarr; On<br>
-            3&#65039;&#8419; Se nao aparecer: <a href="#" onclick="setPrintMode('wifi');return false" style="color:var(--brand)">use WiFi</a> — verifique o IP atual na impressora`;
-        } else {
-          st.style.color = '#c0392b'; st.innerHTML = '&#10060; ' + e.message;
-        }
-      }
+      
     }
 
     async function imprimirViaBluetooth(zpl) {
@@ -1861,27 +1691,7 @@
       document.getElementById('vshiftVal').innerText = savedVShift;
       atualizarBotaoOrient();
       populateSvcDatalist();
-      // Auto-collapse config se ja configurado
-      const cfgBody = document.getElementById('configBody');
-      if (savedIp || savedSvc || savedResp) {
-        cfgBody.classList.remove('cfg-open');
-        document.getElementById('cfgArrow').textContent = '▼ expandir';
-      } else {
-        cfgBody.classList.add('cfg-open');
-        document.getElementById('cfgArrow').textContent = '▲ recolher';
-      }
-      // Garante coordenadas iniciais do SMG3
-      const _c = getSVCCoords();
-      if (!_c['SMG3']) { _c['SMG3'] = { lat: -22.3477512, lng: -45.9251672 }; saveSVCCoords(_c); }
-      // Auto-detecta SVC por GPS se nenhum estiver selecionado
-      detectarSVCPorLocalizacao();
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        document.getElementById('setupBanner').style.display = 'block';
-      }
-      document.getElementById('btPrint').disabled = false;
-      atualizarBadge();
-      atualizarContador();
-      if (savedIp) testarImpressora();
+ 
       renderPrinters();
       renderOperadores();
       setPrintMode(localStorage.getItem('printMode') || 'wifi');
@@ -2032,41 +1842,7 @@
                 </div>`;
             }
           });
-      });
-
-      await Promise.all(probes);
-      btn.disabled = false;
-
-      const elapsed = Date.now() - t0;
-      if (!found.length && elapsed < 400 && location.protocol === 'https:') {
-        row.innerHTML = `<div style="color:#92400e;font-weight:700;margin-bottom:4px">&#9888; Bloqueado pelo Chrome (HTTPS)</div>
-          <div style="color:var(--tx2)">Libere no &#128274; cadeado → Configuracoes do site → Conteudo nao seguro → Permitir → recarregue.</div>`;
-        return;
       }
-
-      if (!found.length) {
-        row.innerHTML = `<div style="color:var(--tx2);margin-bottom:6px">Nenhuma impressora respondeu em ${subnet}.x</div>`;
-        _mostrarInputSubnet(row, subnet);
-        return;
-      }
-
-      // Scan bem-sucedido: salva subnet para este SVC
-      const svcAtual = getV('svc');
-      if (svcAtual) salvarSubnetParaSVC(svcAtual, subnet);
-
-      const svcTag = svcAtual ? ` <span style="background:var(--brand);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px">${svcAtual}</span>` : '';
-      row.innerHTML = `<div style="font-weight:800;color:var(--brand);margin-bottom:6px">&#128247; ${found.length} impressora(s) em ${subnet}.x${svcTag}:</div>` +
-        found.map(ip =>
-          `<span onclick="selecionarIPDescoberto('${ip}')" style="display:inline-flex;align-items:center;gap:5px;background:var(--ok);color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer;margin:2px 2px 2px 0">
-            &#128247; ${ip}
-          </span>`
-        ).join('') +
-        `<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Toque para selecionar · <span onclick="_mostrarInputSubnet(document.getElementById('discoveryRow'), '${subnet}')" style="cursor:pointer;text-decoration:underline">Outra subnet</span></div>`;
-    }
-
-    function atualizarAvisoHTTPS() {
-      const warn = document.getElementById('httpsWarnMain');
-      if (!warn) return;
       const mode = localStorage.getItem('printMode') || 'wifi';
       const ip = document.getElementById('ip').value.trim();
       warn.style.display = (location.protocol === 'https:' && mode === 'wifi' && ip) ? 'block' : 'none';
@@ -2231,24 +2007,7 @@
         const { pw, ll, label } = getDims();
         const ajustado = ajustarZPL(e.target.result, pw, ll);
         document.getElementById('zplContent').value = ajustado;
-        document.getElementById('livreStatus').style.color = '#1a1f63';
-        document.getElementById('livreStatus').innerText =
-          '✔ Arquivo carregado e dimensoes ajustadas para ' + label + '. Verifique e edite se necessario.';
-        document.getElementById('btnAjustarDim').style.display = 'none';
-      };
-      reader.readAsText(file, 'UTF-8');
-      input.value = '';
-    }
-
-    function abrirImpressaoLivre() {
-      document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
-      document.getElementById('labelSize').value = '80x40';
-      document.getElementById('customSizeRow').style.display = 'none';
-      document.getElementById('livreChip').innerText = '80 × 40 mm';
-      document.getElementById('zplContent').value = '';
-      document.getElementById('livreStatus').innerText = '';
-      document.getElementById('btnAjustarDim').style.display = 'none';
-      document.getElementById('modalLivre').style.display = 'block';
+      
     }
 
     // ---- Inserir imagem — abre editor visual ----
@@ -2382,14 +2141,6 @@
       document.getElementById('edX').value = Math.round(edSt.xDots);
       document.getElementById('edY').value = Math.round(edSt.yDots);
     }
-    function syncRotBtns() {
-      [0,90,180,270].forEach(d => {
-        const b = document.getElementById('rotBtn'+d);
-        if (b) b.classList.toggle('rot-active', edSt.rot === d);
-      });
-    }
-    function setRot(deg) { edSt.rot = deg; syncRotBtns(); renderEdCanvas(); }
-    function onEdSlider(v) { edSt.pct = +v; document.getElementById('edSizeLbl').innerText = v+'%'; renderEdCanvas(); }
     function onEdPos() {
       edSt.xDots = +document.getElementById('edX').value || 0;
       edSt.yDots = +document.getElementById('edY').value || 0;
@@ -2696,23 +2447,7 @@
 
         errosAtual = rows;
         if (!errosAtual.length) {
-          body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Nenhum erro encontrado</td></tr>';
-          info.innerText = '0 registros';
-          return;
-        }
-        info.innerText = errosAtual.length + ' registro' + (errosAtual.length > 1 ? 's' : '');
-        body.innerHTML = errosAtual.map(r => {
-          const isNF  = (r.motivo || '').toLowerCase().includes('encontrada');
-          const badge = '<span class="motivo-badge ' + (isNF ? 'nf' : 'imp') + '">' + (r.motivo || '') + '</span>';
-          return '<tr>' +
-            '<td>' + (r.data || '') + '</td>' +
-            '<td>' + (r.responsavel || '') + '</td>' +
-            '<td><b>' + (r.saca_id || '') + '</b></td>' +
-            '<td style="text-align:center">' + (r.qtd ?? '') + '</td>' +
-            '<td>' + (r.ip || '') + '</td>' +
-            '<td>' + badge + '</td>' +
-            '<td>' + (r.auditoria || '') + '</td>' +
-            '</tr>';
+     
         }).join('');
       } catch (e) {
         body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b;padding:24px">Erro: ' + e.message + '</td></tr>';
@@ -2947,45 +2682,6 @@
       el.style.background = cor || '#e6ffed';
       el.innerText = msg;
     }
-
-    // -------- STATUS DAS ROTAS --------
-    let _rankingRotaRows = [];
-    let _rankingSacasHoje = new Set();
-
-    async function verStatus() {
-      document.getElementById('modalRanking').style.display = 'block';
-      document.getElementById('lista').innerHTML = 'Carregando...';
-      document.getElementById('pendentesRotaWrap').style.display = 'none';
-      try {
-        const hoje = dataHoje();
-        const svcAtual = getV('svc');
-        let rotaQ = db.from('rota').select('saca_id,rota,nodo,eta');
-        if (svcAtual) rotaQ = rotaQ.eq('svc', svcAtual);
-        let logHojeQ = db.from('log').select('saca_id').like('data', hoje + '%');
-        if (svcAtual) logHojeQ = logHojeQ.eq('svc', svcAtual);
-        const [rotaRows, logRows] = await Promise.all([
-          sbCheck(await rotaQ),
-          sbCheck(await logHojeQ)
-        ]);
-
-        _rankingRotaRows = rotaRows;
-        _rankingSacasHoje = new Set(logRows.map(r => (r.saca_id || '').trim()));
-
-        // Monta rotaMeta com ETA mínimo por rota direto do banco
-        // ETA "00:00:00" ou vazio = sem prioridade de horário (vai pro fim)
-        const rotaMeta = {};
-        for (const r of rotaRows) {
-          if (!r.rota) continue;
-          if (!rotaMeta[r.rota]) rotaMeta[r.rota] = { minEta: '' };
-          const eta = (r.eta || '').trim();
-          if (!eta || /^0+[:h]?0*[:h]?0*$/.test(eta)) continue; // ignora 00:00:00 / 0h / vazio
-          if (!rotaMeta[r.rota].minEta || eta < rotaMeta[r.rota].minEta)
-            rotaMeta[r.rota].minEta = eta;
-        }
-
-        let totalPorRota = {};
-        for (const r of rotaRows) {
-          if (r.rota) totalPorRota[r.rota] = (totalPorRota[r.rota] || 0) + 1;
         }
 
         let progresso = {};
@@ -3185,27 +2881,7 @@
             const _y4  = inv ? ll - ty4 - 24       : ty4;
             zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
-                   '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
-                   '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
-                   '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
-          }
-        } else {
-          // Layout proporcional para 100×100, 100×150, 150×100
-          // Sem lógica de orientação — posições fixas, ajuste via slider Vertical
-          const sy  = ll / 800;
-          const qrSz = 7 * 29;
-          const qrX  = Math.round((pw - qrSz) / 2);
-          const qrY  = Math.round(20  * sy);
-          const y1   = Math.round(350 * sy);
-          const y2   = Math.round(440 * sy);
-          const y3   = Math.round(520 * sy);
-          const y4   = Math.round(565 * sy);
-          const fA   = Math.round(75  * sy);
-          const fB   = Math.round(65  * sy);
-          const fC   = Math.round(38  * sy);
-          for (let k = 1; k <= qtdVal; k++) {
-            const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
+             
             zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                    '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
@@ -3405,23 +3081,7 @@
         if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
       } else if (mode === 'bt') {
         const ok = await imprimirViaBluetooth(ultimoZPL);
-        if (ok) { toast('✅ Reimpresso via Bluetooth!', 'ok'); beep('ok'); }
-      } else {
-        if (!ultimoIP) return;
-        enviarZPLWifi(ultimoIP, ultimoZPL)
-          .then(() => { toast('✅ Reimpresso com sucesso!', 'ok'); beep('ok'); })
-          .catch(() => { toast('❌ Erro na impressora.', 'err'); beep('err'); });
-      }
-    }
-
-    // ---- Histórico da sessão ----
-    function adicionarHistorico(sacaId, rota, qtd) {
-      historicoSessao.unshift({ sacaId, rota, qtd, hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) });
-      if (historicoSessao.length > 5) historicoSessao.pop();
-      renderHistorico();
-    }
-    function renderHistorico() {
-      const wrap = document.getElementById('historicoWrap');
+        if 
       const list = document.getElementById('historicoList');
       if (!historicoSessao.length) { wrap.style.display = 'none'; return; }
       wrap.style.display = 'block';
@@ -3576,38 +3236,7 @@
     function testarImpressora() {
       const ip  = document.getElementById('ip').value.trim();
       const dot = document.getElementById('printerDot');
-      const hdDot = document.getElementById('hdPrinterDot');
-      const warn = document.getElementById('mixedContentWarn');
-      const setColor = c => { dot.style.background = c; if (hdDot) hdDot.style.background = c; };
-      if (warn) warn.style.display = (location.protocol === 'https:' && ip) ? 'block' : 'none';
-      if (!ip) { setColor('#6b7280'); return; }
-      setColor('#ff9500');
-      const ctrl = new AbortController();
-      const tid  = setTimeout(() => ctrl.abort(), 2500);
-      fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
-        .then(() => {
-          clearTimeout(tid); setColor('#00a650');
-          if (warn) warn.style.display = 'none';
-          const wm = document.getElementById('httpsWarnMain');
-          if (wm) wm.style.display = 'none';
-        })
-        .catch(e80 => {
-          clearTimeout(tid);
-          // Porta 80 falhou — testa porta RAW 9100 como fallback
-          const ctrl2 = new AbortController();
-          const t2 = setTimeout(() => ctrl2.abort(), 2000);
-          const t2start = Date.now();
-          fetch('http://' + ip + ':9100', { method: 'GET', mode: 'no-cors', signal: ctrl2.signal })
-            .catch(e90 => {
-              clearTimeout(t2);
-              // Se respondeu antes do abort (< 1800ms), impressora está online mas sem HTTP na 80
-              if (e90.name !== 'AbortError' && (Date.now() - t2start) < 1800) {
-                setColor('#f59e0b'); // amarelo = RAW disponivel
-              } else {
-                setColor('#c0392b'); // vermelho = sem resposta
-              }
-            })
-            .then(() => { clearTimeout(t2); }); // porta 9100 respondeu com HTTP (raro)
+   
         });
     }
 
@@ -3775,43 +3404,7 @@
         const diasArr = Object.entries(diasMap);
         const maxDia  = Math.max(...diasArr.map(([, n]) => n), 1);
         const hojeStr = dataHoje();
-        const barChart = `<div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:8px">ÚLTIMOS 7 DIAS</div>
-          <div style="display:flex;align-items:flex-end;gap:3px;height:54px;margin-bottom:4px">
-            ${diasArr.map(([d, n]) => {
-              const pct   = Math.round(n / maxDia * 100);
-              const isHj  = d === hojeStr;
-              const parts = d.split('/');
-              const dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-              const label = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' });
-              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end">
-                <div style="font-size:9px;font-weight:800;color:${isHj ? '#1a1f63' : '#aaa'};margin-bottom:1px">${n > 0 ? n : ''}</div>
-                <div style="width:100%;background:${isHj ? '#1a1f63' : '#c9cbef'};border-radius:3px 3px 0 0;height:${Math.max(pct, n > 0 ? 4 : 1)}%"></div>
-                <div style="font-size:8px;color:${isHj ? '#1a1f63' : '#aaa'};font-weight:${isHj ? '800' : '600'};text-transform:capitalize;margin-top:2px">${label}</div>
-              </div>`;
-            }).join('')}
-          </div>`;
-
-        cont.innerHTML = `
-          <div style="background:#e8eaf6;border-radius:12px;padding:14px;margin-bottom:12px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-weight:900;font-size:13px;color:#1a1f63">TOTAL GERAL</span>
-              <span style="font-size:13px;font-weight:700;color:${corGeral}">${pctGeral}%</span>
-            </div>
-            <div style="background:#c9cbef;border-radius:4px;height:10px;overflow:hidden;margin-bottom:8px">
-              <div style="background:${corGeral};height:10px;border-radius:4px;width:${pctGeral}%;transition:width .5s"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:#555">
-              <span>${printGeral} impressas de ${totalGeral}</span>${erroGeralBadge}
-            </div>
-          </div>
-          <div style="background:#f5f7fc;border-radius:12px;padding:14px;margin-bottom:14px">${barChart}</div>
-          <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:10px">SVCs</div>
-          ${svcCards}
-        `;
-      } catch (e) {
-        const cont2 = document.getElementById('dashContent');
-        if (cont2) cont2.innerHTML = '<div style="color:#c0392b">Erro: ' + e.message + '</div>';
-      }
+  
     }
 
     async function abrirErrosHoje() {
@@ -3825,43 +3418,7 @@
     }
 
     // ---- Exportar PDF ----
-    function exportarPDF() {
-      const svc  = getV('svc') || 'Todos';
-      const rows = document.querySelectorAll('#logBody tr');
-      let tabela = '';
-      rows.forEach(r => { tabela += r.outerHTML; });
-      const win = window.open('', '_blank');
-      win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-        <title>Log Auditoria — ${svc}</title>
-        <style>
-          body { font-family: Arial, sans-serif; font-size: 11px; color: #222; }
-          h2 { color: #1a1f63; margin-bottom: 4px; }
-          p { color: #666; margin: 0 0 12px; font-size: 10px; }
-          table { width: 100%; border-collapse: collapse; }
-          th { background: #1a1f63; color: #FFE600; padding: 6px 8px; text-align: left; font-size: 10px; }
-          td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
-          tr:nth-child(even) td { background: #f9f9f9; }
-          @media print { body { margin: 0; } }
-        </style></head><body>
-        <h2>📦 Log de Auditoria — ${svc}</h2>
-        <p>Gerado em ${new Date().toLocaleString('pt-BR')} | Sistema Auditoria de Sacas — Mercado Livre</p>
-        <table><thead><tr>
-          <th>Data / Hora</th><th>Responsavel</th><th>Saca ID</th><th>Qtd</th><th>QR Mae</th><th>Rota</th><th>Auditoria</th>
-        </tr></thead><tbody>${tabela}</tbody></table>
-        <script>window.onload=()=>{window.print();}<\/script>
-        </body></html>`);
-      win.document.close();
-    }
-
-    // ---- Romaneio de Rota ----
-    function abrirRomaneio() {
-      const today = new Date().toISOString().slice(0, 10);
-      document.getElementById('romDe').value  = today;
-      document.getElementById('romAte').value = today;
-      document.getElementById('romRota').value      = '';
-      document.getElementById('romAudit').value     = '';
-      document.getElementById('romTransp').value    = '';
-      document.getElementById('romMotorista').value = '';
+  
       document.getElementById('romPlaca').value     = '';
       document.getElementById('modalRomaneio').style.display = 'flex';
     }
@@ -3968,45 +3525,7 @@
         'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
         'thead tr{background:#1a1f63}' +
         'thead th{color:#FFE600;padding:5px 6px;text-align:left;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}' +
-        'tbody td{padding:3px 6px;border-bottom:1px solid #eee;font-size:9px;vertical-align:middle}' +
-        'tbody tr:nth-child(even) td{background:#f9faff}' +
-        '.tot td{background:#1a1f63!important;color:#FFE600!important;font-weight:700!important;font-size:11px!important;border:none!important;padding:7px 8px!important}' +
-        '.sign-section{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px;page-break-inside:avoid}' +
-        '.sign-box{text-align:center}' +
-        '.sign-line{border-top:1.5px solid #333;margin:30px 0 5px}' +
-        '.sign-label{font-size:9px;font-weight:700;color:#1a1f63;text-transform:uppercase;letter-spacing:.5px}' +
-        '.sign-sub{font-size:9px;color:#888;margin-top:3px}' +
-        '.footer{margin-top:14px;padding-top:8px;border-top:1px solid #ddd;font-size:8px;color:#aaa;text-align:center}' +
-        '@media print{body{padding:0}@page{size:A4;margin:8mm}.no-print{display:none!important}}' +
-        '</style>' +
-        '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>' +
-        '</head><body>' +
-        '<div class="no-print" style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:999">' +
-        '<button onclick="window.print()" style="background:#1a1f63;color:#FFE600;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
-        '<button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer">✕ Fechar</button>' +
-        '</div>' +
-        '<div class="header">' +
-        '<svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 56" width="72" height="45">' +
-        '<rect width="90" height="56" rx="8" fill="#FFE600"/>' +
-        '<circle cx="23" cy="9" r="5.5" fill="#1a1f63"/>' +
-        '<path d="M14,41 L17,23 C18,19 20.5,17.5 23,17.5 C25.5,17.5 28,19 29,23 L32,41 Z" fill="#1a1f63"/>' +
-        '<path d="M17,27 L7,15" stroke="#1a1f63" stroke-width="4.5" stroke-linecap="round"/>' +
-        '<circle cx="67" cy="9" r="5.5" fill="#1a1f63"/>' +
-        '<path d="M58,41 L61,23 C62,19 64.5,17.5 67,17.5 C69.5,17.5 72,19 73,23 L76,41 Z" fill="#1a1f63"/>' +
-        '<path d="M73,27 L83,15" stroke="#1a1f63" stroke-width="4.5" stroke-linecap="round"/>' +
-        '<ellipse cx="45" cy="27" rx="11" ry="8.5" fill="#1a1f63"/>' +
-        '<text x="45" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-size="8.5" font-weight="800" fill="#1a1f63">mercado livre</text>' +
-        '</svg>' +
-        '<div class="title-block"><h1>Romaneio de Rota</h1><p>Sistema de Auditoria de Sacas</p></div>' +
-        '<div class="qr-wrap" id="qr"></div>' +
-        '</div>' +
-        '<div class="info-grid">' +
-        '<div class="ic"><div class="lb">SVC / Unidade</div><div class="vl">' + svc + '</div></div>' +
-        '<div class="ic"><div class="lb">Rota(s)</div><div class="vl">' + rotasLista + '</div></div>' +
-        '<div class="ic"><div class="lb">Período</div><div class="vl">' + periodoDe + ' a ' + periodoAte + '</div></div>' +
-        '<div class="ic"><div class="lb">Transportadora</div><div class="vl">' + transp + '</div></div>' +
-        '<div class="ic"><div class="lb">Motorista</div><div class="vl">' + (motorista || '—') + '</div></div>' +
-        '<div class="ic"><div class="lb">Placa</div><div class="vl">' + (placa || '—') + '</div></div>' +
+        '
         '<div class="ic"><div class="lb">Total de Sacas</div><div class="vl ok">' + totalSacas + '</div></div>' +
         '</div>' +
         '<table><thead><tr>' +
@@ -4105,45 +3624,7 @@
       const testeTag = _opAtiva.teste ? '  🧪 TESTE' : '';
       document.getElementById('opIdLabel').textContent =
         _opAtiva.id + testeTag + '  ·  ' + _opAtiva.sacas.length + ' container(s)  ·  ' + totalSacas + ' saca(s)';
-      const lista = document.getElementById('opLista');
-      if (!_opAtiva.sacas.length) {
-        lista.innerHTML = '<span style="color:var(--tx3);font-size:12px">Nenhuma saca adicionada ainda.</span>';
-        return;
-      }
-      lista.innerHTML = _opAtiva.sacas.map(s =>
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 7px;' +
-        'border-radius:4px;background:var(--surf2);margin-bottom:3px;font-size:12px">' +
-        '<span style="font-weight:700">' + s.saca_id + '</span>' +
-        '<span style="color:var(--tx2)">' + (s.rota || '—') + '</span>' +
-        '<span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-weight:700">' +
-        s.qtd + ' saca(s)</span></div>'
-      ).join('');
-    }
-
-    function setOpStatus(msg, bg) {
-      const el = document.getElementById('opStatus');
-      if (!el) return;
-      el.textContent = msg;
-      if (bg === '#d4edda') { el.style.background = bg; el.style.color = '#155724'; }
-      else if (bg === '#ffdce0') { el.style.background = bg; el.style.color = '#721c24'; }
-      else { el.style.background = bg || 'var(--surf2)'; el.style.color = 'var(--tx2)'; }
-    }
-
-    function opIniciar() {
-      const now = new Date();
-      const p = n => String(n).padStart(2,'0');
-      const id = 'OP-' + now.getFullYear() + p(now.getMonth()+1) + p(now.getDate()) +
-                 '-' + p(now.getHours()) + p(now.getMinutes());
-      const teste = opIsTeste();
-      _opAtiva = { id, inicio: now.toISOString(), teste, sacas: [] };
-      localStorage.setItem('opAtiva', JSON.stringify(_opAtiva));
-      opRenderUI();
-      toast((teste ? '🧪 [TESTE] ' : '') + 'Operação ' + id + ' iniciada!', 'ok');
-      setTimeout(() => document.getElementById('opSacaId').focus(), 150);
-    }
-
-    function opRomaneio() {
-      if (_opAtiva && _opAtiva.sacas.length) abrirRomaneio();
+      const lista = document
       else toast('Nenhuma saca na operação.', 'warn');
     }
 
@@ -4246,43 +3727,6 @@
       document.getElementById('opSacaId').focus();
     }
 
-    function opGerarZPL(entry, k) {
-      const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
-      const dark    = document.getElementById('darkness').value || '30';
-      const svc     = entry.svc;
-      const resp    = getV('resp');
-      const svcResp = zplEscape((svc ? svc + ' - ' : '') + resp);
-      const nMap    = JSON.parse(localStorage.getItem('sacaNodoMap_' + (svc || '')) || '{}');
-      const nodo    = zplEscape(nMap[(entry.saca_id || '').trim()] || '');
-      const rota    = zplEscape(entry.rota || '');
-      const sacaId  = zplEscape(entry.saca_id || '');
-      const audit   = zplEscape(getV('log'));
-      const dataStr = dataHoraAtual();
-      const qr      = k === 1 ? entry.qr_mae : entry.saca_id + ' Saca ' + k;
-      let zpl = '';
-
-      if (pw === 640 && ll === 320) {
-        const inv = isInvertido(), rot = inv ? 'I' : 'N';
-        const qrMag = 3, qrDots = qrMag * 45;
-        const tW = pw - 150 - 5, tX = inv ? pw - 5 : 150;
-        const vOff = Math.round((ll - 166) / 2);
-        const qrY0 = vOff + 10, ty1 = vOff + 10, ty2 = vOff + 65, ty3 = vOff + 112, ty4 = vOff + 142;
-        const _qrY = inv ? ll - qrY0 - qrDots : qrY0;
-        const _y1 = inv ? ll - ty1 - 50 : ty1, _y2 = inv ? ll - ty2 - 42 : ty2;
-        const _y3 = inv ? ll - ty3 - 24 : ty3, _y4 = inv ? ll - ty4 - 24 : ty4;
-        zpl = '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
-          '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
-          '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rota + ' - ' + sacaId + '^FS' +
-          '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + '^FS' +
-          '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
-          '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + audit + '^FS^XZ';
-      } else {
-        const sy = ll / 800, qrSz = 7 * 29;
-        const qrX = Math.round((pw - qrSz) / 2), qrY = Math.round(20 * sy);
-        const y1 = Math.round(350 * sy), y2 = Math.round(440 * sy);
-        const y3 = Math.round(520 * sy), y4 = Math.round(565 * sy);
-        const fA = Math.round(75 * sy), fB = Math.round(65 * sy), fC = Math.round(38 * sy);
-        zpl = '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
           '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
           '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rota + ' - ' + sacaId + '^FS' +
           '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + '^FS' +
@@ -4319,28 +3763,7 @@
       const eta = rotaRows.length ? (rotaRows[0].eta || '—') : '—';
       const sacas = Array.from({length: lg.qtd}, (_, i) =>
         '<span style="background:var(--ok);color:#fff;border-radius:10px;padding:2px 9px;font-weight:700;font-size:12px;margin:2px;display:inline-block">&#10003; Saca ' + (i+1) + '</span>'
-      ).join('');
-
-      el.innerHTML =
-        '<div style="background:var(--surf2);border-radius:var(--rs);padding:12px;border:1.5px solid var(--bdr)">' +
-        '<div style="font-size:17px;font-weight:900;margin-bottom:8px">' + sacaId + '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:12px;margin-bottom:10px">' +
-        '<span><b>Rota:</b> ' + (lg.rota || '—') + '</span>' +
-        '<span><b>SVC:</b> ' + (lg.svc || '—') + '</span>' +
-        '<span><b>ETA:</b> ' + eta + '</span>' +
-        '<span><b>Total:</b> ' + lg.qtd + ' saca(s)</span>' +
-        '<span style="grid-column:1/-1"><b>Resp:</b> ' + (lg.responsavel || '—') + '</span>' +
-        '</div>' +
-        '<div style="line-height:1.8">' + sacas + '</div>' +
-        '</div>';
-    }
-
-    // Restaurar UI da operação ao carregar
-    opRenderUI();
-  </script>
-  <div id="cfgDrawerOverlay" onclick="toggleConfig()"></div>
-  <div id="swUpdateBanner" onclick="aplicarAtualizacao()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1f63;color:#FFE600;padding:14px 16px;text-align:center;z-index:99999;cursor:pointer;font-weight:800;font-size:14px;font-family:'Inter',sans-serif;align-items:center;justify-content:center;gap:8px;box-shadow:0 -2px 12px rgba(0,0,0,.3)">
-    &#128260; Nova versao disponivel &mdash; toque aqui para atualizar
+      
   </div>
 </body>
 </html>
