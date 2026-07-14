@@ -2,7 +2,27 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFE600">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sacas MELI">
+  <title>Sistema Auditoria - Oficial</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ═══ DESIGN SYSTEM ═══ */
+    :root{
+      --brand:#1a1f63; --brand-d:#13174d; --brand-l:#2d3494;
+      --accent:#FFE600;
+      --ok:#00a650; --ok-glow:rgba(0,166,80,.3);
+      --err:#dc2626; --err-bg:#fef2f2; --err-border:#fecaca;
+      --warn:#d97706; --warn-bg:#fffbeb;
       --bg:#eaecf5; --surf:#fff; --surf2:#f8fafd;
       --bdr:#dde1ef; --bdr-focus:#1a1f63;
       --tx:#0d0f1a; --tx2:#5c6882; --tx3:#9ca3b8;
@@ -104,7 +124,37 @@
     @keyframes btn-pulse{0%,100%{box-shadow:0 4px 18px var(--ok-glow),0 1px 3px rgba(0,0,0,.1);}50%{box-shadow:0 4px 28px rgba(0,166,80,.6),0 1px 3px rgba(0,0,0,.1);}}
     .btn-print.printing{animation:btn-pulse .7s infinite;}
 
-
+    /* ═══ SECONDARY BUTTONS ═══ */
+    .btn-reimp{
+      width:100%;padding:11px;border-radius:var(--rs);border:2px solid var(--bdr);
+      background:var(--surf);color:var(--tx2);font-size:13px;font-weight:600;
+      cursor:pointer;margin-top:8px;display:none;font-family:'Inter',sans-serif;
+      transition:border-color .15s,color .15s;
+    }
+    .btn-reimp:hover{border-color:var(--brand);color:var(--brand);}
+    .btn-erros{
+      display:none;width:100%;max-width:400px;padding:12px 16px;margin-bottom:12px;
+      background:linear-gradient(135deg,#fef2f2,#fff1f2);
+      color:var(--err);border:1.5px solid #fecaca;border-radius:12px;
+      cursor:pointer;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;text-align:left;
+      box-shadow:0 2px 10px rgba(220,38,38,.1);
+      transition:transform .15s,box-shadow .15s;
+    }
+    .btn-erros:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(220,38,38,.18);}
+    .btn-atualizar{
+      width:100%;padding:13px;
+      background:linear-gradient(135deg,#f59e0b,#ef7c00);
+      color:#fff;border:none;border-radius:var(--rs);
+      font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+      box-shadow:0 3px 12px rgba(245,158,11,.28);letter-spacing:.3px;
+      transition:all .15s;
+    }
+    .btn-atualizar:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(245,158,11,.38);}
+    .btn-verificar{
+      padding:12px 20px;border:none;border-radius:var(--rs);
+      background:var(--brand);color:var(--accent);
+      font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+      white-space:nowrap;box-shadow:0 2px 10px rgba(26,31,99,.22);
       transition:all .15s;
     }
     .btn-verificar:hover{background:var(--brand-d);box-shadow:0 4px 14px rgba(26,31,99,.3);}
@@ -192,7 +242,84 @@
       .cfg-drawer-title{font-size:14px;font-weight:800;color:var(--brand)}
       [data-dark] .cfg-drawer-title{color:var(--accent)}
     }
-    @media(max-width
+    @media(max-width:699px){.cfg-drawer-close{display:none;}}
+
+    /* ═══ SETUP BANNER ═══ */
+    #setupBanner{background:#fff3cd;border:1px solid #ffc107;padding:14px;border-radius:12px;margin-bottom:12px;font-size:13px;width:100%;max-width:400px;line-height:1.6;display:none;}
+    #status{margin-top:10px;font-size:14px;text-align:center;padding:10px;border-radius:8px;display:none;}
+
+    /* ═══ MODALS (unchanged) ═══ */
+    .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:10;}
+    #modalEditor{z-index:20;}
+    .m-cont{background:#fff;margin:8% auto;padding:20px;width:88%;max-width:380px;border-radius:15px;max-height:80vh;overflow-y:auto;}
+    .ranking-item{padding:8px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+    .barra-fundo{background:#e5e5ea;border-radius:4px;height:8px;flex:1;}
+    .barra-fill{height:8px;border-radius:4px;}
+    .upload-box{border:2px dashed #ccc;border-radius:10px;padding:14px;margin:8px 0;text-align:center;cursor:pointer;position:relative;transition:border-color .2s;}
+    .upload-box:hover,.upload-box.has-file{border-color:#007aff;background:#f0f6ff;}
+    .upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+    .upload-label{font-size:13px;color:#555;pointer-events:none;}
+    .upload-preview{font-size:12px;color:#00a650;margin-top:4px;font-weight:bold;pointer-events:none;}
+    .progress-bar{height:6px;background:#e5e5ea;border-radius:3px;margin:8px 0;overflow:hidden;}
+    .progress-fill{height:6px;background:#007aff;border-radius:3px;transition:width .3s;}
+    .m-cont-log{background:#fff;margin:4% auto;padding:20px;width:95%;max-width:720px;border-radius:15px;max-height:90vh;overflow-y:auto;}
+    .filter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px;}
+    .filter-grid label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#888;display:block;margin-bottom:3px;}
+    .filter-grid input{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:13px;}
+    .log-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .log-table th{background:#1a1f63;color:#FFE600;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;white-space:nowrap;position:sticky;top:0;}
+    .log-table td{padding:7px 10px;border-bottom:1px solid #eee;white-space:nowrap;color:#333;}
+    .log-table tr:nth-child(even) td{background:#fafafa;}
+    .log-table tr:hover td{background:#f0f2ff;}
+    .log-table-wrap{overflow-x:auto;max-height:400px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;margin-top:10px;}
+    .log-info{font-size:12px;color:#666;margin:6px 0;min-height:16px;}
+    .log-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+    .btn-export{padding:8px 14px;background:#00a650;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
+    .btn-buscar{width:100%;padding:11px;background:#6c3dd3;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:6px;}
+    .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e0e0e0;}
+    .tab-btn{flex:1;padding:10px 8px;border:none;background:#f2f2f7;color:#666;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-2px;}
+    .tab-btn.tab-active{background:#fff;color:#6c3dd3;border-bottom-color:#6c3dd3;}
+    .tab-sec{display:none;}.tab-sec.tab-vis{display:block;}
+    .motivo-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+    .motivo-badge.nf{background:#ffdce0;color:#c0392b;}.motivo-badge.imp{background:#fff3cd;color:#856404;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+    .m-cont-livre{background:#fff;margin:3% auto;padding:22px;width:95%;max-width:600px;border-radius:15px;max-height:94vh;overflow-y:auto;}
+    .libre-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+    .libre-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+    .lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#888;display:block;margin-bottom:4px;}
+    .lbl-input{width:100%;padding:9px 11px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px;}
+    .lbl-input:focus{outline:none;border-color:#1a1f63;}
+    .lbl-select{width:100%;padding:9px 11px;border:1.5px solid #d1d1d6;border-radius:8px;font-size:14px;background:#fff;}
+    .zpl-area{width:100%;height:260px;font-family:'SF Mono','Fira Code',monospace;font-size:12px;padding:12px;border:1.5px solid #d1d1d6;border-radius:8px;resize:vertical;line-height:1.5;color:#1a1a1a;background:#fafafa;}
+    .zpl-area:focus{outline:none;border-color:#1a1f63;background:#fff;}
+    .libre-actions{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+    .btn-action{padding:8px 14px;border:1.5px solid #d1d1d6;border-radius:8px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#333;display:flex;align-items:center;gap:6px;}
+    .btn-action:hover{background:#f2f2f7;}
+    .btn-action.file-btn{position:relative;overflow:hidden;}
+    .btn-action.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+    .libre-status{font-size:13px;text-align:center;min-height:20px;margin:8px 0;font-weight:600;}
+    .size-chip{display:inline-block;background:#e8eaf6;color:#1a1f63;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px;}
+    .m-cont-editor{background:#fff;margin:2% auto;padding:20px;width:95%;max-width:580px;border-radius:15px;max-height:96vh;overflow-y:auto;}
+    #edCanvas{display:block;margin:0 auto;cursor:grab;touch-action:none;border:2px solid #fff;box-shadow:0 4px 20px rgba(0,0,0,.4);max-width:100%;}
+    #edCanvas:active{cursor:grabbing;}
+    .rot-btn{flex:1;padding:8px 6px;border:1.5px solid #d1d1d6;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-weight:700;transition:all .15s;}
+    .rot-btn.rot-active{background:#1a1f63;color:#FFE600;border-color:#1a1f63;}
+    .ed-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+    .ed-grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:12px;}
+    .btn-blue{width:100%;padding:10px;background:#007aff;color:#fff;border:none;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:15px;}
+    .btn-orange{width:100%;padding:10px;background:#ff9500;color:#fff;border:none;border-radius:10px;margin-bottom:10px;cursor:pointer;font-size:15px;font-weight:bold;}
+    .btn-purple{width:100%;padding:10px;background:#6c3dd3;color:#fff;border:none;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:15px;font-weight:bold;}
+    .btn-navy{width:100%;padding:10px;background:#1a1f63;color:#FFE600;border:none;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:15px;font-weight:bold;letter-spacing:.3px;}
+    .btn-green{width:100%;padding:15px;background:#00a650;color:#fff;border:none;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;}
+    .btn-green:disabled{background:#a0a0a0;cursor:not-allowed;}
+    #toastCont{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:92%;max-width:360px;}
+    .toast{padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;opacity:0;transform:translateY(-14px);transition:all .28s cubic-bezier(.34,1.56,.64,1);text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.22);}
+    .toast.t-show{opacity:1;transform:translateY(0);}
+    .t-ok{background:#00a650;color:#fff;}.t-err{background:#c0392b;color:#fff;}.t-warn{background:#ff9500;color:#fff;}.t-info{background:#1a1f63;color:#FFE600;}
+  </style>
+</head>
+<body>
   <div id="toastCont"></div>
   <div id="setupBanner"><b>&#9888;&#65039; Supabase nao configurado</b><br>Preencha <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code> no HTML.<br>Consulte o arquivo <b>SETUP.md</b> do repositorio.</div>
 
@@ -248,7 +375,46 @@
           <button onclick="descobrirImpressoras()" id="btnDiscover" title="Descobrir impressoras na rede" style="padding:9px 11px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:14px;flex-shrink:0">&#128269;</button>
           <button onclick="salvarImpressoraAtual()" style="padding:9px 11px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:14px;flex-shrink:0">&#128190;</button>
           <span id="printerDot" style="width:11px;height:11px;border-radius:50%;background:#d1d1d6;flex-shrink:0;transition:background .3s"></span>
-x" onkeydown="if(event.key==='Enter')addSVC()">
+        </div>
+        <div id="discoveryRow" style="display:none;margin-bottom:8px;padding:10px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:12px"></div>
+        <div id="printersRow" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px"></div>
+      </div>
+      <div id="usbSection" style="display:none;margin-bottom:8px">
+        <!-- WebUSB: conexão direta sem software extra -->
+        <button onclick="conectarWebUSB()" id="btnWebUSB" style="width:100%;padding:11px;background:var(--brand);color:var(--accent);border:none;border-radius:var(--rs);font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px">
+          &#128268; Conectar Impressora USB
+        </button>
+        <div id="webUsbStatus" style="font-size:11px;color:var(--tx3);margin-bottom:6px;text-align:center;line-height:1.6"></div>
+        <!-- ZBP fallback -->
+        <details style="margin-top:4px">
+          <summary style="font-size:11px;color:var(--tx3);cursor:pointer;user-select:none">&#9881; Usar Zebra Browser Print (avancado)</summary>
+          <div style="margin-top:6px">
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="usbPrinterSel" style="flex:1;padding:10px;border:1.5px solid var(--bdr);border-radius:var(--rs);font-size:13px;background:var(--surf);font-family:'Inter',sans-serif">
+                <option value="">-- Clique em &#128269; para detectar --</option>
+              </select>
+              <button onclick="detectarImpressorasUSB()" style="padding:10px 13px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:16px;flex-shrink:0">&#128269;</button>
+            </div>
+            <div id="usbStatus" style="font-size:11px;color:var(--tx3);margin-top:5px;text-align:center;line-height:1.6"></div>
+          </div>
+        </details>
+      </div>
+      <div id="btSection" style="display:none;margin-bottom:8px">
+        <button onclick="conectarBluetooth()" id="btnBT" style="width:100%;padding:11px;background:var(--brand);color:var(--accent);border:none;border-radius:var(--rs);font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px">
+          &#128309; Conectar Impressora Bluetooth
+        </button>
+        <div id="btStatus" style="font-size:11px;color:var(--tx3);text-align:center;line-height:1.6"></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <input type="text" id="svc" placeholder="SVC (ex: SMG3)" list="svcList" onchange="sv()" style="flex:1;margin:0;min-width:0">
+        <button onclick="toggleManageSVC()" style="padding:10px 13px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);cursor:pointer;font-size:16px;flex-shrink:0">&#9881;</button>
+      </div>
+      <datalist id="svcList"></datalist>
+      <div id="svcManagePanel" style="display:none;background:var(--surf2);border-radius:var(--rs);padding:10px;margin-bottom:8px;border:1px solid var(--bdr)">
+        <div style="font-size:11px;font-weight:800;color:var(--tx3);letter-spacing:.5px;margin-bottom:6px">GERENCIAR SVCs</div>
+        <div id="svcManageList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input id="svcNewInput" type="text" placeholder="Novo SVC (ex: SSP20)" style="flex:1;margin:0;font-size:13px" onkeydown="if(event.key==='Enter')addSVC()">
           <button onclick="addSVC()" style="padding:8px 12px;border:none;border-radius:var(--rs);background:var(--brand);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:'Inter',sans-serif">+ Add</button>
         </div>
       </div>
@@ -330,7 +496,59 @@ x" onkeydown="if(event.key==='Enter')addSVC()">
   </div><!-- /col-main -->
   <div class="col-side">
   <!-- ── AÇÕES ── -->
-o"></div>
+  <div class="card">
+    <div class="sec-lbl" style="margin-bottom:12px">AÇÕES</div>
+    <div class="act-grid">
+      <button class="act-btn a-status" onclick="verStatus()">
+        <span class="act-ico">&#128202;</span>
+        <span class="act-lbl">Status Rotas</span>
+      </button>
+      <button class="act-btn a-blue" onclick="abrirDashboard()">
+        <span class="act-ico">&#128308;</span>
+        <span class="act-lbl">Dashboard Ao Vivo</span>
+      </button>
+      <button class="act-btn a-green" onclick="abrirRelatorioOperadores()">
+        <span class="act-ico">&#128101;</span>
+        <span class="act-lbl">Operadores</span>
+      </button>
+      <button class="act-btn a-purple" onclick="abrirLog()">
+        <span class="act-ico">&#128203;</span>
+        <span class="act-lbl">Consultar Log</span>
+      </button>
+      <button class="act-btn a-navy" onclick="abrirImpressaoLivre()">
+        <span class="act-ico">&#128438;</span>
+        <span class="act-lbl">Impr. Livre</span>
+      </button>
+      <button class="act-btn a-meli" onclick="abrirMeli()">
+        <span class="act-ico">&#128230;</span>
+        <span class="act-lbl">Etiq. Meli</span>
+      </button>
+      <button class="act-btn a-teal" onclick="abrirRomaneio()">
+        <span class="act-ico">&#128203;</span>
+        <span class="act-lbl">Romaneio</span>
+      </button>
+    </div>
+    <button class="btn-atualizar" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
+  </div>
+
+  <!-- ── MODO OPERAÇÃO ── -->
+  <div class="card" id="opCard" style="border-top:3px solid var(--ok)">
+    <div class="sec-lbl" style="margin-bottom:10px;color:var(--ok)">&#9889; MODO OPERAÇÃO</div>
+    <div id="opPainelInativo">
+      <p style="font-size:12px;color:var(--tx2);margin:0 0 10px;line-height:1.6">
+        Imprime sacas individualmente em tempo real e atualiza o banco a cada saca. Gere o romaneio ao encerrar.
+      </p>
+      <button id="btnOpTeste" onclick="opToggleTeste()" style="width:100%;padding:8px;border:1.5px dashed var(--bdr);border-radius:var(--rs);background:var(--surf);font-size:12px;font-weight:700;cursor:pointer;color:var(--tx2);font-family:'Inter',sans-serif;margin-bottom:8px">&#129514; Modo Teste: OFF</button>
+      <button onclick="opIniciar()" style="width:100%;padding:11px;border:none;border-radius:var(--rs);background:var(--ok);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">&#9654; Iniciar Operação</button>
+    </div>
+    <div id="opPainelAtivo" style="display:none">
+      <div id="opIdLabel" style="font-size:11px;font-weight:700;color:var(--tx2);text-align:center;background:var(--surf2);border-radius:var(--rs);padding:5px 8px;margin-bottom:8px">-</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input type="text" id="opSacaId" placeholder="Nº Saca" inputmode="numeric" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')opAdicionarSaca()">
+        <button onclick="opAdicionarSaca()" style="padding:9px 16px;border:none;border-radius:var(--rs);background:var(--ok);color:#fff;font-weight:900;cursor:pointer;font-size:18px;font-family:'Inter',sans-serif;line-height:1">+</button>
+      </div>
+      <div id="opStatus" style="font-size:11px;font-weight:600;min-height:16px;padding:4px 6px;border-radius:4px;background:var(--surf2);color:var(--tx2);margin-bottom:8px"></div>
+      <div id="opLista" style="margin-bottom:10px;max-height:180px;overflow-y:auto"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <button onclick="opRomaneio()" style="padding:9px;border:none;border-radius:var(--rs);background:var(--brand);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">&#128203; Romaneio</button>
         <button onclick="opLimpar()" style="padding:9px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf);font-size:12px;font-weight:700;cursor:pointer;color:var(--tx2);font-family:'Inter',sans-serif">&#10006; Encerrar</button>
@@ -377,7 +595,55 @@ o"></div>
 
       <!-- Colar dados Meli -->
       <div style="margin-bottom:10px">
-        <button o
+        <button onclick="toggleMeliPaste()" style="width:100%;padding:8px;background:#f0f0f5;color:#1a1f63;border:1.5px dashed #aab;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">&#128203; Colar dados da página do Meli</button>
+        <div id="meliPasteArea" style="display:none;margin-top:6px">
+          <textarea id="meliPasteText" rows="5" placeholder="Copie tudo da página do pedido Meli (Ctrl+A, Ctrl+C) e cole aqui..." style="width:100%;box-sizing:border-box;padding:8px;border:1.5px solid #ddd;border-radius:8px;font-size:12px;resize:vertical;font-family:inherit"></textarea>
+          <button onclick="parseMeliPaste()" style="width:100%;padding:8px;background:#1a1f63;color:#FFE600;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">&#10003; PREENCHER CAMPOS AUTOMATICAMENTE</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">ID / CÓDIGO DE BARRAS</label>
+          <input id="meliId" type="text" placeholder="Ex: BR012345678901" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:1px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">ROTA</label>
+          <input id="meliRota" type="text" placeholder="Ex: XSP5" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:15px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">TIPO DE ENTREGA</label>
+          <div style="display:flex;gap:0;border:1.5px solid #ddd;border-radius:8px;overflow:hidden;margin-top:3px">
+            <button id="meliTipoR" onclick="setMeliTipo('R')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#1a1f63;color:#FFE600">R<br><span style="font-size:10px;font-weight:400">Residencial</span></button>
+            <button id="meliTipoC" onclick="setMeliTipo('C')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#f5f5f7;color:#555">C<br><span style="font-size:10px;font-weight:400">Comercial</span></button>
+            <button id="meliTipoA" onclick="setMeliTipo('A')" style="flex:1;padding:9px 4px;border:none;cursor:pointer;font-weight:800;font-size:14px;background:#f5f5f7;color:#555">A<br><span style="font-size:10px;font-weight:400">Agência</span></button>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">NOME DO COMPRADOR</label>
+          <input id="meliNome" type="text" placeholder="Nome completo" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">ENDEREÇO</label>
+          <input id="meliEndereco" type="text" placeholder="Rua, número" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+        </div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <label style="font-size:12px;color:#888;font-weight:600">CEP</label>
+            <input id="meliCep" type="text" placeholder="00000-000" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+          </div>
+          <div style="flex:2">
+            <label style="font-size:12px;color:#888;font-weight:600">CIDADE / ESTADO</label>
+            <input id="meliCidade" type="text" placeholder="São Paulo / SP" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;font-weight:600">COMPLEMENTO</label>
+          <input id="meliComp" type="text" placeholder="Apto, bloco, referência..." style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px">
         <button onclick="imprimirMeli()" style="flex:1;padding:11px;background:#FFE600;color:#1a1f63;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer">&#128438; IMPRIMIR</button>
         <button onclick="fecharModal('modalMeli')" style="flex:1;padding:11px;background:#f2f2f7;color:#333;border:none;border-radius:10px;font-size:14px;cursor:pointer">FECHAR</button>
       </div>
@@ -398,7 +664,51 @@ o"></div>
       <div id="opsContent" style="font-size:13px;color:#555">Carregando...</div>
       <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharModal('modalOps')">FECHAR</button>
     </div>
+  </div>
 
+  <!-- Modal: Dashboard -->
+  <div id="modalDash" class="modal-bg">
+    <div class="m-cont" style="max-width:520px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0">&#128202; Dashboard</h3>
+        <span id="dashLiveIndicator" style="display:none;font-size:11px;font-weight:800;color:#00a650;animation:pulse 1.5s infinite">&#9679; AO VIVO</span>
+      </div>
+      <div id="dashContent" style="font-size:13px;color:#555">Carregando...</div>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:14px" onclick="fecharDashboard()">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Romaneio de Rota -->
+  <div id="modalRomaneio" class="modal-bg">
+    <div class="m-cont" style="max-width:460px">
+      <h3 style="margin-top:0">&#128203; Romaneio de Rota</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Período — De</label>
+          <input type="date" id="romDe" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Período — Até</label>
+          <input type="date" id="romAte" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Rota (opcional)</label>
+          <input type="text" id="romRota" placeholder="Todas" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Auditoria (opcional)</label>
+          <input type="text" id="romAudit" placeholder="Todas" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Transportadora <span style="color:#dc2626">*</span></label>
+        <input type="text" id="romTransp" placeholder="Nome da transportadora..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Motorista (opcional)</label>
+          <input type="text" id="romMotorista" placeholder="Nome do motorista..." style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit">
+        </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:#5c6882;display:block;margin-bottom:4px">Placa do Veículo (opcional)</label>
           <input type="text" id="romPlaca" placeholder="ABC-1234" style="width:100%;padding:8px 10px;border:1.5px solid #dde1ef;border-radius:8px;font-size:13px;font-family:inherit;text-transform:uppercase">
@@ -439,7 +749,63 @@ o"></div>
       <!-- Tamanho + Posicao -->
       <div class="ed-grid2">
         <div>
- max="400" oninput="onSizeChange()">
+          <span class="lbl">Tamanho — <span id="edSizeLbl">100%</span></span>
+          <input type="range" id="edSlider" min="5" max="300" value="100"
+                 style="width:100%;margin-top:6px;accent-color:#1a1f63" oninput="onEdSlider(this.value)">
+        </div>
+        <div class="ed-grid2" style="margin-bottom:0">
+          <div>
+            <span class="lbl">X (dots)</span>
+            <input type="number" id="edX" class="lbl-input" value="0" min="0" oninput="onEdPos()">
+          </div>
+          <div>
+            <span class="lbl">Y (dots)</span>
+            <input type="number" id="edY" class="lbl-input" value="0" min="0" oninput="onEdPos()">
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size:12px;color:#888;margin-bottom:14px;text-align:center">
+        &#128072; Arraste a imagem no canvas para posicionar &nbsp;|&nbsp; Ajuste rotacao e tamanho com os controles acima
+      </p>
+
+      <div class="ed-grid2" style="margin-bottom:0">
+        <button style="padding:13px;background:#f2f2f7;border:none;border-radius:10px;font-size:14px;cursor:pointer" onclick="fecharModal('modalEditor')">CANCELAR</button>
+        <button style="padding:13px;background:#1a1f63;color:#FFE600;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer" onclick="aplicarEditor()">&#10003; APLICAR NO ZPL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Impressao Livre -->
+  <div id="modalLivre" class="modal-bg">
+    <div class="m-cont-livre">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0">&#128438; Impressao Livre</h3>
+        <span id="livreChip" class="size-chip">80 × 40 mm</span>
+      </div>
+
+      <!-- IP + Tamanho -->
+      <div class="libre-row">
+        <div>
+          <span class="lbl">IP da Impressora</span>
+          <input class="lbl-input" id="livreIP" type="text" placeholder="10.29.180.108">
+        </div>
+        <div>
+          <span class="lbl">Tamanho da Etiqueta</span>
+          <select class="lbl-select" id="labelSize" onchange="onSizeChange()">
+            <option value="80x40">80 × 40 mm</option>
+            <option value="105x150">105 × 150 mm</option>
+            <option value="custom">Personalizado...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tamanho personalizado -->
+      <div class="libre-row" id="customSizeRow" style="display:none">
+        <div>
+          <span class="lbl">Largura (mm)</span>
+          <input class="lbl-input" id="customW" type="number" value="80" min="10" max="400" oninput="onSizeChange()">
         </div>
         <div>
           <span class="lbl">Altura (mm)</span>
@@ -471,11 +837,86 @@ o"></div>
           ^CI28 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ encoding UTF-8<br>
           ^PW<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ largura em dots (mm × 8)<br>
           ^LL<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ altura em dots (mm × 8)<br>
-          ^FO<
+          ^FO<i>x</i>,<i>y</i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ posicao do campo<br>
+          ^A0N,<i>h</i>,<i>w</i> &nbsp;&nbsp;&nbsp;→ fonte (h=altura, w=largura)<br>
+          ^FB<i>w</i>,1,0,C &nbsp;&nbsp;→ texto centralizado (largura w)<br>
+          ^FD<i>texto</i>^FS &nbsp;→ conteudo do campo<br>
+          ^BQN,2,<i>n</i> &nbsp;&nbsp;&nbsp;&nbsp;→ QR Code (n=tamanho 1-10)<br>
+          ^FDQA,<i>dado</i>^FS → dado do QR Code<br>
+          ^XZ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ fim do label
+        </div>
+      </details>
+
+      <!-- Area ZPL -->
+      <span class="lbl">Conteudo ZPL</span>
+      <textarea class="zpl-area" id="zplContent"
+        placeholder="^XA&#10;^CI28&#10;^PW640&#10;^LL320&#10;^FO20,20^A0N,40,40^FDSeu texto^FS&#10;^XZ"></textarea>
+
+      <!-- Preview da etiqueta -->
       <div id="zplPreview" style="display:none;margin:12px 0;border-radius:10px;overflow:hidden;border:1px solid #d1d1d6">
         <div style="background:#1a1f63;color:#FFE600;padding:8px 14px;display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:12px;font-weight:800;letter-spacing:.5px">&#128065; PREVIEW DA ETIQUETA</span>
+          <button onclick="fecharPreview()" style="background:none;border:none;color:#FFE600;cursor:pointer;font-size:18px;line-height:1;padding:0 2px">&times;</button>
+        </div>
+        <div style="padding:16px;text-align:center;background:#666;background-image:repeating-conic-gradient(#777 0% 25%,#555 0% 50%);background-size:16px 16px">
+          <img id="previewImg" alt="preview" style="max-width:100%;display:block;margin:0 auto;border:2px solid white;box-shadow:0 4px 20px rgba(0,0,0,.4)">
+        </div>
+        <div id="previewInfo" style="background:#f8f9fa;padding:6px 14px;font-size:11px;color:#666;text-align:center"></div>
+      </div>
 
+      <div class="libre-status" id="livreStatus"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <button onclick="previewZPL()" style="padding:14px;background:#007aff;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">&#128065; VISUALIZAR</button>
+        <button id="btnImprimirLivre" class="btn-green" onclick="imprimirLivre()">&#128438; IMPRIMIR</button>
+      </div>
+      <button style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer" onclick="fecharModal('modalLivre')">FECHAR</button>
+    </div>
+  </div>
+
+  <!-- Modal: Consultar Log -->
+  <div id="modalLog" class="modal-bg">
+    <div class="m-cont-log">
+      <div class="log-header">
+        <h3 style="margin:0">&#128203; Consultas</h3>
+        <button class="btn-export" id="btnExport" onclick="exportarAtivo()">&#11015;&#65039; Exportar CSV</button>
+        <button class="btn-buscar" style="background:#5856d6;padding:8px 14px;width:auto" onclick="exportarPDF()">&#128196; EXPORTAR PDF</button>
+        <button class="btn-buscar" style="background:#059669;padding:8px 14px;width:auto" onclick="abrirRomaneio()">&#128203; ROMANEIO</button>
+      </div>
+
+      <!-- Abas -->
+      <div class="tabs">
+        <button id="tabBtnLog"   class="tab-btn tab-active" onclick="trocarTab('log')">&#128203; Log de Auditoria</button>
+        <button id="tabBtnErros" class="tab-btn"            onclick="trocarTab('erros')">&#128534; Erros de Impressao</button>
+      </div>
+
+      <!-- ── ABA: LOG ── -->
+      <div id="secLog" class="tab-sec tab-vis">
+        <div class="filter-grid">
+          <div><label>Periodo — De</label><input type="date" id="filtroDataDe"></div>
+          <div><label>Periodo — Ate</label><input type="date" id="filtroDataAte"></div>
+          <div><label>Responsavel</label><input type="text" id="filtroResp" placeholder="Todos"></div>
+          <div><label>Rota</label><input type="text" id="filtroRota" placeholder="Todas"></div>
+          <div><label>Auditoria</label><input type="text" id="filtroAudit" placeholder="Todas"></div>
+          <div><label>Saca ID</label><input type="text" id="filtroSaca" placeholder="Todas"></div>
+        </div>
+        <button class="btn-buscar" onclick="buscarLog()">&#128269; BUSCAR</button>
+        <div class="log-info" id="logInfo"></div>
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th><th>Responsavel</th><th>Auditoria</th>
+                <th>Saca ID</th><th style="text-align:center">Qtd</th><th>QR Mae</th><th>Rota</th>
+              </tr>
+            </thead>
+            <tbody id="logBody">
+              <tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Use os filtros acima e clique em Buscar</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── ABA: ERROS ── -->
       <div id="secErros" class="tab-sec">
         <div class="filter-grid">
           <div><label>Periodo — De</label><input type="date" id="erroDataDe"></div>
@@ -587,7 +1028,46 @@ o"></div>
     // ================================================================
 
     let dadosBase = null;  // rows parsed do CSV Base
-    let dadosRota = null; 
+    let dadosRota = null;  // rows parsed do CSV Rota
+    let _rotaMetaTemp    = null; // {rota → {minEta, nodos[]}} aguardando import
+    let _sacaNodoMapTemp = null; // {saca_id → nodo} aguardando import
+    let ultimoZPL = null, ultimoIP = null;
+    let historicoSessao = [];
+
+    // ---- Gerenciamento de SVCs ----
+    function getSVCAll() {
+      try {
+        const stored = JSON.parse(localStorage.getItem('svcOptions') || 'null');
+        if (Array.isArray(stored) && stored.length) return stored;
+      } catch (_) {}
+      return ['SMG3', 'SSP14', 'SSP11'];
+    }
+    function saveSVCOptions(list) { localStorage.setItem('svcOptions', JSON.stringify(list)); }
+
+    function populateSvcDatalist() {
+      const list = getSVCAll();
+      document.getElementById('svcList').innerHTML = list.map(v => `<option value="${v}">`).join('');
+    }
+    function populateSvcUpload() {
+      const list = getSVCAll();
+      const sel = document.getElementById('svcUpload');
+      sel.innerHTML = '<option value="">-- Selecione o SVC --</option>' +
+        list.map(v => `<option value="${v}">${v}</option>`).join('');
+    }
+    function checkImportBtn() {
+      const svc = document.getElementById('svcUpload').value;
+      document.getElementById('btnImportar').disabled = !svc || (!dadosBase && !dadosRota);
+    }
+    function toggleManageSVC() {
+      const p = document.getElementById('svcManagePanel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+      if (p.style.display === 'block') renderManageSVC();
+    }
+    function renderManageSVC() {
+      const list   = getSVCAll();
+      const coords = getSVCCoords();
+      document.getElementById('svcManageList').innerHTML = list.map((v, i) => {
+        const c = coords[v];
         const coordTxt = c
           ? `<span style="font-size:10px;color:#888;font-weight:400">${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}</span>`
           : `<span style="font-size:10px;color:#bbb;font-weight:400">sem coord</span>`;
@@ -596,7 +1076,63 @@ o"></div>
           ${coordTxt}
           <button onclick="capturarLocalizacaoParaSVC('${v}')" title="Capturar localização GPS" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px">📍</button>
           <button onclick="removeSVC(${i})" title="Remover SVC" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px;font-weight:900;padding:0 2px;line-height:1">×</button>
+        </div>`;
+      }).join('');
+    }
+    function addSVC() {
+      const inp = document.getElementById('svcNewInput');
+      const val = inp.value.trim().toUpperCase();
+      if (!val) return;
+      const list = getSVCAll();
+      if (!list.includes(val)) { list.push(val); saveSVCOptions(list); }
+      inp.value = '';
+      populateSvcDatalist();
+      renderManageSVC();
+    }
+    function removeSVC(idx) {
+      const list = getSVCAll();
+      list.splice(idx, 1);
+      saveSVCOptions(list);
+      populateSvcDatalist();
+      renderManageSVC();
+    }
 
+    // ---- Multi-impressora ----
+    function getPrinters() {
+      try { return JSON.parse(localStorage.getItem('printers') || '[]'); } catch (_) { return []; }
+    }
+    function savePrinters(list) { localStorage.setItem('printers', JSON.stringify(list)); }
+
+    function renderPrinters() {
+      const list = getPrinters();
+      const row  = document.getElementById('printersRow');
+      if (!row) return;
+      const ipAtual = document.getElementById('ip').value.trim();
+      row.innerHTML = list.map((p, i) =>
+        `<span style="display:inline-flex;align-items:center;gap:3px;background:${p.ip===ipAtual?'#1a1f63':'#e8eaf6'};color:${p.ip===ipAtual?'#FFE600':'#1a1f63'};border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;cursor:pointer" onclick="selectPrinter('${p.ip}')" title="${p.ip}">
+          🖨️ ${p.nome}
+          <button onclick="event.stopPropagation();removerImpressora(${i})" style="background:none;border:none;cursor:pointer;color:${p.ip===ipAtual?'#FFE600':'#c0392b'};font-size:12px;font-weight:900;padding:0 0 0 3px;line-height:1">×</button>
+        </span>`
+      ).join('');
+    }
+
+    function selectPrinter(ip) {
+      document.getElementById('ip').value = ip;
+      sv();
+      testarImpressora();
+      renderPrinters();
+    }
+
+    function salvarImpressoraAtual() {
+      const ip = document.getElementById('ip').value.trim();
+      if (!ip) { toast('⚠️ Informe o IP primeiro.', 'warn'); return; }
+      const list = getPrinters();
+      if (list.find(p => p.ip === ip)) { toast('ℹ️ IP já salvo.', 'info'); return; }
+      const nome = prompt('Nome para esta impressora (ex: ZT411 Doca A):', 'Impressora');
+      if (!nome || !nome.trim()) return;
+      list.push({ nome: nome.trim(), ip });
+      savePrinters(list);
+      renderPrinters();
       toast('✅ Impressora "' + nome.trim() + '" salva!', 'ok');
     }
 
@@ -639,7 +1175,162 @@ o"></div>
       const list = getOperadores();
       if (list.includes(nome)) { toast('Operador já na lista.', 'warn'); return; }
       list.push(nome);
+      saveOperadores(list);
+      renderOperadores();
+      toast('✅ "' + nome + '" salvo!', 'ok');
+    }
 
+    function removerOperador(idx) {
+      const list = getOperadores();
+      list.splice(idx, 1);
+      saveOperadores(list);
+      renderOperadores();
+    }
+
+    // ---- Etiqueta Meli ----
+    let _meliTipo = 'R';
+    let _meliTamanho = '100x150';
+
+    function abrirMeli() {
+      _meliTipo = 'R';
+      _meliTamanho = '100x150';
+      setMeliTipo('R');
+      setMeliTamanho('100x150');
+      document.getElementById('meliPasteArea').style.display = 'none';
+      renderMeliHistory();
+      document.getElementById('modalMeli').style.display = 'flex';
+    }
+
+    function setMeliTipo(t) {
+      _meliTipo = t;
+      ['R','C','A'].forEach(x => {
+        const b = document.getElementById('meliTipo' + x);
+        if (!b) return;
+        b.style.background = x === t ? '#1a1f63' : '#f5f5f7';
+        b.style.color       = x === t ? '#FFE600' : '#555';
+      });
+    }
+
+    function setMeliTamanho(t) {
+      _meliTamanho = t;
+      ['100x150','100x100','150x100'].forEach(x => {
+        const b = document.getElementById('meliSz' + x);
+        if (!b) return;
+        b.style.background = x === t ? '#1a1f63' : '#f5f5f7';
+        b.style.color       = x === t ? '#FFE600' : '#555';
+      });
+    }
+
+    function toggleMeliPaste() {
+      const el = document.getElementById('meliPasteArea');
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+      if (el.style.display === 'block') document.getElementById('meliPasteText').focus();
+    }
+
+    function parseMeliPaste() {
+      const raw   = document.getElementById('meliPasteText').value;
+      const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+
+      // Labels to skip (PT + ES) — these are section headers/UI text, not values
+      // Lines that look like section headers or field labels — skip when looking for values
+      // Matches standalone label lines only ($ anchors to end so "Rua Fulano" is NOT skipped)
+      const skip = /^(ver (no|en) |m[aá]s datos|mais dados|datos del |dados do |endere[cç]o de|direcci[oó]n de|telef[oô]ne?$|n[uú]mero$|nro\.$|num\.$|bairro$|barrio$|colonia$|ciudad$|cidade$|estado$|provincia$|departamento$|depto$|cp$|cep$|c[oó]digo postal$|rua$|calle$|referencias?( \(opcional\))?$|tipo de|nombre (y|completo)|nome completo|datos del paquete|dados do pacote)/i;
+
+      // Try multiple label variants (PT first, then ES fallback)
+      function after(...labels) {
+        for (const label of labels) {
+          const i = lines.findIndex(l => l.toLowerCase().startsWith(label.toLowerCase()));
+          if (i < 0) continue;
+          for (let j = i + 1; j < lines.length; j++) {
+            const v = lines[j];
+            if (!skip.test(v) && v.length >= 1) return v;
+          }
+        }
+        return '';
+      }
+
+      const nome    = after('Nome completo',     'Nombre y apellido', 'Nombre completo', 'Nombre');
+      const rua     = after('Rua',               'Calle',             'Dirección',       'Direccion', 'Avenida');
+      const numero  = after('Número',            'Nro.',              'Num.',             'No.');
+      const cep     = after('CEP',               'CP',                'Código postal',    'Codigo postal');
+      const bairro  = after('Bairro',            'Barrio',            'Colonia');
+      const cidade  = after('Cidade',            'Ciudad');
+      const estado  = after('Estado',            'Provincia',         'Departamento');
+      const ref     = after('Referências',       'Referencias (opcional)', 'Referencias', 'Referencia');
+      const tipoEnd = after('Tipo de endereço',  'Tipo de domicilio', 'Tipo de dirección', 'Tipo de direccion');
+
+      if (nome)    document.getElementById('meliNome').value     = nome;
+      if (rua)     document.getElementById('meliEndereco').value = rua + (numero ? ', ' + numero : '') + (bairro ? ' - ' + bairro : '');
+      if (cep)     document.getElementById('meliCep').value      = cep;
+      if (cidade)  document.getElementById('meliCidade').value   = cidade + (estado ? ' / ' + estado : '');
+      if (ref)     document.getElementById('meliComp').value     = ref;
+
+      const tipoMap = { comercial: 'C', residencial: 'R', 'agência': 'A', agencia: 'A',
+                        casa: 'R', apartamento: 'R', oficina: 'C', negocio: 'C', agencia: 'A' };
+      const tipo = tipoMap[(tipoEnd || '').toLowerCase().trim()] || null;
+      if (tipo) setMeliTipo(tipo);
+
+      document.getElementById('meliPasteArea').style.display = 'none';
+      document.getElementById('meliPasteText').value = '';
+      toast('✅ Campos preenchidos!', 'ok');
+    }
+
+    function zplEscape(s) {
+      return String(s || '').replace(/[^A-Za-z0-9 \-\.\/\,\:\(\)]/g, ' ');
+    }
+
+    function gerarZPLMeli() {
+      const id       = (document.getElementById('meliId').value || '').trim();
+      const rota     = zplEscape((document.getElementById('meliRota').value || '').trim().toUpperCase());
+      const nome     = zplEscape((document.getElementById('meliNome').value || '').trim());
+      const endereco = zplEscape((document.getElementById('meliEndereco').value || '').trim());
+      const cep      = zplEscape((document.getElementById('meliCep').value || '').trim());
+      const cidade   = zplEscape((document.getElementById('meliCidade').value || '').trim());
+      const comp     = zplEscape((document.getElementById('meliComp').value || '').trim());
+      const svcLabel = zplEscape((document.getElementById('svcSelect')?.value || localStorage.getItem('svc') || '').trim());
+      const tipo     = _meliTipo;
+
+      if (!id) { toast('⚠️ Informe o ID.', 'warn'); return null; }
+
+      // @203dpi: 1mm = ~8 dots
+      if (_meliTamanho === '150x100') {
+        // Landscape 1200×800: left column = barcode/SVC, right = customer/QR
+        const mid = 598;
+        const iW  = 1200 - mid - 20; // info column width ~562
+        return [
+          '^XA^PW1200^LL800',
+          // Rota box top-left
+          '^FO20,14^GB210,62,4^FS',
+          '^FO30,17^A0N,20,20^FDRota^FS',
+          '^FO30,38^A0N,38,38^FD' + (rota || '--') + '^FS',
+          // Barcode (BY1 = narrow bars, centered in left half)
+          '^FO20,84^BY2,3,76^BCN,76,N,N,N^FD' + id + '^FS',
+          // ID text under barcode
+          '^FO20,170^A0N,22,22^FB' + (mid - 40) + ',1,0,C^FD' + id + '^FS',
+          // Big SVC
+          '^FO20,200^A0N,90,90^FB' + (mid - 40) + ',1,0,C^FD' + svcLabel + '^FS',
+          // Rota › SVC
+          '^FO20,305^A0N,22,22^FD' + (rota || '--') + ' > ' + svcLabel + '^FS',
+          // Tipo box bottom-left
+          '^FO468,655^GB100,100,4^FS',
+          '^FO472,659^A0N,88,88^FD' + tipo + '^FS',
+          // Vertical divider
+          '^FO' + mid + ',0^GB4,800,4^FS',
+          // Customer info right column (endereco+comp allow 2 lines each)
+          '^FO618,18^A0N,24,24^FB' + iW + ',2,0,L^FD' + nome + '^FS',
+          '^FO618,70^A0N,22,22^FB' + iW + ',2,0,L^FD' + endereco + '^FS',
+          '^FO618,120^A0N,20,20^FB' + iW + ',1,0,L^FDCEP: ' + cep + '^FS',
+          '^FO618,146^A0N,20,20^FB' + iW + ',1,0,L^FD' + cidade + '^FS',
+          '^FO618,172^A0N,20,20^FB' + iW + ',2,0,L^FD' + comp + '^FS',
+          // QR right bottom
+          '^FO880,400^BQN,2,5^FDQA,' + id + '^FS',
+          '^XZ'
+        ].join('\n');
+      }
+
+      if (_meliTamanho === '100x100') {
+        // Square portrait 800×800
+        return [
           '^XA^PW800^LL800',
           // Rota box
           '^FO20,12^GB200,56,4^FS',
@@ -749,6 +1440,29 @@ o"></div>
           <button onclick="reimprimirMeli(${i})" style="padding:5px 10px;background:#1a1f63;color:#FFE600;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px">↩ Reimpr.</button>
         </div>`
       ).join('');
+    }
+
+    async function reimprimirMeli(idx) {
+      const h = getMeliHistory();
+      if (!h[idx]) return;
+      const zpl  = h[idx].zpl;
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      if (mode === 'usb') {
+        const ok = await imprimirViaUSB(zpl);
+        if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
+      } else if (mode === 'bt') {
+        const ok = await imprimirViaBluetooth(zpl);
+        if (ok) { toast('✅ Reimpresso via Bluetooth!', 'ok'); beep('ok'); }
+      } else {
+        const ip = document.getElementById('ip').value.trim();
+        if (!ip) { toast('⚠️ Configure o IP da impressora.', 'warn'); return; }
+        enviarZPLWifi(ip, zpl)
+          .then(() => { toast('✅ Etiqueta reimprimida!', 'ok'); beep('ok'); })
+          .catch(() => { toast('❌ Erro ao reimprimir.', 'err'); beep('err'); });
+      }
+    }
+
+    async function imprimirMeli() {
       const zpl = gerarZPLMeli();
       if (!zpl) return;
       const mode = localStorage.getItem('printMode') || 'wifi';
@@ -960,7 +1674,94 @@ o"></div>
 
     // ---- Bluetooth (BLE) ----
     const BT_SERVICE = '38eb4a82-c570-11e3-9507-0002a5d5c51b';
+    const BT_CHAR    = '38eb4a83-c570-11e3-9507-0002a5d5c51b';
+    let _btDevice = null;
+    let _btChar   = null;
 
+    async function conectarBluetooth() {
+      const st  = document.getElementById('btStatus');
+      const btn = document.getElementById('btnBT');
+      if (_btDevice) {
+        try { _btDevice.gatt.disconnect(); } catch (_) {}
+        _btDevice = null; _btChar = null;
+        btn.innerHTML = '&#128309; Conectar Impressora Bluetooth';
+        btn.style.background = 'var(--brand)'; btn.style.color = 'var(--accent)';
+        st.innerHTML = ''; return;
+      }
+      if (!('bluetooth' in navigator)) {
+        st.style.color = '#c0392b';
+        st.innerHTML = '&#10060; Web Bluetooth nao disponivel. Use Chrome no Android ou PC.';
+        return;
+      }
+      st.style.color = 'var(--tx3)'; st.innerHTML = '&#9203; Procurando impressora...';
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [BT_SERVICE]
+        });
+        st.innerHTML = '&#9203; Conectando via BLE...';
+        const server = await device.gatt.connect();
+        // Tenta servico Zebra Link-OS; fallback: descobre servicos automaticamente
+        let char = null;
+        try {
+          const svc = await server.getPrimaryService(BT_SERVICE);
+          char = await svc.getCharacteristic(BT_CHAR);
+        } catch (_) {
+          st.innerHTML = '&#9203; Buscando servico de impressao...';
+          const svcs = await server.getPrimaryServices();
+          for (const svc of svcs) {
+            try {
+              const chars = await svc.getCharacteristics();
+              const c = chars.find(x => x.properties.write || x.properties.writeWithoutResponse);
+              if (c) { char = c; break; }
+            } catch (_) {}
+          }
+        }
+        if (!char) throw new Error('Servico BLE de impressao nao encontrado. Verifique se BLE esta ativo na impressora (Link-OS).');
+        _btDevice = device; _btChar = char;
+        device.addEventListener('gattserverdisconnected', () => {
+          _btDevice = null; _btChar = null;
+          btn.innerHTML = '&#128309; Conectar Impressora Bluetooth';
+          btn.style.background = 'var(--brand)'; btn.style.color = 'var(--accent)';
+          st.style.color = '#c0392b'; st.innerHTML = 'Desconectado.';
+        });
+        const nome = device.name || 'Impressora Bluetooth';
+        btn.innerHTML = '&#9989; ' + nome + ' &mdash; Desconectar';
+        btn.style.background = '#00a650'; btn.style.color = '#fff';
+        st.style.color = '#00a650'; st.innerHTML = '&#9989; Pronta para imprimir via Bluetooth!';
+        toast('✅ ' + nome + ' conectada!', 'ok');
+      } catch (e) {
+        if (e.name === 'NotFoundError') {
+          st.style.color = '#92400e';
+          st.innerHTML = `<b>Impressora nao encontrada via BLE.</b><br>
+            Verifique:<br>
+            1&#65039;&#8419; Permissao <b>Dispositivos proximos</b> concedida ao Chrome<br>
+            &nbsp;&nbsp;&nbsp;(Configuracoes do Android &rarr; Apps &rarr; Chrome &rarr; Permissoes)<br>
+            2&#65039;&#8419; BLE ativo na impressora: no Printer Setup,<br>
+            &nbsp;&nbsp;&nbsp;Settings &rarr; Bluetooth &rarr; <b>Bluetooth LE</b> &rarr; On<br>
+            3&#65039;&#8419; Se nao aparecer: <a href="#" onclick="setPrintMode('wifi');return false" style="color:var(--brand)">use WiFi</a> — verifique o IP atual na impressora`;
+        } else {
+          st.style.color = '#c0392b'; st.innerHTML = '&#10060; ' + e.message;
+        }
+      }
+    }
+
+    async function imprimirViaBluetooth(zpl) {
+      if (!_btChar) { toast('⚠️ Conecte a impressora Bluetooth primeiro.', 'warn'); return false; }
+      try {
+        const data  = new TextEncoder().encode(applyLabelShift(zpl));
+        const CHUNK = 512;
+        for (let i = 0; i < data.length; i += CHUNK) {
+          const chunk = data.slice(i, i + CHUNK);
+          try { await _btChar.writeValueWithoutResponse(chunk); }
+          catch (_) { await _btChar.writeValue(chunk); }
+        }
+        return true;
+      } catch (e) {
+        toast('❌ Erro Bluetooth: ' + e.message, 'err');
+        return false;
+      }
+    }
 
     // ---- Geolocalização por SVC ----
     function getSVCCoords() {
@@ -1060,7 +1861,27 @@ o"></div>
       document.getElementById('vshiftVal').innerText = savedVShift;
       atualizarBotaoOrient();
       populateSvcDatalist();
- 
+      // Auto-collapse config se ja configurado
+      const cfgBody = document.getElementById('configBody');
+      if (savedIp || savedSvc || savedResp) {
+        cfgBody.classList.remove('cfg-open');
+        document.getElementById('cfgArrow').textContent = '▼ expandir';
+      } else {
+        cfgBody.classList.add('cfg-open');
+        document.getElementById('cfgArrow').textContent = '▲ recolher';
+      }
+      // Garante coordenadas iniciais do SMG3
+      const _c = getSVCCoords();
+      if (!_c['SMG3']) { _c['SMG3'] = { lat: -22.3477512, lng: -45.9251672 }; saveSVCCoords(_c); }
+      // Auto-detecta SVC por GPS se nenhum estiver selecionado
+      detectarSVCPorLocalizacao();
+      if (!SUPABASE_URL || !SUPABASE_KEY) {
+        document.getElementById('setupBanner').style.display = 'block';
+      }
+      document.getElementById('btPrint').disabled = false;
+      atualizarBadge();
+      atualizarContador();
+      if (savedIp) testarImpressora();
       renderPrinters();
       renderOperadores();
       setPrintMode(localStorage.getItem('printMode') || 'wifi');
@@ -1211,7 +2032,41 @@ o"></div>
                 </div>`;
             }
           });
+      });
+
+      await Promise.all(probes);
+      btn.disabled = false;
+
+      const elapsed = Date.now() - t0;
+      if (!found.length && elapsed < 400 && location.protocol === 'https:') {
+        row.innerHTML = `<div style="color:#92400e;font-weight:700;margin-bottom:4px">&#9888; Bloqueado pelo Chrome (HTTPS)</div>
+          <div style="color:var(--tx2)">Libere no &#128274; cadeado → Configuracoes do site → Conteudo nao seguro → Permitir → recarregue.</div>`;
+        return;
       }
+
+      if (!found.length) {
+        row.innerHTML = `<div style="color:var(--tx2);margin-bottom:6px">Nenhuma impressora respondeu em ${subnet}.x</div>`;
+        _mostrarInputSubnet(row, subnet);
+        return;
+      }
+
+      // Scan bem-sucedido: salva subnet para este SVC
+      const svcAtual = getV('svc');
+      if (svcAtual) salvarSubnetParaSVC(svcAtual, subnet);
+
+      const svcTag = svcAtual ? ` <span style="background:var(--brand);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px">${svcAtual}</span>` : '';
+      row.innerHTML = `<div style="font-weight:800;color:var(--brand);margin-bottom:6px">&#128247; ${found.length} impressora(s) em ${subnet}.x${svcTag}:</div>` +
+        found.map(ip =>
+          `<span onclick="selecionarIPDescoberto('${ip}')" style="display:inline-flex;align-items:center;gap:5px;background:var(--ok);color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer;margin:2px 2px 2px 0">
+            &#128247; ${ip}
+          </span>`
+        ).join('') +
+        `<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Toque para selecionar · <span onclick="_mostrarInputSubnet(document.getElementById('discoveryRow'), '${subnet}')" style="cursor:pointer;text-decoration:underline">Outra subnet</span></div>`;
+    }
+
+    function atualizarAvisoHTTPS() {
+      const warn = document.getElementById('httpsWarnMain');
+      if (!warn) return;
       const mode = localStorage.getItem('printMode') || 'wifi';
       const ip = document.getElementById('ip').value.trim();
       warn.style.display = (location.protocol === 'https:' && mode === 'wifi' && ip) ? 'block' : 'none';
@@ -1376,7 +2231,24 @@ o"></div>
         const { pw, ll, label } = getDims();
         const ajustado = ajustarZPL(e.target.result, pw, ll);
         document.getElementById('zplContent').value = ajustado;
-      
+        document.getElementById('livreStatus').style.color = '#1a1f63';
+        document.getElementById('livreStatus').innerText =
+          '✔ Arquivo carregado e dimensoes ajustadas para ' + label + '. Verifique e edite se necessario.';
+        document.getElementById('btnAjustarDim').style.display = 'none';
+      };
+      reader.readAsText(file, 'UTF-8');
+      input.value = '';
+    }
+
+    function abrirImpressaoLivre() {
+      document.getElementById('livreIP').value = localStorage.getItem('ip') || '';
+      document.getElementById('labelSize').value = '80x40';
+      document.getElementById('customSizeRow').style.display = 'none';
+      document.getElementById('livreChip').innerText = '80 × 40 mm';
+      document.getElementById('zplContent').value = '';
+      document.getElementById('livreStatus').innerText = '';
+      document.getElementById('btnAjustarDim').style.display = 'none';
+      document.getElementById('modalLivre').style.display = 'block';
     }
 
     // ---- Inserir imagem — abre editor visual ----
@@ -1510,6 +2382,14 @@ o"></div>
       document.getElementById('edX').value = Math.round(edSt.xDots);
       document.getElementById('edY').value = Math.round(edSt.yDots);
     }
+    function syncRotBtns() {
+      [0,90,180,270].forEach(d => {
+        const b = document.getElementById('rotBtn'+d);
+        if (b) b.classList.toggle('rot-active', edSt.rot === d);
+      });
+    }
+    function setRot(deg) { edSt.rot = deg; syncRotBtns(); renderEdCanvas(); }
+    function onEdSlider(v) { edSt.pct = +v; document.getElementById('edSizeLbl').innerText = v+'%'; renderEdCanvas(); }
     function onEdPos() {
       edSt.xDots = +document.getElementById('edX').value || 0;
       edSt.yDots = +document.getElementById('edY').value || 0;
@@ -1816,7 +2696,23 @@ o"></div>
 
         errosAtual = rows;
         if (!errosAtual.length) {
-     
+          body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">Nenhum erro encontrado</td></tr>';
+          info.innerText = '0 registros';
+          return;
+        }
+        info.innerText = errosAtual.length + ' registro' + (errosAtual.length > 1 ? 's' : '');
+        body.innerHTML = errosAtual.map(r => {
+          const isNF  = (r.motivo || '').toLowerCase().includes('encontrada');
+          const badge = '<span class="motivo-badge ' + (isNF ? 'nf' : 'imp') + '">' + (r.motivo || '') + '</span>';
+          return '<tr>' +
+            '<td>' + (r.data || '') + '</td>' +
+            '<td>' + (r.responsavel || '') + '</td>' +
+            '<td><b>' + (r.saca_id || '') + '</b></td>' +
+            '<td style="text-align:center">' + (r.qtd ?? '') + '</td>' +
+            '<td>' + (r.ip || '') + '</td>' +
+            '<td>' + badge + '</td>' +
+            '<td>' + (r.auditoria || '') + '</td>' +
+            '</tr>';
         }).join('');
       } catch (e) {
         body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#c0392b;padding:24px">Erro: ' + e.message + '</td></tr>';
@@ -2051,6 +2947,45 @@ o"></div>
       el.style.background = cor || '#e6ffed';
       el.innerText = msg;
     }
+
+    // -------- STATUS DAS ROTAS --------
+    let _rankingRotaRows = [];
+    let _rankingSacasHoje = new Set();
+
+    async function verStatus() {
+      document.getElementById('modalRanking').style.display = 'block';
+      document.getElementById('lista').innerHTML = 'Carregando...';
+      document.getElementById('pendentesRotaWrap').style.display = 'none';
+      try {
+        const hoje = dataHoje();
+        const svcAtual = getV('svc');
+        let rotaQ = db.from('rota').select('saca_id,rota,nodo,eta');
+        if (svcAtual) rotaQ = rotaQ.eq('svc', svcAtual);
+        let logHojeQ = db.from('log').select('saca_id').like('data', hoje + '%');
+        if (svcAtual) logHojeQ = logHojeQ.eq('svc', svcAtual);
+        const [rotaRows, logRows] = await Promise.all([
+          sbCheck(await rotaQ),
+          sbCheck(await logHojeQ)
+        ]);
+
+        _rankingRotaRows = rotaRows;
+        _rankingSacasHoje = new Set(logRows.map(r => (r.saca_id || '').trim()));
+
+        // Monta rotaMeta com ETA mínimo por rota direto do banco
+        // ETA "00:00:00" ou vazio = sem prioridade de horário (vai pro fim)
+        const rotaMeta = {};
+        for (const r of rotaRows) {
+          if (!r.rota) continue;
+          if (!rotaMeta[r.rota]) rotaMeta[r.rota] = { minEta: '' };
+          const eta = (r.eta || '').trim();
+          if (!eta || /^0+[:h]?0*[:h]?0*$/.test(eta)) continue; // ignora 00:00:00 / 0h / vazio
+          if (!rotaMeta[r.rota].minEta || eta < rotaMeta[r.rota].minEta)
+            rotaMeta[r.rota].minEta = eta;
+        }
+
+        let totalPorRota = {};
+        for (const r of rotaRows) {
+          if (r.rota) totalPorRota[r.rota] = (totalPorRota[r.rota] || 0) + 1;
         }
 
         let progresso = {};
@@ -2250,7 +3185,27 @@ o"></div>
             const _y4  = inv ? ll - ty4 - 24       : ty4;
             zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
-             
+                   '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                   '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
+                   '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
+          }
+        } else {
+          // Layout proporcional para 100×100, 100×150, 150×100
+          // Sem lógica de orientação — posições fixas, ajuste via slider Vertical
+          const sy  = ll / 800;
+          const qrSz = 7 * 29;
+          const qrX  = Math.round((pw - qrSz) / 2);
+          const qrY  = Math.round(20  * sy);
+          const y1   = Math.round(350 * sy);
+          const y2   = Math.round(440 * sy);
+          const y3   = Math.round(520 * sy);
+          const y4   = Math.round(565 * sy);
+          const fA   = Math.round(75  * sy);
+          const fB   = Math.round(65  * sy);
+          const fC   = Math.round(38  * sy);
+          for (let k = 1; k <= qtdVal; k++) {
+            const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
             zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
                    '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
@@ -2362,14 +3317,1030 @@ o"></div>
         const hoje = dataHoje();
         const [countRes, totalRes, primeiroRes, erroRes] = await Promise.all([
           db.from('log').select('*', { count: 'exact', head: true }).eq('svc', svc).like('data', hoje + '%'),
-no log.</span>';
+          db.from('rota').select('*', { count: 'exact', head: true }).eq('svc', svc),
+          db.from('log').select('data').eq('svc', svc).like('data', hoje + '%').order('id', { ascending: true }).limit(1),
+          db.from('erros').select('id', { count: 'exact', head: true }).eq('svc', svc).like('data', hoje + '%')
+        ]);
+        const count = countRes.count || 0;
+        const total = totalRes.count || 0;
+        const erroCount = erroRes.count || 0;
+        const btnErros = document.getElementById('btnErrosHoje');
+        if (btnErros) {
+          document.getElementById('errosHojeCount').innerText = erroCount;
+          btnErros.style.display = erroCount > 0 ? 'block' : 'none';
+        }
+
+        // Velocidade e projeção
+        let velocidadeHTML = '';
+        if (count > 0 && primeiroRes?.data?.length) {
+          const inicio = parseDateBR(primeiroRes.data[0].data) || new Date();
+          const agora  = new Date();
+          const horas  = (agora - inicio) / 3600000;
+          if (horas > 0.05) {
+            const taxa = count / horas;
+            const taxaStr = taxa.toFixed(1).replace('.', ',');
+            if (total > count) {
+              const restante   = total - count;
+              const etaMinutos = Math.round((restante / taxa) * 60);
+              const etaHora    = new Date(agora.getTime() + etaMinutos * 60000);
+              const etaStr     = etaHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+              velocidadeHTML = `<div style="font-size:11px;font-weight:600;color:#9ca3b8;margin-top:8px">⚡ ${taxaStr}/h · previsão de término ~${etaStr}</div>`;
+            } else {
+              velocidadeHTML = `<div style="font-size:11px;font-weight:600;color:#9ca3b8;margin-top:8px">⚡ ${taxaStr} sacas/h</div>`;
+            }
+          }
+        }
+
+        if (total > 0) {
+          const pct = Math.round(count / total * 100);
+          const barColor = pct === 100 ? 'linear-gradient(90deg,#00a650,#00c060)' : pct >= 70 ? 'linear-gradient(90deg,#f59e0b,#ef7c00)' : 'linear-gradient(90deg,#1a1f63,#2d3494)';
+          const statusDot = pct === 100 ? '#00a650' : pct >= 70 ? '#f59e0b' : '#1a1f63';
+          el.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9ca3b8;margin-bottom:2px">Sacas hoje</div>
+                <div style="display:flex;align-items:baseline;gap:5px">
+                  <span style="font-size:28px;font-weight:900;color:#0d0f1a;line-height:1">${count}</span>
+                  <span style="font-size:14px;font-weight:600;color:#9ca3b8">/ ${total}</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                <div style="font-size:22px;font-weight:900;color:${statusDot}">${pct}%</div>
+                <div style="font-size:10px;font-weight:700;color:#9ca3b8;white-space:nowrap">${count === total ? '✓ Concluído' : `${total - count} restantes`}</div>
+              </div>
+            </div>
+            <div style="background:#dde3f8;border-radius:6px;height:7px;overflow:hidden">
+              <div style="background:${barColor};height:7px;border-radius:6px;width:${pct}%;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
+            </div>
+            ${velocidadeHTML}`;
+
+          // Celebração ao atingir 100%
+          if (pct === 100 && !_metaJaCelebrou) {
+            _metaJaCelebrou = true;
+            toast('🎉 META ATINGIDA! Todas as sacas impressas!', 'ok', 5000);
+            beep('ok'); setTimeout(() => beep('ok'), 300); setTimeout(() => beep('ok'), 600);
+          }
+          if (pct < 100) _metaJaCelebrou = false;
+        } else {
+          el.innerHTML = count > 0
+            ? `<div style="display:flex;align-items:center;gap:10px">
+                 <div>
+                   <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9ca3b8;margin-bottom:2px">Sacas hoje</div>
+                   <div style="font-size:28px;font-weight:900;color:#0d0f1a;line-height:1">${count}</div>
+                 </div>
+                 <div style="font-size:11px;color:#9ca3b8;font-weight:600">sem meta definida</div>
+               </div>${velocidadeHTML}`
+            : '';
+        }
+      } catch (_) {}
+    }
+
+    // ---- Reimprimir ----
+    async function reimprimir() {
+      if (!ultimoZPL) return;
+      toast('🔄 Reenviando...', 'info', 1500);
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      if (mode === 'usb') {
+        const ok = await imprimirViaUSB(ultimoZPL);
+        if (ok) { toast('✅ Reimpresso via USB!', 'ok'); beep('ok'); }
+      } else if (mode === 'bt') {
+        const ok = await imprimirViaBluetooth(ultimoZPL);
+        if (ok) { toast('✅ Reimpresso via Bluetooth!', 'ok'); beep('ok'); }
+      } else {
+        if (!ultimoIP) return;
+        enviarZPLWifi(ultimoIP, ultimoZPL)
+          .then(() => { toast('✅ Reimpresso com sucesso!', 'ok'); beep('ok'); })
+          .catch(() => { toast('❌ Erro na impressora.', 'err'); beep('err'); });
+      }
+    }
+
+    // ---- Histórico da sessão ----
+    function adicionarHistorico(sacaId, rota, qtd) {
+      historicoSessao.unshift({ sacaId, rota, qtd, hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) });
+      if (historicoSessao.length > 5) historicoSessao.pop();
+      renderHistorico();
+    }
+    function renderHistorico() {
+      const wrap = document.getElementById('historicoWrap');
+      const list = document.getElementById('historicoList');
+      if (!historicoSessao.length) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      list.innerHTML = historicoSessao.map(h =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f9f9f9;border-radius:7px;font-size:12px;margin-bottom:4px;border:1px solid #eee;cursor:pointer" onclick="document.getElementById('saca').value='${h.sacaId}'">
+          <span style="font-weight:700;color:#1a1f63">${h.sacaId}</span>
+          <span style="color:#888">${h.rota} · ${h.qtd}x</span>
+          <span style="color:#aaa">${h.hora}</span>
+        </div>`
+      ).join('');
+    }
+
+    // ---- Busca Rápida (Saca ID ou Rota) ----
+    async function buscarRapido() {
+      const input = document.getElementById('buscaInput').value.trim();
+      const res   = document.getElementById('buscaResult');
+      if (!input) return;
+      res.style.color = '#888'; res.innerHTML = '⏳ Buscando...';
+      try {
+        const svc = getV('svc');
+
+        // 1. Tenta como Saca ID exato
+        let q = db.from('base').select('rota').eq('saca_id', input);
+        if (svc) q = q.eq('svc', svc);
+        const baseRows = await sbCheck(await q.limit(1));
+
+        if (baseRows && baseRows.length) {
+          const logRows = await sbCheck(
+            await db.from('log').select('data,responsavel').eq('saca_id', input).order('id', { ascending: false }).limit(1)
+          );
+          const rota = baseRows[0].rota || '—';
+          if (logRows && logRows.length) {
+            res.style.color = '#00a650';
+            res.innerHTML = `✅ <b>${input}</b> · ${rota} · Última impressão: ${logRows[0].data} por ${logRows[0].responsavel}`;
+          } else {
+            res.style.color = '#ff9500';
+            res.innerHTML = `⚠️ <b>${input}</b> · ${rota} · Ainda não impressa.`;
+          }
+          return;
+        }
+
+        // 2. Tenta como Rota (busca parcial)
+        let rQ = db.from('base').select('saca_id').ilike('rota', '%' + input + '%');
+        if (svc) rQ = rQ.eq('svc', svc);
+        const sacasBase = await sbCheck(await rQ.limit(500));
+
+        if (!sacasBase || !sacasBase.length) {
+          res.style.color = '#c0392b';
+          res.innerHTML = `❌ Nada encontrado para "<b>${input}</b>"` + (svc ? ` no ${svc}` : '') + '.';
+          return;
+        }
+
+        const sacaIds = sacasBase.map(r => r.saca_id);
+        const hoje = dataHoje();
+        let lQ = db.from('log').select('saca_id').ilike('rota', '%' + input + '%').like('data', hoje + '%');
+        if (svc) lQ = lQ.eq('svc', svc);
+        const logRotaRows = await sbCheck(await lQ);
+
+        const impressasSet = new Set((logRotaRows || []).map(r => r.saca_id));
+        const impressas = sacaIds.filter(s => impressasSet.has(s));
+        const pendentes = sacaIds.filter(s => !impressasSet.has(s));
+        const pct = sacaIds.length ? Math.round(impressas.length / sacaIds.length * 100) : 0;
+        const cor = pct === 100 ? '#00a650' : pct >= 50 ? '#ff9500' : '#c0392b';
+
+        const tagPend = pendentes.map(s =>
+          `<span style="display:inline-block;background:#fff3cd;border-radius:4px;padding:1px 7px;margin:2px;font-size:11px;color:#856404;font-weight:700">${s}</span>`
+        ).join('');
+        const tagImp = impressas.map(s =>
+          `<span style="display:inline-block;background:#d4edda;border-radius:4px;padding:1px 7px;margin:2px;font-size:11px;color:#155724;font-weight:700">${s}</span>`
+        ).join('');
+
+        res.style.color = '#333';
+        res.innerHTML = `
+          <div style="font-weight:800;color:${cor};margin-bottom:8px;font-size:13px">
+            Rota: <b>${input.toUpperCase()}</b> &nbsp;·&nbsp; ${impressas.length}/${sacaIds.length} impressas (${pct}%)
+            <div style="background:#e5e5ea;border-radius:4px;height:6px;margin-top:5px;overflow:hidden">
+              <div style="background:${cor};height:6px;border-radius:4px;width:${pct}%"></div>
+            </div>
+          </div>
+          ${pendentes.length ? `<div style="font-size:11px;font-weight:800;color:#856404;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">⚠️ Pendentes hoje (${pendentes.length})</div>
+          <div style="max-height:110px;overflow-y:auto;padding:2px 0;margin-bottom:8px">${tagPend}</div>` : ''}
+          ${impressas.length ? `<div style="font-size:11px;font-weight:800;color:#155724;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">✅ Impressas hoje (${impressas.length})</div>
+          <div style="max-height:80px;overflow-y:auto;padding:2px 0">${tagImp}</div>` : ''}
+        `;
+      } catch (e) {
+        res.style.color = '#c0392b'; res.innerHTML = 'Erro: ' + e.message;
+      }
+    }
+
+    // ---- Etiqueta de teste ----
+    async function imprimirTeste() {
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      const ip = document.getElementById('ip').value.trim();
+      if (mode === 'wifi' && !ip) { toast('⚠️ Informe o IP da impressora primeiro.', 'warn'); return; }
+      if (mode === 'usb' && !getSelectedUSBPrinter() && !(_webUsbDevice && _webUsbEndpointNum !== null)) { toast('⚠️ Conecte a impressora USB primeiro.', 'warn'); return; }
+      if (mode === 'bt' && !_btChar) { toast('⚠️ Conecte a impressora Bluetooth primeiro.', 'warn'); return; }
+
+      const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
+      const dark  = document.getElementById('darkness').value || '30';
+      const inv   = isInvertido();
+      const rot   = inv ? 'I' : 'N';
+      const svc   = getV('svc') || 'SVC';
+      const dataStr = dataHoraAtual();
+      let zpl;
+
+      if (pw === 640 && ll === 320) {
+        const qrMag = 3, qrDots = qrMag * 21;
+        const vOff  = Math.round((ll - 166) / 2);
+        const tX    = inv ? pw - 5 : 150;
+        const tW    = pw - 155;
+        const _qrY  = inv ? ll - vOff - 10 - qrDots : vOff + 10;
+        const _y1   = inv ? ll - (vOff + 10)  - 50 : vOff + 10;
+        const _y2   = inv ? ll - (vOff + 65)  - 42 : vOff + 65;
+        const _y3   = inv ? ll - (vOff + 112) - 24 : vOff + 112;
+        const _y4   = inv ? ll - (vOff + 142) - 24 : vOff + 142;
+        zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
+              `^FO10,${_qrY}^BQN,2,${qrMag}^FDQA,TESTE^FS` +
+              `^FO${tX},${_y1}^A0${rot},50,50^FB${tW},1,0,L^FDTESTE IMPRESSAO^FS` +
+              `^FO${tX},${_y2}^A0${rot},42,42^FB${tW},1,0,L^FD${svc}^FS` +
+              `^FO${tX},${_y3}^A0${rot},24,24^FB${tW},1,0,L^FD${dataStr}^FS` +
+              `^FO${tX},${_y4}^A0${rot},24,24^FB${tW},1,0,L^FDIP: ${ip}^FS^XZ`;
+      } else {
+        const sy   = ll / 800;
+        const qrSz = 5 * 21;
+        const qrX  = Math.round((pw - qrSz) / 2), qrY = Math.round(20 * sy);
+        const y1   = Math.round(350 * sy), y2 = Math.round(440 * sy);
+        const y3   = Math.round(520 * sy), y4 = Math.round(565 * sy);
+        const fA   = Math.round(75 * sy), fB = Math.round(65 * sy), fC = Math.round(38 * sy);
+        zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
+              `^FO${qrX},${qrY}^BQN,2,5^FDQA,TESTE^FS` +
+              `^FO0,${y1}^A0N,${fA},${fA}^FB${pw},1,0,C^FDTESTE DE IMPRESSAO^FS` +
+              `^FO0,${y2}^A0N,${fB},${fB}^FB${pw},1,0,C^FD${svc}^FS` +
+              `^FO0,${y3}^A0N,${fC},${fC}^FB${pw},1,0,C^FD${dataStr}^FS` +
+              `^FO0,${y4}^A0N,${fC},${fC}^FB${pw},1,0,C^FDIP: ${ip}^FS^XZ`;
+      }
+
+      toast('🖨️ Enviando etiqueta de teste...', 'info', 2000);
+      if (mode === 'usb') {
+        const ok = await imprimirViaUSB(zpl);
+        if (ok) { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); }
+      } else if (mode === 'bt') {
+        const ok = await imprimirViaBluetooth(zpl);
+        if (ok) { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); }
+      } else {
+        enviarZPLWifi(ip, zpl)
+          .then(() => { toast('✅ Etiqueta de teste enviada!', 'ok'); beep('ok'); })
+          .catch(() => { toast('❌ Erro ao conectar na impressora.', 'err'); beep('err'); });
+      }
+    }
+
+    // ---- Status da impressora ----
+    function testarImpressora() {
+      const ip  = document.getElementById('ip').value.trim();
+      const dot = document.getElementById('printerDot');
+      const hdDot = document.getElementById('hdPrinterDot');
+      const warn = document.getElementById('mixedContentWarn');
+      const setColor = c => { dot.style.background = c; if (hdDot) hdDot.style.background = c; };
+      if (warn) warn.style.display = (location.protocol === 'https:' && ip) ? 'block' : 'none';
+      if (!ip) { setColor('#6b7280'); return; }
+      setColor('#ff9500');
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 2500);
+      fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
+        .then(() => {
+          clearTimeout(tid); setColor('#00a650');
+          if (warn) warn.style.display = 'none';
+          const wm = document.getElementById('httpsWarnMain');
+          if (wm) wm.style.display = 'none';
+        })
+        .catch(e80 => {
+          clearTimeout(tid);
+          // Porta 80 falhou — testa porta RAW 9100 como fallback
+          const ctrl2 = new AbortController();
+          const t2 = setTimeout(() => ctrl2.abort(), 2000);
+          const t2start = Date.now();
+          fetch('http://' + ip + ':9100', { method: 'GET', mode: 'no-cors', signal: ctrl2.signal })
+            .catch(e90 => {
+              clearTimeout(t2);
+              // Se respondeu antes do abort (< 1800ms), impressora está online mas sem HTTP na 80
+              if (e90.name !== 'AbortError' && (Date.now() - t2start) < 1800) {
+                setColor('#f59e0b'); // amarelo = RAW disponivel
+              } else {
+                setColor('#c0392b'); // vermelho = sem resposta
+              }
+            })
+            .then(() => { clearTimeout(t2); }); // porta 9100 respondeu com HTTP (raro)
+        });
+    }
+
+    // ---- Relatório por operador ----
+    async function abrirRelatorioOperadores() {
+      document.getElementById('modalOps').style.display = 'block';
+      const svc = getV('svc');
+      document.getElementById('opsSvcLabel').innerText = svc || 'Geral';
+      const cont = document.getElementById('opsContent');
+      cont.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">⏳ Carregando...</div>';
+      try {
+        const dias = 7;
+        const hoje = new Date();
+        const datas = Array.from({ length: dias }, (_, i) => {
+          const d = new Date(hoje); d.setDate(d.getDate() - i);
+          return new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }).format(d);
+        });
+
+        let q = db.from('log').select('responsavel,data').gte('id', 0);
+        if (svc) q = q.eq('svc', svc);
+        // Filter last 7 days using the oldest date pattern
+        const oldest = datas[datas.length - 1];
+        const rows = await sbCheck(await q.order('id', { ascending: false }).limit(5000)) || [];
+
+        const byOp = {};
+        for (const r of rows) {
+          const opRaw = (r.responsavel || '—').trim();
+          const key   = opRaw.toLowerCase(); // agrupa sem distinção de maiúsculas
+          if (!byOp[key]) byOp[key] = { total: 0, dias: {}, label: opRaw };
+          else if (opRaw.length > byOp[key].label.length) byOp[key].label = opRaw; // usa versão mais completa
+          const dia = (r.data || '').slice(0, 10); // DD/MM/YYYY
+          if (datas.includes(dia)) {
+            byOp[key].total++;
+            byOp[key].dias[dia] = (byOp[key].dias[dia] || 0) + 1;
+          }
+        }
+
+        const ops = Object.entries(byOp)
+          .filter(([, v]) => v.total > 0)
+          .sort((a, b) => b[1].total - a[1].total);
+
+        if (!ops.length) {
+          cont.innerHTML = '<div style="color:#aaa;text-align:center;padding:20px">Nenhum dado nos últimos 7 dias.</div>';
+          return;
+        }
+
+        const maxTotal = ops[0][1].total || 1;
+        cont.innerHTML = ops.map(([, v]) => {
+          const pct = Math.round(v.total / maxTotal * 100);
+          const media = (v.total / dias).toFixed(1);
+          const diasAtivos = Object.keys(v.dias).length;
+          const barDias = datas.slice().reverse().map(d => {
+            const n = v.dias[d] || 0;
+            const h = n ? Math.max(6, Math.round(n / maxTotal * 32)) : 3;
+            return `<div title="${d}: ${n}" style="width:10px;background:${n ? '#1a1f63' : '#e5e5ea'};height:${h}px;border-radius:2px;flex-shrink:0"></div>`;
+          }).join('');
+          return `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f0f0f0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-weight:800;color:#1a1f63;font-size:13px">👤 ${v.label}</span>
+              <span style="font-size:12px;color:#555">${v.total} total · ${media}/dia · ${diasAtivos}d ativo</span>
+            </div>
+            <div style="background:#e5e5ea;border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px">
+              <div style="background:#1a1f63;height:6px;border-radius:4px;width:${pct}%"></div>
+            </div>
+            <div style="display:flex;gap:3px;align-items:flex-end;height:36px">${barDias}</div>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        cont.innerHTML = '<div style="color:#c0392b">Erro: ' + e.message + '</div>';
+      }
+    }
+
+    // ---- Dashboard Realtime ----
+    let _dashChannel = null;
+
+    async function abrirDashboard() {
+      document.getElementById('modalDash').style.display = 'block';
+      document.getElementById('dashLiveIndicator').style.display = 'none';
+      await carregarDashboard();
+      if (_dashChannel) { try { db.removeChannel(_dashChannel); } catch (_) {} }
+      _dashChannel = db.channel('sacas-dashboard-' + Date.now())
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'log' }, () => {
+          carregarDashboard();
+        })
+        .subscribe(status => {
+          const ind = document.getElementById('dashLiveIndicator');
+          if (ind) ind.style.display = status === 'SUBSCRIBED' ? 'inline' : 'none';
+        });
+    }
+
+    function fecharDashboard() {
+      if (_dashChannel) { try { db.removeChannel(_dashChannel); } catch (_) {} _dashChannel = null; }
+      const ind = document.getElementById('dashLiveIndicator');
+      if (ind) ind.style.display = 'none';
+      fecharModal('modalDash');
+    }
+
+    async function carregarDashboard() {
+      const cont = document.getElementById('dashContent');
+      if (!cont) return;
+      try {
+        const hoje = dataHoje();
+        const [rotaRows, logRows, erroRows] = await Promise.all([
+          sbCheck(await db.from('rota').select('svc,saca_id')),
+          sbCheck(await db.from('log').select('svc,saca_id').like('data', hoje + '%')),
+          sbCheck(await db.from('erros').select('svc').like('data', hoje + '%'))
+        ]);
+
+        const totalPorSvc = {};
+        (rotaRows || []).forEach(r => { if (r.svc) totalPorSvc[r.svc] = (totalPorSvc[r.svc] || 0) + 1; });
+        const printPorSvc = {};
+        (logRows || []).forEach(r => { if (r.svc) printPorSvc[r.svc] = (printPorSvc[r.svc] || 0) + 1; });
+        const erroPorSvc = {};
+        (erroRows || []).forEach(r => { if (r.svc) erroPorSvc[r.svc] = (erroPorSvc[r.svc] || 0) + 1; });
+
+        const allSvcs = [...new Set([...Object.keys(totalPorSvc), ...Object.keys(printPorSvc)])].sort();
+
+        if (!allSvcs.length) {
+          cont.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px">Nenhum dado disponivel.</div>';
+          return;
+        }
+
+        const totalGeral = allSvcs.reduce((s, sv) => s + (totalPorSvc[sv] || 0), 0);
+        const printGeral = allSvcs.reduce((s, sv) => s + (printPorSvc[sv] || 0), 0);
+        const erroGeral  = allSvcs.reduce((s, sv) => s + (erroPorSvc[sv] || 0), 0);
+        const pctGeral   = totalGeral ? Math.round(printGeral / totalGeral * 100) : 0;
+        const corGeral   = pctGeral === 100 ? '#00a650' : pctGeral >= 50 ? '#ff9500' : '#c0392b';
+
+        const svcCards = allSvcs.map(sv => {
+          const total  = totalPorSvc[sv] || 0;
+          const feitas = printPorSvc[sv] || 0;
+          const erros  = erroPorSvc[sv] || 0;
+          const pct    = total ? Math.round(feitas / total * 100) : 0;
+          const cor    = pct === 100 ? '#00a650' : pct >= 50 ? '#ff9500' : '#c0392b';
+          const erroBadge = erros > 0
+            ? `<span style="background:#fce4ec;color:#c0392b;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">&#128680; ${erros} erro${erros !== 1 ? 's' : ''}</span>`
+            : `<span style="background:#e8f5e9;color:#00a650;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">&#10003; Sem erros</span>`;
+          return `<div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:900;font-size:14px;color:#1a1f63">${sv}</span>
+              <span style="font-size:12px;font-weight:700;color:${cor}">${feitas}/${total} (${pct}%)</span>
+            </div>
+            <div style="background:#e5e5ea;border-radius:4px;height:8px;overflow:hidden;margin-bottom:8px">
+              <div style="background:${cor};height:8px;border-radius:4px;width:${pct}%;transition:width .5s"></div>
+            </div>
+            ${erroBadge}
+          </div>`;
+        }).join('');
+
+        const erroGeralBadge = erroGeral > 0
+          ? `<span style="color:#c0392b;font-weight:700">&#128680; ${erroGeral} erros</span>`
+          : `<span style="color:#00a650;font-weight:700">&#10003; 0 erros</span>`;
+
+        // ── 7-day chart — usa formato BR (DD/MM/YYYY) igual ao campo `data` ──
+        const brDates7 = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          brDates7.push(d.toLocaleDateString('pt-BR'));
+        }
+        const diasMap = {};
+        brDates7.forEach(d => { diasMap[d] = 0; });
+        const log7Rows = await sbCheck(await db.from('log').select('data')
+          .or(brDates7.map(d => 'data.like.' + d + '%').join(',')));
+        (log7Rows || []).forEach(r => { const dia = (r.data || '').slice(0, 10); if (diasMap[dia] !== undefined) diasMap[dia]++; });
+        const diasArr = Object.entries(diasMap);
+        const maxDia  = Math.max(...diasArr.map(([, n]) => n), 1);
+        const hojeStr = dataHoje();
+        const barChart = `<div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:8px">ÚLTIMOS 7 DIAS</div>
+          <div style="display:flex;align-items:flex-end;gap:3px;height:54px;margin-bottom:4px">
+            ${diasArr.map(([d, n]) => {
+              const pct   = Math.round(n / maxDia * 100);
+              const isHj  = d === hojeStr;
+              const parts = d.split('/');
+              const dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+              const label = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' });
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end">
+                <div style="font-size:9px;font-weight:800;color:${isHj ? '#1a1f63' : '#aaa'};margin-bottom:1px">${n > 0 ? n : ''}</div>
+                <div style="width:100%;background:${isHj ? '#1a1f63' : '#c9cbef'};border-radius:3px 3px 0 0;height:${Math.max(pct, n > 0 ? 4 : 1)}%"></div>
+                <div style="font-size:8px;color:${isHj ? '#1a1f63' : '#aaa'};font-weight:${isHj ? '800' : '600'};text-transform:capitalize;margin-top:2px">${label}</div>
+              </div>`;
+            }).join('')}
+          </div>`;
+
+        cont.innerHTML = `
+          <div style="background:#e8eaf6;border-radius:12px;padding:14px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-weight:900;font-size:13px;color:#1a1f63">TOTAL GERAL</span>
+              <span style="font-size:13px;font-weight:700;color:${corGeral}">${pctGeral}%</span>
+            </div>
+            <div style="background:#c9cbef;border-radius:4px;height:10px;overflow:hidden;margin-bottom:8px">
+              <div style="background:${corGeral};height:10px;border-radius:4px;width:${pctGeral}%;transition:width .5s"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#555">
+              <span>${printGeral} impressas de ${totalGeral}</span>${erroGeralBadge}
+            </div>
+          </div>
+          <div style="background:#f5f7fc;border-radius:12px;padding:14px;margin-bottom:14px">${barChart}</div>
+          <div style="font-size:11px;font-weight:800;color:#aaa;letter-spacing:.5px;margin-bottom:10px">SVCs</div>
+          ${svcCards}
+        `;
+      } catch (e) {
+        const cont2 = document.getElementById('dashContent');
+        if (cont2) cont2.innerHTML = '<div style="color:#c0392b">Erro: ' + e.message + '</div>';
+      }
+    }
+
+    async function abrirErrosHoje() {
+      _abrirModalLog();
+      trocarTab('erros');
+      // input[type=date] requer YYYY-MM-DD
+      const iso = new Date().toISOString().slice(0, 10);
+      document.getElementById('erroDataDe').value = iso;
+      document.getElementById('erroDataAte').value = iso;
+      await buscarErros();
+    }
+
+    // ---- Exportar PDF ----
+    function exportarPDF() {
+      const svc  = getV('svc') || 'Todos';
+      const rows = document.querySelectorAll('#logBody tr');
+      let tabela = '';
+      rows.forEach(r => { tabela += r.outerHTML; });
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <title>Log Auditoria — ${svc}</title>
+        <style>
+          body { font-family: Arial, sans-serif; font-size: 11px; color: #222; }
+          h2 { color: #1a1f63; margin-bottom: 4px; }
+          p { color: #666; margin: 0 0 12px; font-size: 10px; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #1a1f63; color: #FFE600; padding: 6px 8px; text-align: left; font-size: 10px; }
+          td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+          tr:nth-child(even) td { background: #f9f9f9; }
+          @media print { body { margin: 0; } }
+        </style></head><body>
+        <h2>📦 Log de Auditoria — ${svc}</h2>
+        <p>Gerado em ${new Date().toLocaleString('pt-BR')} | Sistema Auditoria de Sacas — Mercado Livre</p>
+        <table><thead><tr>
+          <th>Data / Hora</th><th>Responsavel</th><th>Saca ID</th><th>Qtd</th><th>QR Mae</th><th>Rota</th><th>Auditoria</th>
+        </tr></thead><tbody>${tabela}</tbody></table>
+        <script>window.onload=()=>{window.print();}<\/script>
+        </body></html>`);
+      win.document.close();
+    }
+
+    // ---- Romaneio de Rota ----
+    function abrirRomaneio() {
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('romDe').value  = today;
+      document.getElementById('romAte').value = today;
+      document.getElementById('romRota').value      = '';
+      document.getElementById('romAudit').value     = '';
+      document.getElementById('romTransp').value    = '';
+      document.getElementById('romMotorista').value = '';
+      document.getElementById('romPlaca').value     = '';
+      document.getElementById('modalRomaneio').style.display = 'flex';
+    }
+
+    async function gerarRomaneio() {
+      const transp    = document.getElementById('romTransp').value.trim();
+      const motorista = document.getElementById('romMotorista').value.trim();
+      const placa     = document.getElementById('romPlaca').value.trim().toUpperCase();
+      if (!transp) { toast('Informe a transportadora', 'err'); return; }
+
+      const de    = document.getElementById('romDe').value;
+      const ate   = document.getElementById('romAte').value;
+      const rota  = document.getElementById('romRota').value.trim();
+      const audit = document.getElementById('romAudit').value.trim();
+
+      let q = db.from('log').select('*').order('rota', { ascending: true }).order('saca_id', { ascending: true }).limit(5000);
+      if (getV('svc')) q = q.eq('svc', getV('svc'));
+      if (rota)  q = q.ilike('rota',      '%' + rota  + '%');
+      if (audit) q = q.ilike('auditoria', '%' + audit + '%');
+
+      let rows = await sbCheck(await q) || [];
+
+      if (de || ate) {
+        const deDt  = de  ? new Date(de)  : null;
+        const ateDt = ate ? new Date(ate + 'T23:59:59') : null;
+        rows = rows.filter(r => {
+          const d = parseDateBR(r.data);
+          if (!d) return true;
+          if (deDt  && d < deDt)  return false;
+          if (ateDt && d > ateDt) return false;
+          return true;
+        });
+      }
+
+      if (!rows.length) { toast('Nenhum registro encontrado para os filtros informados', 'warn'); return; }
+
+      let totalSacas = rows.length;
+      const svc          = getV('svc') || 'Todos';
+      const dataGeracao  = new Date().toLocaleString('pt-BR');
+      const rotasLista   = [...new Set(rows.map(r => r.rota || r.auditoria).filter(Boolean))].join(', ') || 'Todas';
+      const periodoDe    = de  ? new Date(de  + 'T00:00').toLocaleDateString('pt-BR') : '—';
+      const periodoAte   = ate ? new Date(ate + 'T00:00').toLocaleDateString('pt-BR') : '—';
+
+      function extrairSaca(r) {
+        if (r.qr_mae) {
+          try {
+            const q = typeof r.qr_mae === 'string' ? JSON.parse(r.qr_mae) : r.qr_mae;
+            if (q.assignment) return q.assignment;
+            if (q.container_id) return q.container_id;
+          } catch(_) {}
+        }
+        return r.saca_id || '—';
+      }
+
+      // Deduplica: mantém apenas a primeira impressão de cada saca (menor id)
+      const sacaMap = new Map();
+      for (const r of rows) {
+        const key = String(extrairSaca(r)).toLowerCase();
+        if (!sacaMap.has(key) || (r.id < sacaMap.get(key).id)) sacaMap.set(key, r);
+      }
+      const rowsDedup = Array.from(sacaMap.values()).sort((a, b) => {
+        const ra = a.rota || a.auditoria || '', rb = b.rota || b.auditoria || '';
+        if (ra !== rb) return ra.localeCompare(rb);
+        return String(extrairSaca(a)).localeCompare(String(extrairSaca(b)), undefined, { numeric: true });
+      });
+      totalSacas = rowsDedup.length;
+
+      const tableRows = rowsDedup.map((r, i) =>
+        '<tr>' +
+        '<td style="text-align:center;color:#888;font-size:9px">' + (i + 1) + '</td>' +
+        '<td style="text-align:center;font-weight:700;font-size:10px">' + extrairSaca(r) + '</td>' +
+        '<td>' + (r.rota || r.auditoria || '') + '</td>' +
+        '<td style="color:#888;font-size:9px;white-space:nowrap">' + (r.data || '') + '</td>' +
+        '<td style="text-align:center;font-weight:700">' + (r.qtd || 1) + '</td>' +
+        '</tr>'
+      ).join('');
+
+      const sacaKeys = rowsDedup.map(r => String(extrairSaca(r))).sort().join(',');
+      let _qh = 5381;
+      for (let i = 0; i < sacaKeys.length; i++) _qh = (_qh * 33 ^ sacaKeys.charCodeAt(i)) >>> 0;
+      const checkHash = _qh.toString(16).slice(0, 6).toUpperCase();
+      const qrText = 'SACAS-MELI | ' + svc + ' | ' + new Date().toLocaleDateString('pt-BR') +
+        '\nTransp: ' + transp + (placa ? ' | Placa: ' + placa : '') +
+        '\nSacas: ' + totalSacas + ' | Rotas: ' + rotasLista +
+        '\nHash: ' + checkHash;
+
+      const win = window.open('', '_blank');
+      win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+        '<title>Romaneio de Rota — ' + svc + '</title>' +
+        '<style>' +
+        '*{box-sizing:border-box;margin:0;padding:0}' +
+        'body{font-family:Arial,sans-serif;font-size:10px;color:#222;background:#fff;padding:16px}' +
+        '.header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:2px solid #1a1f63;padding-bottom:8px;margin-bottom:10px}' +
+        '.logo-svg{flex-shrink:0}' +
+        '.title-block{text-align:center;flex:1}' +
+        '.title-block h1{font-size:19px;font-weight:900;color:#1a1f63;text-transform:uppercase;letter-spacing:1px}' +
+        '.title-block p{font-size:9px;color:#888;margin-top:2px}' +
+        '.qr-wrap{flex-shrink:0;width:70px;height:70px}' +
+        '.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}' +
+        '.ic{background:#f5f6fa;border-radius:5px;padding:4px 8px;border-left:2px solid #1a1f63}' +
+        '.ic .lb{font-size:7px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}' +
+        '.ic .vl{font-size:12px;font-weight:700;color:#1a1f63;margin-top:2px}' +
+        '.ic .vl.ok{color:#059669;font-size:15px}' +
+        'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
+        'thead tr{background:#1a1f63}' +
+        'thead th{color:#FFE600;padding:5px 6px;text-align:left;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}' +
+        'tbody td{padding:3px 6px;border-bottom:1px solid #eee;font-size:9px;vertical-align:middle}' +
+        'tbody tr:nth-child(even) td{background:#f9faff}' +
+        '.tot td{background:#1a1f63!important;color:#FFE600!important;font-weight:700!important;font-size:11px!important;border:none!important;padding:7px 8px!important}' +
+        '.sign-section{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px;page-break-inside:avoid}' +
+        '.sign-box{text-align:center}' +
+        '.sign-line{border-top:1.5px solid #333;margin:30px 0 5px}' +
+        '.sign-label{font-size:9px;font-weight:700;color:#1a1f63;text-transform:uppercase;letter-spacing:.5px}' +
+        '.sign-sub{font-size:9px;color:#888;margin-top:3px}' +
+        '.footer{margin-top:14px;padding-top:8px;border-top:1px solid #ddd;font-size:8px;color:#aaa;text-align:center}' +
+        '@media print{body{padding:0}@page{size:A4;margin:8mm}.no-print{display:none!important}}' +
+        '</style>' +
+        '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>' +
+        '</head><body>' +
+        '<div class="no-print" style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:999">' +
+        '<button onclick="window.print()" style="background:#1a1f63;color:#FFE600;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
+        '<button onclick="window.close()" style="background:#eee;color:#333;border:none;padding:10px 16px;border-radius:8px;font-size:13px;cursor:pointer">✕ Fechar</button>' +
+        '</div>' +
+        '<div class="header">' +
+        '<svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 56" width="72" height="45">' +
+        '<rect width="90" height="56" rx="8" fill="#FFE600"/>' +
+        '<circle cx="23" cy="9" r="5.5" fill="#1a1f63"/>' +
+        '<path d="M14,41 L17,23 C18,19 20.5,17.5 23,17.5 C25.5,17.5 28,19 29,23 L32,41 Z" fill="#1a1f63"/>' +
+        '<path d="M17,27 L7,15" stroke="#1a1f63" stroke-width="4.5" stroke-linecap="round"/>' +
+        '<circle cx="67" cy="9" r="5.5" fill="#1a1f63"/>' +
+        '<path d="M58,41 L61,23 C62,19 64.5,17.5 67,17.5 C69.5,17.5 72,19 73,23 L76,41 Z" fill="#1a1f63"/>' +
+        '<path d="M73,27 L83,15" stroke="#1a1f63" stroke-width="4.5" stroke-linecap="round"/>' +
+        '<ellipse cx="45" cy="27" rx="11" ry="8.5" fill="#1a1f63"/>' +
+        '<text x="45" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-size="8.5" font-weight="800" fill="#1a1f63">mercado livre</text>' +
+        '</svg>' +
+        '<div class="title-block"><h1>Romaneio de Rota</h1><p>Sistema de Auditoria de Sacas</p></div>' +
+        '<div class="qr-wrap" id="qr"></div>' +
+        '</div>' +
+        '<div class="info-grid">' +
+        '<div class="ic"><div class="lb">SVC / Unidade</div><div class="vl">' + svc + '</div></div>' +
+        '<div class="ic"><div class="lb">Rota(s)</div><div class="vl">' + rotasLista + '</div></div>' +
+        '<div class="ic"><div class="lb">Período</div><div class="vl">' + periodoDe + ' a ' + periodoAte + '</div></div>' +
+        '<div class="ic"><div class="lb">Transportadora</div><div class="vl">' + transp + '</div></div>' +
+        '<div class="ic"><div class="lb">Motorista</div><div class="vl">' + (motorista || '—') + '</div></div>' +
+        '<div class="ic"><div class="lb">Placa</div><div class="vl">' + (placa || '—') + '</div></div>' +
+        '<div class="ic"><div class="lb">Total de Sacas</div><div class="vl ok">' + totalSacas + '</div></div>' +
+        '</div>' +
+        '<table><thead><tr>' +
+        '<th>#</th><th style="text-align:center">Nº Saca</th><th>Rota</th><th>Data / Hora</th><th style="text-align:center">Vol.</th>' +
+        '</tr></thead><tbody>' +
+        tableRows +
+        '<tr class="tot"><td colspan="5" style="text-align:center">' + totalSacas + ' sacas entregues</td></tr>' +
+        '</tbody></table>' +
+        '<div class="sign-section">' +
+        '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Separador / Responsável pela Auditoria</div><div class="sign-sub">Nome / Matrícula</div></div>' +
+        '<div class="sign-box"><div class="sign-line"></div><div class="sign-label">Motorista / Representante da Transportadora</div><div class="sign-sub">' + (motorista || 'Nome / CPF / RG') + '</div></div>' +
+        '</div>' +
+        '<div class="footer">Documento gerado em ' + dataGeracao + ' &nbsp;|&nbsp; Sistema Auditoria de Sacas &mdash; Mercado Livre &nbsp;|&nbsp; Este documento comprova a entrega das sacas relacionadas acima</div>' +
+        '<script>try{new QRCode(document.getElementById("qr"),{text:' + JSON.stringify(qrText) + ',width:70,height:70,correctLevel:QRCode.CorrectLevel.M});}catch(e){}<\/script>' +
+        '</body></html>');
+      win.document.close();
+      fecharModal('modalRomaneio');
+    }
+
+    // ---- Service Worker ----
+    let _swWaiting = null;
+    function aplicarAtualizacao() {
+      if (_swWaiting) {
+        _swWaiting.postMessage({ type: 'SKIP_WAITING' });
+        navigator.serviceWorker.addEventListener('controllerchange',
+          () => window.location.reload(), { once: true });
+      }
+    }
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/Sacas/sw.js').then(reg => {
+
+          function mostrarBanner(sw) {
+            _swWaiting = sw;
+            document.getElementById('swUpdateBanner').style.display = 'flex';
+          }
+
+          // Caso 1: já havia um SW esperando quando a página carregou
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            mostrarBanner(reg.waiting);
+          }
+
+          // Caso 2: novo SW encontrado enquanto a página está aberta
+          reg.addEventListener('updatefound', () => {
+            const novo = reg.installing;
+            if (!novo) return;
+            novo.addEventListener('statechange', () => {
+              if (novo.state === 'installed' && navigator.serviceWorker.controller) {
+                mostrarBanner(novo);
+              }
+            });
+          });
+
+          // Verifica atualização a cada 2 minutos (garante detecção mesmo sem recarregar)
+          setInterval(() => reg.update(), 120000);
+
+        }).catch(() => {});
+      });
+    }
+
+    // ─── MODO OPERAÇÃO ────────────────────────────────────────────────────────
+    let _opAtiva = (() => {
+      try { return JSON.parse(localStorage.getItem('opAtiva') || 'null'); } catch(e) { return null; }
+    })();
+
+    function opIsTeste() { return localStorage.getItem('opTestMode') === 'true'; }
+
+    function opToggleTeste() {
+      const next = !opIsTeste();
+      localStorage.setItem('opTestMode', next ? 'true' : 'false');
+      const btn = document.getElementById('btnOpTeste');
+      if (btn) {
+        btn.textContent = '🧪 Modo Teste: ' + (next ? 'ON' : 'OFF');
+        btn.style.background = next ? '#fff3cd' : 'var(--surf)';
+        btn.style.color      = next ? '#78350f' : 'var(--tx2)';
+        btn.style.borderColor = next ? '#f59e0b' : 'var(--bdr)';
+      }
+    }
+
+    function opRenderUI() {
+      const ativo = !!_opAtiva;
+      document.getElementById('opPainelInativo').style.display = ativo ? 'none' : '';
+      document.getElementById('opPainelAtivo').style.display   = ativo ? ''     : 'none';
+      // Atualiza botão de teste (pode ter mudado no localStorage)
+      opToggleTeste(); opToggleTeste(); // idempotente — só garante sincronismo visual
+      const btn = document.getElementById('btnOpTeste');
+      if (btn) { // restaura estado sem double-toggle
+        const t = opIsTeste();
+        btn.textContent   = '🧪 Modo Teste: ' + (t ? 'ON' : 'OFF');
+        btn.style.background  = t ? '#fff3cd' : 'var(--surf)';
+        btn.style.color       = t ? '#78350f' : 'var(--tx2)';
+        btn.style.borderColor = t ? '#f59e0b' : 'var(--bdr)';
+      }
+      if (!ativo) return;
+      const totalSacas = _opAtiva.sacas.reduce((s, e) => s + e.qtd, 0);
+      const testeTag = _opAtiva.teste ? '  🧪 TESTE' : '';
+      document.getElementById('opIdLabel').textContent =
+        _opAtiva.id + testeTag + '  ·  ' + _opAtiva.sacas.length + ' container(s)  ·  ' + totalSacas + ' saca(s)';
+      const lista = document.getElementById('opLista');
+      if (!_opAtiva.sacas.length) {
+        lista.innerHTML = '<span style="color:var(--tx3);font-size:12px">Nenhuma saca adicionada ainda.</span>';
+        return;
+      }
+      lista.innerHTML = _opAtiva.sacas.map(s =>
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 7px;' +
+        'border-radius:4px;background:var(--surf2);margin-bottom:3px;font-size:12px">' +
+        '<span style="font-weight:700">' + s.saca_id + '</span>' +
+        '<span style="color:var(--tx2)">' + (s.rota || '—') + '</span>' +
+        '<span style="background:var(--ok);color:#fff;border-radius:10px;padding:1px 8px;font-weight:700">' +
+        s.qtd + ' saca(s)</span></div>'
+      ).join('');
+    }
+
+    function setOpStatus(msg, bg) {
+      const el = document.getElementById('opStatus');
+      if (!el) return;
+      el.textContent = msg;
+      if (bg === '#d4edda') { el.style.background = bg; el.style.color = '#155724'; }
+      else if (bg === '#ffdce0') { el.style.background = bg; el.style.color = '#721c24'; }
+      else { el.style.background = bg || 'var(--surf2)'; el.style.color = 'var(--tx2)'; }
+    }
+
+    function opIniciar() {
+      const now = new Date();
+      const p = n => String(n).padStart(2,'0');
+      const id = 'OP-' + now.getFullYear() + p(now.getMonth()+1) + p(now.getDate()) +
+                 '-' + p(now.getHours()) + p(now.getMinutes());
+      const teste = opIsTeste();
+      _opAtiva = { id, inicio: now.toISOString(), teste, sacas: [] };
+      localStorage.setItem('opAtiva', JSON.stringify(_opAtiva));
+      opRenderUI();
+      toast((teste ? '🧪 [TESTE] ' : '') + 'Operação ' + id + ' iniciada!', 'ok');
+      setTimeout(() => document.getElementById('opSacaId').focus(), 150);
+    }
+
+    function opRomaneio() {
+      if (_opAtiva && _opAtiva.sacas.length) abrirRomaneio();
+      else toast('Nenhuma saca na operação.', 'warn');
+    }
+
+    function opLimpar() {
+      if (_opAtiva && _opAtiva.sacas.length &&
+          !confirm('Encerrar operação ' + _opAtiva.id + '?\n' + _opAtiva.sacas.length + ' container(s) já registrados no banco.')) return;
+      _opAtiva = null;
+      localStorage.removeItem('opAtiva');
+      opRenderUI();
+    }
+
+    async function opAdicionarSaca() {
+      if (!_opAtiva) return;
+      const input = (document.getElementById('opSacaId').value || '').trim();
+      if (!input) return;
+
+      const mode = localStorage.getItem('printMode') || 'wifi';
+      const ip   = (document.getElementById('ip').value || '').trim();
+      if (mode === 'wifi' && !ip) { toast('Configure o IP da impressora.', 'warn'); return; }
+
+      const svc   = getV('svc');
+      const resp  = getV('resp');
+      const audit = getV('log');
+
+      let entry = _opAtiva.sacas.find(s => s.saca_id === input);
+
+      const modoTeste = !!_opAtiva.teste;
+
+      if (!entry) {
+        setOpStatus('Buscando saca ' + input + '...', '#fff3cd');
+        // Leitura da base sempre acontece (não grava nada) — só o log é pulado no modo teste
+        let q = db.from('base').select('qr_mae,rota,svc').eq('saca_id', input);
+        if (svc) q = q.eq('svc', svc);
+        const { data: baseRows, error: baseErr } = await q.limit(1);
+        if (baseErr || !baseRows || !baseRows.length || !baseRows[0].qr_mae) {
+          if (modoTeste) {
+            // Fallback de teste: saca não está na base, usa dados sintéticos
+            entry = { saca_id: input, qr_mae: 'TESTE-' + input, rota: 'TESTE', svc: svc || 'SVC', qtd: 0, log_id: null };
+          } else {
+            setOpStatus('Saca ' + input + ' não encontrada na base.', '#ffdce0'); return;
+          }
+        } else {
+          const br = baseRows[0];
+          entry = { saca_id: input, qr_mae: br.qr_mae, rota: br.rota || '', svc: svc || br.svc || '', qtd: 0, log_id: null };
+        }
+        _opAtiva.sacas.push(entry);
+      }
+
+      entry.qtd++;
+      const k = entry.qtd;
+
+      if (modoTeste) {
+        setOpStatus('🧪 [TESTE] Saca ' + k + ' — ' + input + ' (sem banco)', '#fff3cd');
+      } else {
+        setOpStatus('Registrando saca ' + k + ' — ' + input + '...', '#fff3cd');
+        if (k === 1) {
+          const dataStr = dataHoraAtual();
+          const { data: ins, error: insErr } = await db.from('log').insert({
+            data:        dataStr,
+            svc:         entry.svc,
+            responsavel: (entry.svc ? entry.svc + ' - ' : '') + resp,
+            auditoria:   audit,
+            saca_id:     input,
+            qtd:         1,
+            qr_mae:      entry.qr_mae,
+            rota:        entry.rota
+          }).select('id');
+          if (insErr || !ins || !ins.length) {
+            setOpStatus('Erro ao inserir: ' + (insErr ? insErr.message : '?'), '#ffdce0');
+            entry.qtd--; if (!entry.qtd) _opAtiva.sacas.pop(); return;
+          }
+          entry.log_id = ins[0].id;
+        } else {
+          const { error: updErr } = await db.from('log').update({ qtd: k }).eq('id', entry.log_id);
+          if (updErr) {
+            setOpStatus('Erro ao atualizar: ' + updErr.message, '#ffdce0');
+            entry.qtd--; return;
+          }
+        }
+      }
+
+      localStorage.setItem('opAtiva', JSON.stringify(_opAtiva));
+      opRenderUI();
+
+      // Imprimir etiqueta
+      setOpStatus('Imprimindo etiqueta ' + k + ' — ' + input + '...', '#fff3cd');
+      const zpl = opGerarZPL(entry, k);
+      let ok = false;
+      try {
+        if (mode === 'usb')      ok = await imprimirViaUSB(zpl);
+        else if (mode === 'bt')  ok = await imprimirViaBluetooth(zpl);
+        else { await enviarZPLWifi(ip, zpl); ok = true; }
+      } catch(e) { ok = false; }
+
+      const pfx = modoTeste ? '🧪 [TESTE] ' : '';
+      if (ok) { setOpStatus(pfx + '✅ ' + input + ' · Saca ' + k + ' impressa', '#d4edda'); beep('ok'); }
+      else    { setOpStatus(pfx + '⚠️ ' + input + ' · Saca ' + k + (modoTeste ? ' — erro na impressora' : ' registrada — erro na impressora'), '#fff3cd'); beep('err'); }
+
+      document.getElementById('opSacaId').value = '';
+      document.getElementById('opSacaId').focus();
+    }
+
+    function opGerarZPL(entry, k) {
+      const [pw, ll] = (document.getElementById('labelSizeMain').value || '800x800').split('x').map(Number);
+      const dark    = document.getElementById('darkness').value || '30';
+      const svc     = entry.svc;
+      const resp    = getV('resp');
+      const svcResp = zplEscape((svc ? svc + ' - ' : '') + resp);
+      const nMap    = JSON.parse(localStorage.getItem('sacaNodoMap_' + (svc || '')) || '{}');
+      const nodo    = zplEscape(nMap[(entry.saca_id || '').trim()] || '');
+      const rota    = zplEscape(entry.rota || '');
+      const sacaId  = zplEscape(entry.saca_id || '');
+      const audit   = zplEscape(getV('log'));
+      const dataStr = dataHoraAtual();
+      const qr      = k === 1 ? entry.qr_mae : entry.saca_id + ' Saca ' + k;
+      let zpl = '';
+
+      if (pw === 640 && ll === 320) {
+        const inv = isInvertido(), rot = inv ? 'I' : 'N';
+        const qrMag = 3, qrDots = qrMag * 45;
+        const tW = pw - 150 - 5, tX = inv ? pw - 5 : 150;
+        const vOff = Math.round((ll - 166) / 2);
+        const qrY0 = vOff + 10, ty1 = vOff + 10, ty2 = vOff + 65, ty3 = vOff + 112, ty4 = vOff + 142;
+        const _qrY = inv ? ll - qrY0 - qrDots : qrY0;
+        const _y1 = inv ? ll - ty1 - 50 : ty1, _y2 = inv ? ll - ty2 - 42 : ty2;
+        const _y3 = inv ? ll - ty3 - 24 : ty3, _y4 = inv ? ll - ty4 - 24 : ty4;
+        zpl = '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
+          '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
+          '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rota + ' - ' + sacaId + '^FS' +
+          '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + '^FS' +
+          '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
+          '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + audit + '^FS^XZ';
+      } else {
+        const sy = ll / 800, qrSz = 7 * 29;
+        const qrX = Math.round((pw - qrSz) / 2), qrY = Math.round(20 * sy);
+        const y1 = Math.round(350 * sy), y2 = Math.round(440 * sy);
+        const y3 = Math.round(520 * sy), y4 = Math.round(565 * sy);
+        const fA = Math.round(75 * sy), fB = Math.round(65 * sy), fC = Math.round(38 * sy);
+        zpl = '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
+          '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
+          '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rota + ' - ' + sacaId + '^FS' +
+          '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + '^FS' +
+          '^FO0,' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
+          '^FO0,' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + audit + '^FS^XZ';
+      }
+      return applyLabelShift(zpl);
+    }
+
+    // ─── CONSULTAR SACA ───────────────────────────────────────────────────────
+    async function consultarSaca() {
+      const raw = (document.getElementById('consultaInput').value || '').trim();
+      if (!raw) return;
+      // "SACAID Saca N" ou "SACAID Saca N-M" → extrai SACAID
+      const m = raw.match(/^(.+?)\s+[Ss]aca\s+\d/);
+      const sacaId = m ? m[1].trim() : raw;
+      const el = document.getElementById('consultaResult');
+      el.innerHTML = '<span style="color:var(--tx2)">Buscando...</span>';
+
+      const [logRes, rotaRes] = await Promise.all([
+        db.from('log').select('svc,rota,qtd,data,responsavel')
+          .eq('saca_id', sacaId).order('data', {ascending: false}).limit(1),
+        db.from('rota').select('eta').eq('saca_id', sacaId).limit(1)
+      ]);
+
+      const logRows  = logRes.data  || [];
+      const rotaRows = rotaRes.data || [];
+
+      if (!logRows.length) {
+        el.innerHTML = '<span style="color:var(--err)">Saca <b>' + sacaId + '</b> não encontrada no log.</span>';
         return;
       }
       const lg  = logRows[0];
       const eta = rotaRows.length ? (rotaRows[0].eta || '—') : '—';
       const sacas = Array.from({length: lg.qtd}, (_, i) =>
         '<span style="background:var(--ok);color:#fff;border-radius:10px;padding:2px 9px;font-weight:700;font-size:12px;margin:2px;display:inline-block">&#10003; Saca ' + (i+1) + '</span>'
-      
+      ).join('');
+
+      el.innerHTML =
+        '<div style="background:var(--surf2);border-radius:var(--rs);padding:12px;border:1.5px solid var(--bdr)">' +
+        '<div style="font-size:17px;font-weight:900;margin-bottom:8px">' + sacaId + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:12px;margin-bottom:10px">' +
+        '<span><b>Rota:</b> ' + (lg.rota || '—') + '</span>' +
+        '<span><b>SVC:</b> ' + (lg.svc || '—') + '</span>' +
+        '<span><b>ETA:</b> ' + eta + '</span>' +
+        '<span><b>Total:</b> ' + lg.qtd + ' saca(s)</span>' +
+        '<span style="grid-column:1/-1"><b>Resp:</b> ' + (lg.responsavel || '—') + '</span>' +
+        '</div>' +
+        '<div style="line-height:1.8">' + sacas + '</div>' +
+        '</div>';
+    }
+
+    // Restaurar UI da operação ao carregar
+    opRenderUI();
+  </script>
+  <div id="cfgDrawerOverlay" onclick="toggleConfig()"></div>
+  <div id="swUpdateBanner" onclick="aplicarAtualizacao()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1f63;color:#FFE600;padding:14px 16px;text-align:center;z-index:99999;cursor:pointer;font-weight:800;font-size:14px;font-family:'Inter',sans-serif;align-items:center;justify-content:center;gap:8px;box-shadow:0 -2px 12px rgba(0,0,0,.3)">
+    &#128260; Nova versao disponivel &mdash; toque aqui para atualizar
   </div>
 </body>
 </html>
