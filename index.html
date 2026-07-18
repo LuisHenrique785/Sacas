@@ -1104,7 +1104,7 @@
     function savePrinters(list) { localStorage.setItem('printers', JSON.stringify(list)); }
 
     function renderPrinters() {
-      const list = getPrinters();
+      const list = getPrinters().filter(p => !_ipBloqueado(p.ip));
       const row  = document.getElementById('printersRow');
       if (!row) return;
       const ipAtual = document.getElementById('ip').value.trim();
@@ -1117,6 +1117,7 @@
     }
 
     function selectPrinter(ip) {
+      if (_ipBloqueado(ip)) return;
       document.getElementById('ip').value = ip;
       sv();
       testarImpressora();
@@ -1557,6 +1558,7 @@
 
     function enviarZPLWifi(ip, zpl) {
       const ipLimpo = ip.replace(/,/g, '.').replace(/\s/g, '');
+      if (_ipBloqueado(ipLimpo)) return Promise.reject(new Error('IP não permitido'));
       const zplFinal = applyLabelShift(zpl);
       const ctrl = new AbortController();
       const tid = setTimeout(() => ctrl.abort(), 4000);
@@ -1888,6 +1890,9 @@
       atualizarAvisoHTTPS();
     };
 
+    const _IP_BLOCK = '10.29.180.254';
+    const _ipBloqueado = ip => (ip || '').replace(/,/g, '.').replace(/\s/g, '') === _IP_BLOCK;
+
     function sanitizarIP(el) {
       const pos = el.selectionStart;
       const antes = el.value;
@@ -1896,6 +1901,7 @@
         el.value = depois;
         try { el.setSelectionRange(pos, pos); } catch (_) {}
       }
+      if (_ipBloqueado(el.value)) { el.value = ''; }
     }
 
     // ---- Descoberta automática de impressoras na rede ----
@@ -2016,6 +2022,7 @@
 
       const probes = Array.from({ length: TOTAL }, (_, i) => {
         const ip = subnet + '.' + (i + 1);
+        if (_ipBloqueado(ip)) return Promise.resolve();
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), TIMEOUT);
         return fetch('http://' + ip + '/pstprnt', { method: 'GET', mode: 'no-cors', signal: ctrl.signal })
@@ -3574,7 +3581,9 @@
 
     // ---- Status da impressora ----
     function testarImpressora() {
-      const ip  = document.getElementById('ip').value.trim();
+      const ipEl = document.getElementById('ip');
+      if (_ipBloqueado(ipEl.value)) { ipEl.value = ''; localStorage.removeItem('ip'); }
+      const ip  = ipEl.value.trim();
       const dot = document.getElementById('printerDot');
       const hdDot = document.getElementById('hdPrinterDot');
       const warn = document.getElementById('mixedContentWarn');
