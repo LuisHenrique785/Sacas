@@ -204,6 +204,7 @@
     .a-navy   .act-ico{background:linear-gradient(135deg,var(--brand-l),var(--brand-d));}
     .a-meli   .act-ico{background:linear-gradient(135deg,#fbbf24,#1a1f63);}
     .a-teal   .act-ico{background:linear-gradient(135deg,#2dd4bf,#0d9488);}
+    .a-orange .act-ico{background:linear-gradient(135deg,#fb923c,#ea580c);}
 
     /* ═══ LAYOUT RESPONSIVO ═══ */
     .app-layout{width:100%;max-width:400px;}
@@ -459,19 +460,35 @@
     </div>
     <div class="sec-row"><span>Ajustes de Impressão</span></div>
     <div style="padding:10px 12px;border:1.5px solid var(--bdr);border-radius:var(--rs);background:var(--surf2);margin-bottom:10px">
+      <div style="font-size:11px;font-weight:800;color:var(--brand);margin-bottom:8px">QR Code</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8596; Posicao Horizontal</span>
-        <span id="shiftVal" style="font-size:12px;font-weight:900;color:var(--brand)">0</span>
+        <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8597; Vertical</span>
+        <span id="qrVVal" style="font-size:12px;font-weight:900;color:var(--brand)">0</span>
       </div>
-      <input type="range" id="labelShift" min="-200" max="200" value="0" oninput="svShift()" style="width:100%;accent-color:var(--brand)">
-      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9664; Esquerda</span><span>Direita &#9654;</span></div>
+      <input type="range" id="qrVShift" min="-200" max="200" value="0" oninput="svQRV()" style="width:100%;accent-color:var(--brand)">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9650; Para cima</span><span>Para baixo &#9660;</span></div>
       <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8597; Ajuste Vertical</span>
-        <span id="vshiftVal" style="font-size:12px;font-weight:900;color:var(--brand)">0</span>
+        <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8596; Horizontal</span>
+        <span id="qrHVal" style="font-size:12px;font-weight:900;color:var(--brand)">0</span>
       </div>
-      <input type="range" id="labelVShift" min="-300" max="300" value="0" oninput="svVShift()" style="width:100%;accent-color:var(--brand)">
+      <input type="range" id="qrHShift" min="-200" max="200" value="0" oninput="svQRH()" style="width:100%;accent-color:var(--brand)">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9664; Esquerda</span><span>Direita &#9654;</span></div>
+      <div style="height:2px;background:var(--bdr);margin:10px 0"></div>
+      <div style="font-size:11px;font-weight:800;color:var(--brand);margin-bottom:8px">Texto</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8597; Vertical</span>
+        <span id="txtVVal" style="font-size:12px;font-weight:900;color:var(--brand)">0</span>
+      </div>
+      <input type="range" id="txtVShift" min="-200" max="200" value="0" oninput="svTxtV()" style="width:100%;accent-color:var(--brand)">
       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9650; Para cima</span><span>Para baixo &#9660;</span></div>
+      <div style="height:1px;background:var(--bdr);margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:11px;font-weight:700;color:var(--tx2)">&#8596; Horizontal</span>
+        <span id="txtHVal" style="font-size:12px;font-weight:900;color:var(--brand)">0</span>
+      </div>
+      <input type="range" id="txtHShift" min="-200" max="200" value="0" oninput="svTxtH()" style="width:100%;accent-color:var(--brand)">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);font-weight:600;margin-top:2px"><span>&#9664; Esquerda</span><span>Direita &#9654;</span></div>
     </div>
     <div id="httpsWarnMain" style="display:none;background:#fff3cd;border:2px solid #f59e0b;border-radius:var(--rs);padding:12px 14px;margin-bottom:10px;font-size:12px;line-height:1.7;color:#78350f">
       <div style="font-weight:900;font-size:13px;margin-bottom:4px">&#128274; Impressao WiFi bloqueada pelo Chrome</div>
@@ -526,6 +543,10 @@
       <button class="act-btn a-teal" onclick="abrirRomaneio()">
         <span class="act-ico">&#128203;</span>
         <span class="act-lbl">Romaneio</span>
+      </button>
+      <button class="act-btn a-orange" onclick="abrirLocalizador()">
+        <span class="act-ico">&#128205;</span>
+        <span class="act-lbl">Localizar</span>
       </button>
     </div>
     <button class="btn-atualizar" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
@@ -1017,6 +1038,22 @@
     </div>
   </div>
 
+  <div id="modalLocalizador" class="modal-bg">
+    <div class="modal-box" style="display:flex;flex-direction:column;max-height:85vh">
+      <div style="font-weight:900;font-size:16px;margin-bottom:4px;color:var(--tx)">&#128205; Localizar Impressoras</div>
+      <div id="locGpsStatus" style="font-size:11px;color:var(--tx3);margin-bottom:12px"></div>
+      <div id="locRegAtual" style="background:#e3f2fd;border:1.5px solid #90caf9;border-radius:var(--rs);padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:#1565c0;margin-bottom:8px">Impressora ativa: <span id="locIpAtual" style="font-family:monospace">—</span></div>
+        <button onclick="registrarLocImpressora(null)" style="width:100%;padding:10px;background:#1a1f63;color:#FFE600;border:none;border-radius:var(--rs);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">
+          &#128205; Estou do lado dela — Salvar localização
+        </button>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:8px">Impressoras salvas</div>
+      <div id="locLista" style="flex:1;overflow-y:auto;min-height:60px"></div>
+      <button onclick="fecharLocalizador()" style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:12px;font-family:inherit">FECHAR</button>
+    </div>
+  </div>
+
   <script>
     // ================================================================
     // CONFIGURAÇÃO SUPABASE
@@ -1142,6 +1179,120 @@
       list.splice(idx, 1);
       savePrinters(list);
       renderPrinters();
+    }
+
+    // ---- Localizador de Impressoras ----
+    function getPrinterLoc(ip)       { try { return JSON.parse(localStorage.getItem('prt_loc_' + ip)); } catch (_) { return null; } }
+    function savePrinterLoc(ip,lat,lng) { localStorage.setItem('prt_loc_' + ip, JSON.stringify({lat,lng})); }
+    function removePrinterLoc(ip)    { localStorage.removeItem('prt_loc_' + ip); }
+
+    function _haversine(lat1,lng1,lat2,lng2) {
+      const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
+      const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+      return R*2*Math.asin(Math.sqrt(a));
+    }
+    function _bearing(lat1,lng1,lat2,lng2) {
+      const dLng=(lng2-lng1)*Math.PI/180;
+      const y=Math.sin(dLng)*Math.cos(lat2*Math.PI/180);
+      const x=Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos(dLng);
+      return(Math.atan2(y,x)*180/Math.PI+360)%360;
+    }
+    function _cardinal(deg){return['N','NE','L','SE','S','SO','O','NO'][Math.round(deg/45)%8];}
+    function _dirArrow(deg){return['↑','↗','→','↘','↓','↙','←','↖'][Math.round(deg/45)%8];}
+
+    let _locWatchId=null, _locPos=null;
+
+    function abrirLocalizador() {
+      document.getElementById('modalLocalizador').style.display='flex';
+      const ip=document.getElementById('ip').value.trim();
+      document.getElementById('locIpAtual').textContent=ip||'(nenhuma)';
+      document.getElementById('locRegAtual').style.display=ip?'block':'none';
+      document.getElementById('locGpsStatus').textContent='Obtendo localização GPS...';
+      renderLocalizador();
+      if(_locWatchId!==null) navigator.geolocation.clearWatch(_locWatchId);
+      if(!navigator.geolocation){document.getElementById('locGpsStatus').textContent='❌ GPS não disponível neste dispositivo.';return;}
+      _locWatchId=navigator.geolocation.watchPosition(pos=>{
+        _locPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:Math.round(pos.coords.accuracy)};
+        document.getElementById('locGpsStatus').textContent='📡 GPS ativo — precisão ±'+_locPos.acc+' m';
+        renderLocalizador();
+      },()=>{
+        document.getElementById('locGpsStatus').textContent='⚠️ Sem acesso ao GPS. Verifique as permissões.';
+      },{enableHighAccuracy:true,timeout:15000,maximumAge:3000});
+    }
+
+    function fecharLocalizador() {
+      if(_locWatchId!==null){navigator.geolocation.clearWatch(_locWatchId);_locWatchId=null;}
+      _locPos=null;
+      document.getElementById('modalLocalizador').style.display='none';
+    }
+
+    function renderLocalizador() {
+      const lista=document.getElementById('locLista');
+      if(!lista) return;
+      const printers=getPrinters().filter(p=>!_ipBloqueado(p.ip));
+      if(!printers.length){
+        lista.innerHTML='<div style="text-align:center;color:var(--tx3);font-size:13px;padding:20px">Nenhuma impressora salva. Use o ícone 💾 nas configurações para salvar.</div>';
+        return;
+      }
+      const enriched=printers.map(p=>{
+        const loc=getPrinterLoc(p.ip);
+        let dist=null,bear=null;
+        if(loc&&_locPos){dist=Math.round(_haversine(_locPos.lat,_locPos.lng,loc.lat,loc.lng));bear=_bearing(_locPos.lat,_locPos.lng,loc.lat,loc.lng);}
+        return{...p,loc,dist,bear};
+      }).sort((a,b)=>{
+        if(a.dist!==null&&b.dist!==null)return a.dist-b.dist;
+        if(a.dist!==null)return-1;if(b.dist!==null)return 1;
+        if(a.loc&&!b.loc)return-1;if(!a.loc&&b.loc)return 1;return 0;
+      });
+      lista.innerHTML=enriched.map(p=>{
+        const hasLoc=!!p.loc, hasDist=p.dist!==null;
+        let distHtml='',bdr='var(--bdr)';
+        if(hasDist){
+          const clr=p.dist<15?'#059669':p.dist<60?'#d97706':'#dc2626';
+          bdr=p.dist<15?clr:'var(--bdr)';
+          distHtml=`<div style="font-size:19px;font-weight:900;color:${clr};margin-top:3px">${_dirArrow(p.bear)} ${p.dist} m <span style="font-size:13px;font-weight:700">${_cardinal(p.bear)}</span></div>`;
+        } else if(hasLoc){
+          distHtml='<div style="font-size:12px;color:var(--tx3);margin-top:3px">Aguardando GPS...</div>';
+        } else {
+          distHtml='<div style="font-size:12px;color:#d97706;margin-top:3px">Sem localização registrada</div>';
+        }
+        const mapsUrl=hasLoc?'https://www.google.com/maps?q='+p.loc.lat+','+p.loc.lng:'';
+        return`<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:var(--rs);border:1.5px solid ${bdr};margin-bottom:8px">
+          <div style="font-size:28px;line-height:1">🖨️</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:14px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</div>
+            <div style="font-size:11px;color:var(--tx3);font-family:monospace">${p.ip}</div>
+            ${distHtml}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+            ${hasLoc?`<a href="${mapsUrl}" target="_blank" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:#e8f5e9;border-radius:8px;font-size:17px;text-decoration:none" title="Abrir no Maps">🗺️</a>`:''}
+            <button onclick="registrarLocImpressora('${p.ip}')" style="width:34px;height:34px;background:#e3f2fd;border:none;border-radius:8px;font-size:16px;cursor:pointer" title="Salvar minha localização atual para esta impressora">📍</button>
+            ${hasLoc?`<button onclick="removerLocImpressora('${p.ip}')" style="width:34px;height:34px;background:#fce4ec;border:none;border-radius:8px;font-size:16px;cursor:pointer" title="Remover localização">🗑️</button>`:''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function registrarLocImpressora(ip) {
+      const targetIp=ip||document.getElementById('ip').value.trim();
+      if(!targetIp){toast('⚠️ Nenhuma impressora selecionada.','warn');return;}
+      if(!navigator.geolocation){toast('❌ GPS não disponível.','err');return;}
+      const doSave=(lat,lng)=>{
+        savePrinterLoc(targetIp,lat,lng);
+        toast('📍 Localização registrada!','ok');
+        renderLocalizador();
+      };
+      if(_locPos){doSave(_locPos.lat,_locPos.lng);return;}
+      toast('📡 Obtendo GPS...','info',2000);
+      navigator.geolocation.getCurrentPosition(pos=>doSave(pos.coords.latitude,pos.coords.longitude),
+        ()=>toast('❌ Não foi possível obter localização.','err'),
+        {enableHighAccuracy:true,timeout:10000});
+    }
+
+    function removerLocImpressora(ip) {
+      removePrinterLoc(ip);
+      toast('🗑️ Localização removida.','info');
+      renderLocalizador();
     }
 
     // ---- Operadores cadastrados ----
@@ -1855,12 +2006,11 @@
       const savedDark = savedIp ? (localStorage.getItem('dk_' + savedIp) || '30') : '30';
       document.getElementById('darkness').value = savedDark;
       document.getElementById('darkVal').innerText = savedDark;
-      const savedShift = savedIp ? (localStorage.getItem('lsx_' + savedIp) || '0') : '0';
-      document.getElementById('labelShift').value = savedShift;
-      document.getElementById('shiftVal').innerText = savedShift;
-      const savedVShift = savedIp ? (localStorage.getItem('lsv_' + savedIp) || '0') : '0';
-      document.getElementById('labelVShift').value = savedVShift;
-      document.getElementById('vshiftVal').innerText = savedVShift;
+      [['qrVShift','qrVVal','qrv_'],['qrHShift','qrHVal','qrh_'],['txtVShift','txtVVal','tv_'],['txtHShift','txtHVal','txh_']].forEach(([id,val,key]) => {
+        const v = savedIp ? (localStorage.getItem(key + savedIp) || '0') : '0';
+        document.getElementById(id).value = v;
+        document.getElementById(val).innerText = v;
+      });
       atualizarBotaoOrient();
       populateSvcDatalist();
       // Auto-collapse config se ja configurado
@@ -2093,29 +2243,22 @@
       if (ip) localStorage.setItem('dk_' + ip, val);
     };
 
-    const svShift = () => {
-      const val = document.getElementById('labelShift').value;
-      document.getElementById('shiftVal').innerText = val;
-      const ip = document.getElementById('ip').value.trim();
-      if (ip) localStorage.setItem('lsx_' + ip, val);
-    };
+    const svQRV  = () => { const v = document.getElementById('qrVShift').value;  document.getElementById('qrVVal').innerText  = v; const ip = document.getElementById('ip').value.trim(); if (ip) localStorage.setItem('qrv_' + ip, v); };
+    const svQRH  = () => { const v = document.getElementById('qrHShift').value;  document.getElementById('qrHVal').innerText  = v; const ip = document.getElementById('ip').value.trim(); if (ip) localStorage.setItem('qrh_' + ip, v); };
+    const svTxtV = () => { const v = document.getElementById('txtVShift').value; document.getElementById('txtVVal').innerText = v; const ip = document.getElementById('ip').value.trim(); if (ip) localStorage.setItem('tv_'  + ip, v); };
+    const svTxtH = () => { const v = document.getElementById('txtHShift').value; document.getElementById('txtHVal').innerText = v; const ip = document.getElementById('ip').value.trim(); if (ip) localStorage.setItem('txh_' + ip, v); };
 
-    const svVShift = () => {
-      const val = document.getElementById('labelVShift').value;
-      document.getElementById('vshiftVal').innerText = val;
+    function getAdj() {
       const ip = document.getElementById('ip').value.trim();
-      if (ip) localStorage.setItem('lsv_' + ip, val);
-    };
-
-    function applyLabelShift(zpl) {
-      const ip     = document.getElementById('ip').value.trim();
-      const shift  = parseInt(localStorage.getItem('lsx_' + ip) || '0');
-      const vshift = parseInt(localStorage.getItem('lsv_' + ip) || '0');
-      if (!shift && !vshift) return zpl;
-      return zpl.replace(/\^FO(-?\d+),(-?\d+)/g, (_, x, y) =>
-        '^FO' + Math.max(0, parseInt(x) + shift) + ',' + Math.max(0, parseInt(y) + vshift)
-      );
+      return {
+        qrV: parseInt(localStorage.getItem('qrv_' + ip) || '0'),
+        qrH: parseInt(localStorage.getItem('qrh_' + ip) || '0'),
+        txV: parseInt(localStorage.getItem('tv_'  + ip) || '0'),
+        txH: parseInt(localStorage.getItem('txh_' + ip) || '0'),
+      };
     }
+
+    function applyLabelShift(zpl) { return zpl; }
 
     function isInvertido() {
       const ip = document.getElementById('ip').value.trim();
@@ -2151,12 +2294,11 @@
       const dk = localStorage.getItem('dk_' + ip) || '30';
       document.getElementById('darkness').value = dk;
       document.getElementById('darkVal').innerText = dk;
-      const savedShift = parseInt(localStorage.getItem('lsx_' + ip) || '0');
-      document.getElementById('labelShift').value = savedShift;
-      document.getElementById('shiftVal').innerText = savedShift;
-      const savedVShift = parseInt(localStorage.getItem('lsv_' + ip) || '0');
-      document.getElementById('labelVShift').value = savedVShift;
-      document.getElementById('vshiftVal').innerText = savedVShift;
+      [['qrVShift','qrVVal','qrv_'],['qrHShift','qrHVal','qrh_'],['txtVShift','txtVVal','tv_'],['txtHShift','txtHVal','txh_']].forEach(([id,val,key]) => {
+        const v = parseInt(localStorage.getItem(key + ip) || '0');
+        document.getElementById(id).value = v;
+        document.getElementById(val).innerText = v;
+      });
       atualizarBotaoOrient();
       atualizarBadge();
       atualizarContador();
@@ -3183,6 +3325,7 @@
           const ty2  = vOff + 65;
           const ty3  = vOff + 112;
           const ty4  = vOff + 142;
+          const adj = getAdj();
           for (let k = 1; k <= qtdVal; k++) {
             const qr   = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
             const _qrY = inv ? ll - qrY0 - qrDots : qrY0;
@@ -3190,24 +3333,28 @@
             const _y2  = inv ? ll - ty2 - 42       : ty2;
             const _y3  = inv ? ll - ty3 - 24       : ty3;
             const _y4  = inv ? ll - ty4 - 24       : ty4;
+            const _qrX = Math.max(0, 10 + adj.qrH);
+            const _qrYa = Math.max(0, _qrY + adj.qrV);
+            const _tX  = Math.max(0, tX + adj.txH);
             zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
-                   '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
-                   '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
-                   '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
-                   '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
+                   '^FO' + _qrX + ',' + _qrYa + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
+                   '^FO' + _tX + ',' + Math.max(0,_y1+adj.txV) + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                   '^FO' + _tX + ',' + Math.max(0,_y2+adj.txV) + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                   '^FO' + _tX + ',' + Math.max(0,_y3+adj.txV) + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
+                   '^FO' + _tX + ',' + Math.max(0,_y4+adj.txV) + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
           }
         } else {
           // Layout proporcional para 100×100, 100×150, 150×100
-          // Sem lógica de orientação — posições fixas, ajuste via slider Vertical
-          const sy  = ll / 800;
+          const adj  = getAdj();
+          const sy   = ll / 800;
           const qrSz = 7 * 29;
-          const qrX  = Math.round((pw - qrSz) / 2);
-          const qrY  = Math.round(20  * sy);
-          const y1   = Math.round(350 * sy);
-          const y2   = Math.round(440 * sy);
-          const y3   = Math.round(520 * sy);
-          const y4   = Math.round(565 * sy);
+          const qrX  = Math.max(0, Math.round((pw - qrSz) / 2) + adj.qrH);
+          const qrY  = Math.max(0, Math.round(20  * sy) + adj.qrV);
+          const y1   = Math.max(0, Math.round(350 * sy) + adj.txV);
+          const y2   = Math.max(0, Math.round(440 * sy) + adj.txV);
+          const y3   = Math.max(0, Math.round(520 * sy) + adj.txV);
+          const y4   = Math.max(0, Math.round(565 * sy) + adj.txV);
+          const txX  = Math.max(0, adj.txH);
           const fA   = Math.round(75  * sy);
           const fB   = Math.round(65  * sy);
           const fC   = Math.round(38  * sy);
@@ -3215,10 +3362,10 @@
             const qr = k === 1 ? qrMae : sacaId + ' Saca ' + k + '-' + qtdVal;
             zpl += '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
                    '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
-                   '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
-                   '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
-                   '^FO0,' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
-                   '^FO0,' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
+                   '^FO' + txX + ',' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rotaSaca + ' - ' + sacaId + '^FS' +
+                   '^FO' + txX + ',' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + ' de ' + qtdVal + '^FS' +
+                   '^FO' + txX + ',' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodoSaca ? nodoSaca + ' | ' : '') + svcResp + '^FS' +
+                   '^FO' + txX + ',' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + getV('log') + '^FS^XZ';
           }
         }
 
@@ -3534,6 +3681,7 @@
       const dataStr = dataHoraAtual();
       let zpl;
 
+      const adj = getAdj();
       if (pw === 640 && ll === 320) {
         const qrMag = 3, qrDots = qrMag * 21;
         const vOff  = Math.round((ll - 166) / 2);
@@ -3544,25 +3692,32 @@
         const _y2   = inv ? ll - (vOff + 65)  - 42 : vOff + 65;
         const _y3   = inv ? ll - (vOff + 112) - 24 : vOff + 112;
         const _y4   = inv ? ll - (vOff + 142) - 24 : vOff + 142;
+        const _qrX  = Math.max(0, 10 + adj.qrH);
+        const _qrYa = Math.max(0, _qrY + adj.qrV);
+        const _tX   = Math.max(0, tX + adj.txH);
         zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
-              `^FO10,${_qrY}^BQN,2,${qrMag}^FDQA,TESTE^FS` +
-              `^FO${tX},${_y1}^A0${rot},50,50^FB${tW},1,0,L^FDTESTE IMPRESSAO^FS` +
-              `^FO${tX},${_y2}^A0${rot},42,42^FB${tW},1,0,L^FD${svc}^FS` +
-              `^FO${tX},${_y3}^A0${rot},24,24^FB${tW},1,0,L^FD${dataStr}^FS` +
-              `^FO${tX},${_y4}^A0${rot},24,24^FB${tW},1,0,L^FDIP: ${ip}^FS^XZ`;
+              `^FO${_qrX},${_qrYa}^BQN,2,${qrMag}^FDQA,TESTE^FS` +
+              `^FO${_tX},${Math.max(0,_y1+adj.txV)}^A0${rot},50,50^FB${tW},1,0,L^FDTESTE IMPRESSAO^FS` +
+              `^FO${_tX},${Math.max(0,_y2+adj.txV)}^A0${rot},42,42^FB${tW},1,0,L^FD${svc}^FS` +
+              `^FO${_tX},${Math.max(0,_y3+adj.txV)}^A0${rot},24,24^FB${tW},1,0,L^FD${dataStr}^FS` +
+              `^FO${_tX},${Math.max(0,_y4+adj.txV)}^A0${rot},24,24^FB${tW},1,0,L^FDIP: ${ip}^FS^XZ`;
       } else {
         const sy   = ll / 800;
         const qrSz = 5 * 21;
-        const qrX  = Math.round((pw - qrSz) / 2), qrY = Math.round(20 * sy);
-        const y1   = Math.round(350 * sy), y2 = Math.round(440 * sy);
-        const y3   = Math.round(520 * sy), y4 = Math.round(565 * sy);
+        const qrX  = Math.max(0, Math.round((pw - qrSz) / 2) + adj.qrH);
+        const qrY  = Math.max(0, Math.round(20 * sy) + adj.qrV);
+        const y1   = Math.max(0, Math.round(350 * sy) + adj.txV);
+        const y2   = Math.max(0, Math.round(440 * sy) + adj.txV);
+        const y3   = Math.max(0, Math.round(520 * sy) + adj.txV);
+        const y4   = Math.max(0, Math.round(565 * sy) + adj.txV);
+        const txX  = Math.max(0, adj.txH);
         const fA   = Math.round(75 * sy), fB = Math.round(65 * sy), fC = Math.round(38 * sy);
         zpl = `^XA^PW${pw}^LL${ll}^MD${dark}` +
               `^FO${qrX},${qrY}^BQN,2,5^FDQA,TESTE^FS` +
-              `^FO0,${y1}^A0N,${fA},${fA}^FB${pw},1,0,C^FDTESTE DE IMPRESSAO^FS` +
-              `^FO0,${y2}^A0N,${fB},${fB}^FB${pw},1,0,C^FD${svc}^FS` +
-              `^FO0,${y3}^A0N,${fC},${fC}^FB${pw},1,0,C^FD${dataStr}^FS` +
-              `^FO0,${y4}^A0N,${fC},${fC}^FB${pw},1,0,C^FDIP: ${ip}^FS^XZ`;
+              `^FO${txX},${y1}^A0N,${fA},${fA}^FB${pw},1,0,C^FDTESTE DE IMPRESSAO^FS` +
+              `^FO${txX},${y2}^A0N,${fB},${fB}^FB${pw},1,0,C^FD${svc}^FS` +
+              `^FO${txX},${y3}^A0N,${fC},${fC}^FB${pw},1,0,C^FD${dataStr}^FS` +
+              `^FO${txX},${y4}^A0N,${fC},${fC}^FB${pw},1,0,C^FDIP: ${ip}^FS^XZ`;
       }
 
       toast('🖨️ Enviando etiqueta de teste...', 'info', 2000);
@@ -4270,6 +4425,7 @@
       const qr      = k === 1 ? entry.qr_mae : entry.saca_id + ' Saca ' + k;
       let zpl = '';
 
+      const adj = getAdj();
       if (pw === 640 && ll === 320) {
         const inv = isInvertido(), rot = inv ? 'I' : 'N';
         const qrMag = 3, qrDots = qrMag * 45;
@@ -4279,26 +4435,33 @@
         const _qrY = inv ? ll - qrY0 - qrDots : qrY0;
         const _y1 = inv ? ll - ty1 - 50 : ty1, _y2 = inv ? ll - ty2 - 42 : ty2;
         const _y3 = inv ? ll - ty3 - 24 : ty3, _y4 = inv ? ll - ty4 - 24 : ty4;
+        const _qrX = Math.max(0, 10 + adj.qrH);
+        const _qrYa = Math.max(0, _qrY + adj.qrV);
+        const _tX = Math.max(0, tX + adj.txH);
         zpl = '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
-          '^FO10,' + _qrY + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
-          '^FO' + tX + ',' + _y1 + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rota + ' - ' + sacaId + '^FS' +
-          '^FO' + tX + ',' + _y2 + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + '^FS' +
-          '^FO' + tX + ',' + _y3 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
-          '^FO' + tX + ',' + _y4 + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + audit + '^FS^XZ';
+          '^FO' + _qrX + ',' + _qrYa + '^BQN,2,' + qrMag + '^FDQA,' + qr + '^FS' +
+          '^FO' + _tX + ',' + Math.max(0,_y1+adj.txV) + '^A0' + rot + ',50,50^FB' + tW + ',1,0,L^FD' + rota + ' - ' + sacaId + '^FS' +
+          '^FO' + _tX + ',' + Math.max(0,_y2+adj.txV) + '^A0' + rot + ',42,42^FB' + tW + ',1,0,L^FDSaca ' + k + '^FS' +
+          '^FO' + _tX + ',' + Math.max(0,_y3+adj.txV) + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
+          '^FO' + _tX + ',' + Math.max(0,_y4+adj.txV) + '^A0' + rot + ',24,24^FB' + tW + ',1,0,L^FD' + dataStr + ' | ' + audit + '^FS^XZ';
       } else {
         const sy = ll / 800, qrSz = 7 * 29;
-        const qrX = Math.round((pw - qrSz) / 2), qrY = Math.round(20 * sy);
-        const y1 = Math.round(350 * sy), y2 = Math.round(440 * sy);
-        const y3 = Math.round(520 * sy), y4 = Math.round(565 * sy);
+        const qrX = Math.max(0, Math.round((pw - qrSz) / 2) + adj.qrH);
+        const qrY = Math.max(0, Math.round(20 * sy) + adj.qrV);
+        const y1 = Math.max(0, Math.round(350 * sy) + adj.txV);
+        const y2 = Math.max(0, Math.round(440 * sy) + adj.txV);
+        const y3 = Math.max(0, Math.round(520 * sy) + adj.txV);
+        const y4 = Math.max(0, Math.round(565 * sy) + adj.txV);
+        const txX = Math.max(0, adj.txH);
         const fA = Math.round(75 * sy), fB = Math.round(65 * sy), fC = Math.round(38 * sy);
         zpl = '^XA^PW' + pw + '^LL' + ll + '^MD' + dark +
           '^FO' + qrX + ',' + qrY + '^BQN,2,7^FDQA,' + qr + '^FS' +
-          '^FO0,' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rota + ' - ' + sacaId + '^FS' +
-          '^FO0,' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + '^FS' +
-          '^FO0,' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
-          '^FO0,' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + audit + '^FS^XZ';
+          '^FO' + txX + ',' + y1 + '^A0N,' + fA + ',' + fA + '^FB' + pw + ',1,0,C^FD' + rota + ' - ' + sacaId + '^FS' +
+          '^FO' + txX + ',' + y2 + '^A0N,' + fB + ',' + fB + '^FB' + pw + ',1,0,C^FDSaca ' + k + '^FS' +
+          '^FO' + txX + ',' + y3 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + (nodo ? nodo + ' | ' : '') + svcResp + '^FS' +
+          '^FO' + txX + ',' + y4 + '^A0N,' + fC + ',' + fC + '^FB' + pw + ',1,0,C^FD' + dataStr + ' | ' + audit + '^FS^XZ';
       }
-      return applyLabelShift(zpl);
+      return zpl;
     }
 
     // ─── CONSULTAR SACA ───────────────────────────────────────────────────────
