@@ -204,6 +204,7 @@
     .a-navy   .act-ico{background:linear-gradient(135deg,var(--brand-l),var(--brand-d));}
     .a-meli   .act-ico{background:linear-gradient(135deg,#fbbf24,#1a1f63);}
     .a-teal   .act-ico{background:linear-gradient(135deg,#2dd4bf,#0d9488);}
+    .a-orange .act-ico{background:linear-gradient(135deg,#fb923c,#ea580c);}
 
     /* ═══ LAYOUT RESPONSIVO ═══ */
     .app-layout{width:100%;max-width:400px;}
@@ -542,6 +543,10 @@
       <button class="act-btn a-teal" onclick="abrirRomaneio()">
         <span class="act-ico">&#128203;</span>
         <span class="act-lbl">Romaneio</span>
+      </button>
+      <button class="act-btn a-orange" onclick="abrirLocalizador()">
+        <span class="act-ico">&#128205;</span>
+        <span class="act-lbl">Localizar</span>
       </button>
     </div>
     <button class="btn-atualizar" onclick="abrirAtualizar()">&#11014;&#65039; ATUALIZAR BASE / ROTA</button>
@@ -1033,6 +1038,22 @@
     </div>
   </div>
 
+  <div id="modalLocalizador" class="modal-bg">
+    <div class="modal-box" style="display:flex;flex-direction:column;max-height:85vh">
+      <div style="font-weight:900;font-size:16px;margin-bottom:4px;color:var(--tx)">&#128205; Localizar Impressoras</div>
+      <div id="locGpsStatus" style="font-size:11px;color:var(--tx3);margin-bottom:12px"></div>
+      <div id="locRegAtual" style="background:#e3f2fd;border:1.5px solid #90caf9;border-radius:var(--rs);padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:#1565c0;margin-bottom:8px">Impressora ativa: <span id="locIpAtual" style="font-family:monospace">—</span></div>
+        <button onclick="registrarLocImpressora(null)" style="width:100%;padding:10px;background:#1a1f63;color:#FFE600;border:none;border-radius:var(--rs);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">
+          &#128205; Estou do lado dela — Salvar localização
+        </button>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:8px">Impressoras salvas</div>
+      <div id="locLista" style="flex:1;overflow-y:auto;min-height:60px"></div>
+      <button onclick="fecharLocalizador()" style="width:100%;padding:10px;border-radius:8px;border:none;background:#f2f2f7;font-size:14px;cursor:pointer;margin-top:12px;font-family:inherit">FECHAR</button>
+    </div>
+  </div>
+
   <script>
     // ================================================================
     // CONFIGURAÇÃO SUPABASE
@@ -1158,6 +1179,120 @@
       list.splice(idx, 1);
       savePrinters(list);
       renderPrinters();
+    }
+
+    // ---- Localizador de Impressoras ----
+    function getPrinterLoc(ip)       { try { return JSON.parse(localStorage.getItem('prt_loc_' + ip)); } catch (_) { return null; } }
+    function savePrinterLoc(ip,lat,lng) { localStorage.setItem('prt_loc_' + ip, JSON.stringify({lat,lng})); }
+    function removePrinterLoc(ip)    { localStorage.removeItem('prt_loc_' + ip); }
+
+    function _haversine(lat1,lng1,lat2,lng2) {
+      const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
+      const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+      return R*2*Math.asin(Math.sqrt(a));
+    }
+    function _bearing(lat1,lng1,lat2,lng2) {
+      const dLng=(lng2-lng1)*Math.PI/180;
+      const y=Math.sin(dLng)*Math.cos(lat2*Math.PI/180);
+      const x=Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos(dLng);
+      return(Math.atan2(y,x)*180/Math.PI+360)%360;
+    }
+    function _cardinal(deg){return['N','NE','L','SE','S','SO','O','NO'][Math.round(deg/45)%8];}
+    function _dirArrow(deg){return['↑','↗','→','↘','↓','↙','←','↖'][Math.round(deg/45)%8];}
+
+    let _locWatchId=null, _locPos=null;
+
+    function abrirLocalizador() {
+      document.getElementById('modalLocalizador').style.display='flex';
+      const ip=document.getElementById('ip').value.trim();
+      document.getElementById('locIpAtual').textContent=ip||'(nenhuma)';
+      document.getElementById('locRegAtual').style.display=ip?'block':'none';
+      document.getElementById('locGpsStatus').textContent='Obtendo localização GPS...';
+      renderLocalizador();
+      if(_locWatchId!==null) navigator.geolocation.clearWatch(_locWatchId);
+      if(!navigator.geolocation){document.getElementById('locGpsStatus').textContent='❌ GPS não disponível neste dispositivo.';return;}
+      _locWatchId=navigator.geolocation.watchPosition(pos=>{
+        _locPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:Math.round(pos.coords.accuracy)};
+        document.getElementById('locGpsStatus').textContent='📡 GPS ativo — precisão ±'+_locPos.acc+' m';
+        renderLocalizador();
+      },()=>{
+        document.getElementById('locGpsStatus').textContent='⚠️ Sem acesso ao GPS. Verifique as permissões.';
+      },{enableHighAccuracy:true,timeout:15000,maximumAge:3000});
+    }
+
+    function fecharLocalizador() {
+      if(_locWatchId!==null){navigator.geolocation.clearWatch(_locWatchId);_locWatchId=null;}
+      _locPos=null;
+      document.getElementById('modalLocalizador').style.display='none';
+    }
+
+    function renderLocalizador() {
+      const lista=document.getElementById('locLista');
+      if(!lista) return;
+      const printers=getPrinters().filter(p=>!_ipBloqueado(p.ip));
+      if(!printers.length){
+        lista.innerHTML='<div style="text-align:center;color:var(--tx3);font-size:13px;padding:20px">Nenhuma impressora salva. Use o ícone 💾 nas configurações para salvar.</div>';
+        return;
+      }
+      const enriched=printers.map(p=>{
+        const loc=getPrinterLoc(p.ip);
+        let dist=null,bear=null;
+        if(loc&&_locPos){dist=Math.round(_haversine(_locPos.lat,_locPos.lng,loc.lat,loc.lng));bear=_bearing(_locPos.lat,_locPos.lng,loc.lat,loc.lng);}
+        return{...p,loc,dist,bear};
+      }).sort((a,b)=>{
+        if(a.dist!==null&&b.dist!==null)return a.dist-b.dist;
+        if(a.dist!==null)return-1;if(b.dist!==null)return 1;
+        if(a.loc&&!b.loc)return-1;if(!a.loc&&b.loc)return 1;return 0;
+      });
+      lista.innerHTML=enriched.map(p=>{
+        const hasLoc=!!p.loc, hasDist=p.dist!==null;
+        let distHtml='',bdr='var(--bdr)';
+        if(hasDist){
+          const clr=p.dist<15?'#059669':p.dist<60?'#d97706':'#dc2626';
+          bdr=p.dist<15?clr:'var(--bdr)';
+          distHtml=`<div style="font-size:19px;font-weight:900;color:${clr};margin-top:3px">${_dirArrow(p.bear)} ${p.dist} m <span style="font-size:13px;font-weight:700">${_cardinal(p.bear)}</span></div>`;
+        } else if(hasLoc){
+          distHtml='<div style="font-size:12px;color:var(--tx3);margin-top:3px">Aguardando GPS...</div>';
+        } else {
+          distHtml='<div style="font-size:12px;color:#d97706;margin-top:3px">Sem localização registrada</div>';
+        }
+        const mapsUrl=hasLoc?'https://www.google.com/maps?q='+p.loc.lat+','+p.loc.lng:'';
+        return`<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surf2);border-radius:var(--rs);border:1.5px solid ${bdr};margin-bottom:8px">
+          <div style="font-size:28px;line-height:1">🖨️</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:14px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</div>
+            <div style="font-size:11px;color:var(--tx3);font-family:monospace">${p.ip}</div>
+            ${distHtml}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+            ${hasLoc?`<a href="${mapsUrl}" target="_blank" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:#e8f5e9;border-radius:8px;font-size:17px;text-decoration:none" title="Abrir no Maps">🗺️</a>`:''}
+            <button onclick="registrarLocImpressora('${p.ip}')" style="width:34px;height:34px;background:#e3f2fd;border:none;border-radius:8px;font-size:16px;cursor:pointer" title="Salvar minha localização atual para esta impressora">📍</button>
+            ${hasLoc?`<button onclick="removerLocImpressora('${p.ip}')" style="width:34px;height:34px;background:#fce4ec;border:none;border-radius:8px;font-size:16px;cursor:pointer" title="Remover localização">🗑️</button>`:''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function registrarLocImpressora(ip) {
+      const targetIp=ip||document.getElementById('ip').value.trim();
+      if(!targetIp){toast('⚠️ Nenhuma impressora selecionada.','warn');return;}
+      if(!navigator.geolocation){toast('❌ GPS não disponível.','err');return;}
+      const doSave=(lat,lng)=>{
+        savePrinterLoc(targetIp,lat,lng);
+        toast('📍 Localização registrada!','ok');
+        renderLocalizador();
+      };
+      if(_locPos){doSave(_locPos.lat,_locPos.lng);return;}
+      toast('📡 Obtendo GPS...','info',2000);
+      navigator.geolocation.getCurrentPosition(pos=>doSave(pos.coords.latitude,pos.coords.longitude),
+        ()=>toast('❌ Não foi possível obter localização.','err'),
+        {enableHighAccuracy:true,timeout:10000});
+    }
+
+    function removerLocImpressora(ip) {
+      removePrinterLoc(ip);
+      toast('🗑️ Localização removida.','info');
+      renderLocalizador();
     }
 
     // ---- Operadores cadastrados ----
